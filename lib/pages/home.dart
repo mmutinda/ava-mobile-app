@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/pages/qc_inpection_home.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/scheduleUnits.dart';
 import 'package:isuze_pqcs/widgets/menu_item.dart';
@@ -13,8 +16,22 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
+  var user = {};
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    getuserdata().then((value) {
+      setState(() {
+        user = jsonDecode(value);
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    // print(user['data']['token']);
+
     return Scaffold(
       // floatingActionButton: SpeedDial(
       //   animatedIcon: AnimatedIcons.menu_close,
@@ -84,7 +101,7 @@ class _HomeState extends State<Home> {
                     child: MenuItem(
                       name: "GCA",
                       onTap: () {},
-                         iconData: Icons.book_outlined,
+                      iconData: Icons.book_outlined,
                     ),
                   ),
                 ],
@@ -96,7 +113,7 @@ class _HomeState extends State<Home> {
                 children: [
                   Expanded(
                       child: MenuItem(
-                           iconData: Icons.star,
+                          iconData: Icons.star,
                           name: "Tightening Torque Management(TTMS)",
                           onTap: () {})),
                 ],

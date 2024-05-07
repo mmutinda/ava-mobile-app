@@ -2,7 +2,11 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+import 'package:isuze_pqcs/common/api.dart';
+import 'package:isuze_pqcs/common/functions.dart';
+import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/models/shops.dart';
+import 'package:isuze_pqcs/pages/qc_inspection/scanning.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/scheduleUnits.dart';
 import 'package:isuze_pqcs/widgets/menu_item.dart';
 import 'package:isuze_pqcs/widgets/shops.dart';
@@ -24,27 +28,82 @@ final List<Color> colors = [
 ];
 
 class _Qc_HomeState extends State<Qc_Home> {
+  var user = {};
+  bool isLoading = false;
+  String message = '';
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-    fetchData();
+    getuserdata().then((value) {
+      setState(() {
+        user = jsonDecode(value);
+      });
+      fetchData();
+    });
   }
 
-  void fetchData() async {
-    String apiResponse =
-        '{"shops": [ {"id": 1, "name": "Best Auto Deals"},{"id": 2, "name": "Great Cars Emporium"}, {"id": 3, "name": "Top Notch Autos"}]}';
-    // print(apiResponse);
-    // Convert JSON string to Map
-    Map<String, dynamic> responseJson = json.decode(apiResponse);
-    // Extract list of vehicles from the response and convert them into Vehicle objects
-    List<shops> fetchedShop = (responseJson['shops'] as List)
-        .map((shopJson) => shops.fromJson(shopJson))
-        .toList();
-    print(fetchedShop);
+  // void fetchData() async {
+  //   String apiResponse =
+  //       '{"shops": [ {"id": 1, "name": "Best Auto Deals"},{"id": 2, "name": "Great Cars Emporium"}, {"id": 3, "name": "Top Notch Autos"}]}';
+  //   // print(apiResponse);
+  //   // Convert JSON string to Map
+  //   Map<String, dynamic> responseJson = json.decode(apiResponse);
+  //   // Extract list of vehicles from the response and convert them into Vehicle objects
+  //   List<shops> fetchedShop = (responseJson['shops'] as List)
+  //       .map((shopJson) => shops.fromJson(shopJson))
+  //       .toList();
+  //   print(fetchedShop);
+  //   setState(() {
+  //     shop = fetchedShop; // Update state with fetched vehicles
+  //   });
+  // }
+  Future<void> fetchData() async {
     setState(() {
-      shop = fetchedShop; // Update state with fetched vehicles
+      isLoading = true;
     });
+    var url = "${Api.api_url}home";
+    print(url);
+
+    try {
+      var response = await httpget(url, user['data']['token'], context);
+      // log(jsonEncode(response['data']['shop']));
+      response['data']['shop'].forEach((shop) {
+        print(shop['unitmovement'].length);
+      });
+      if (response == null) {
+        print("No Internet");
+        // Handle no internet scenario
+        return;
+      }
+
+      if (response['success'] && response['data'] != null) {
+        List<dynamic> responseData = response['data']['shop'];
+        // print(response['data']['shop']['unitmovement']);
+        List<shops> fetchedVehicles = responseData.map((vehicleData) {
+          return shops.fromJson(vehicleData);
+        }).toList();
+
+        setState(() {
+          shop = fetchedVehicles;
+          isLoading = false;
+          message = '';
+        });
+      } else {
+        // Handle other scenarios
+        setState(() {
+          isLoading = false;
+          message = '${response['msg']}';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+        message = 'Network Problem';
+      });
+      // message = '${"Network Problem"}';
+      print('Error fetching data: $e');
+    }
   }
 
   @override
@@ -130,28 +189,50 @@ class _Qc_HomeState extends State<Qc_Home> {
             //     return MenuItem(name: "Shop No ${index + 1}", onTap: () {});
             //   },
             // ))
-            Expanded(
-              child: GridView.builder(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount:
-                      2, // You can adjust the number of columns here
-                  crossAxisSpacing: 10.0,
-                  mainAxisSpacing: 10.0,
-                  childAspectRatio: 3 /
-                      2, // You can adjust the aspect ratio of each grid item
-                ),
-                itemCount: 12,
-                itemBuilder: (context, index) {
-                  Color categoryColor = colors[index % colors.length];
-                  return ShopItems(
-                    dividerColor: categoryColor,
-                    name: "Shop No ${index + 1}",
-                    onTap: () {},
-                    number: "${index + 2}",
-                  );
-                },
-              ),
-            )
+            isLoading
+                ? Expanded(
+                    child: Container(
+                      width: double.infinity,
+                      child: FacebookLikeShimmer2(),
+                    ),
+                  )
+                : message.isNotEmpty
+                    ? ErrorMessageWidget(
+                        errorMessage: message,
+                        onRetry: () {
+                          fetchData();
+                        },
+                      ) // Show message for success or failure
+                    : Expanded(
+                        child: GridView.builder(
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount:
+                                2, // You can adjust the number of columns here
+                            crossAxisSpacing: 10.0,
+                            mainAxisSpacing: 10.0,
+                            childAspectRatio: 3 /
+                                2, // You can adjust the aspect ratio of each grid item
+                          ),
+                          itemCount: shop.length,
+                          itemBuilder: (context, index) {
+                            Color categoryColor = colors[index % colors.length];
+                            return ShopItems(
+                              dividerColor: categoryColor,
+                              name: "${shop[index].name}",
+                              onTap: () {
+                                Scanning(
+                                  shopId: "${shop[index].id}",
+                                  shopName: "${shop[index].name}",
+                                ).launch(context,
+                                    pageRouteAnimation:
+                                        PageRouteAnimation.Slide);
+                              },
+                              number: "${shop[index].number}",
+                            );
+                          },
+                        ),
+                      )
           ],
         ),
       ),

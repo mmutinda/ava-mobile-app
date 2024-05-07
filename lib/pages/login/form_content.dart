@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:developer';
+import 'package:awesome_top_snackbar/awesome_top_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
@@ -50,14 +51,6 @@ class FormContentState extends State<FormContent> {
                 if (value == null || value.isEmpty) {
                   return 'Please enter some text';
                 }
-
-                bool emailValid = RegExp(
-                        r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+")
-                    .hasMatch(value);
-                if (!emailValid) {
-                  return 'Please enter a valid email';
-                }
-
                 return null;
               },
               decoration: const InputDecoration(
@@ -75,7 +68,7 @@ class FormContentState extends State<FormContent> {
                   return 'Please enter some text';
                 }
 
-                if (value.length < 6) {
+                if (value.length < 4) {
                   return 'Password must be at least 6 characters';
                 }
                 return null;
@@ -151,31 +144,43 @@ class FormContentState extends State<FormContent> {
         },
       );
 
-      String loginurl = "Api.api_url + Api.endpoint_login";
+      String loginurl = Api.api_url + "apilogin";
+      print(loginurl);
       var data = {
-        "email": email,
+        "username": email,
         "password": password,
       };
 
       var responsedata = await httppost(loginurl, data, context);
-
+      print(responsedata);
+      log(jsonEncode(responsedata));
       if (responsedata != null) {
-        if (responsedata["status"] == 1) {
+        if (responsedata["success"]) {
           Navigator.pop(context);
           var responsedataencode = jsonEncode(responsedata);
-          log(responsedataencode);
+          // log(responsedataencode);
           userdata(responsedataencode);
           Navigator.of(context).pushReplacement(MaterialPageRoute(
             builder: (context) => Dashboard(),
           ));
         } else {
           Navigator.pop(context);
-          showTopSnackBar(
-            Overlay.of(context),
-            CustomSnackBar.error(
-              message: "${responsedata["message"]}",
-            ),
-          );
+          // showTopSnackBar(
+          //   Overlay.of(context),
+          //   CustomSnackBar.error(
+          //     message: "${responsedata["msg"]}",
+          //   ),
+          // );
+          awesomeTopSnackbar(context, "${responsedata["msg"]}",
+              iconWithDecoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(),
+                  color: Colors.white),
+              icon: Icon(
+                Icons.close,
+                color: Colors.red,
+              ),
+              backgroundColor: Colors.red[900]);
         }
       }
     } catch (e) {

@@ -1,6 +1,9 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:isuze_pqcs/common/api.dart';
+import 'package:isuze_pqcs/common/functions.dart';
+import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/models/qc_inpection.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/chooseComponent.dart';
 import 'package:nb_utils/nb_utils.dart';
@@ -17,27 +20,63 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
     Colors.teal,
   ];
   List<Vehicle> vehicles = []; // List to hold vehicles fetched from API
-
+  var user = {};
+  bool isLoading = false;
+  String message = '';
   @override
   void initState() {
     super.initState();
-    fetchData(); // Fetch data when the page is initialized
+    getuserdata().then((value) {
+      setState(() {
+        user = jsonDecode(value);
+      });
+      fetchData();
+    });
+    // fetchData(); // Fetch data when the page is initialized
   }
 
-  // Method to fetch data from API
-  void fetchData() async {
-    String apiResponse =
-        '{"vehicles": [   {"model": "Jeep", "vin": "NOP012", "lot": "424344", "job": "Job404142", "unitRemaining": 19, "color": "Teal", "year": 2023, "mileage": 22000},   {"model": "Audi", "vin": "PQR678", "lot": "181920", "job": "Job161718", "unitRemaining": 12, "color": "Gray", "year": 2022, "mileage": 27000},{"model": "Honda", "vin": "DEF456", "lot": "5678", "job": "Job456", "unitRemaining": 15, "color": "Blue", "year": 2021, "mileage": 30000}, {"model": "Toyota", "vin": "ABC123", "lot": "1234", "job": "Job123", "unitRemaining": 10, "color": "Red", "year": 2022, "mileage": 25000},{"model": "Toyota", "vin": "ABC123", "lot": "1234", "job": "Job123", "unitRemaining": 10}, {"model": "Honda", "vin": "DEF456", "lot": "5678", "job": "Job456", "unitRemaining": 15}]}';
-
-    // Convert JSON string to Map
-    Map<String, dynamic> responseJson = json.decode(apiResponse);
-    // Extract list of vehicles from the response and convert them into Vehicle objects
-    List<Vehicle> fetchedVehicles = (responseJson['vehicles'] as List)
-        .map((vehicleJson) => Vehicle.fromJson(vehicleJson))
-        .toList();
+  Future<void> fetchData() async {
     setState(() {
-      vehicles = fetchedVehicles; // Update state with fetched vehicles
+      isLoading = true;
     });
+    var url = "${Api.api_url}sheduledunits";
+
+    try {
+      var response = await httpget(url, user['data']['token'], context);
+      log(jsonEncode(response));
+      if (response == null) {
+        print("No Internet");
+        // Handle no internet scenario
+        return;
+      }
+
+      if (response['success'] && response['data'] != null) {
+        List<dynamic> responseData = response['data'];
+
+        List<Vehicle> fetchedVehicles = responseData.map((vehicleData) {
+          return Vehicle.fromJson(vehicleData);
+        }).toList();
+
+        setState(() {
+          vehicles = fetchedVehicles;
+          isLoading = false;
+          message = '';
+        });
+      } else {
+        // Handle other scenarios
+        setState(() {
+          isLoading = false;
+          message = '${response['msg']}';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+        message = 'Network Problem';
+      });
+      // message = '${"Network Problem"}';
+      print('Error fetching data: $e');
+    }
   }
 
   TextEditingController searchController = TextEditingController();
@@ -84,87 +123,136 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
           ),
         ],
       ),
-      body: ListView.builder(
-        itemCount: vehicles.length,
-        itemBuilder: (context, index) {
-          Color categoryColor = colors[index % colors.length];
-          var vin = vehicles[index].vin;
-          var model = vehicles[index].model;
-          if (searchText.isNotEmpty &&
-              !(vin.toLowerCase().contains(searchText.toLowerCase()) ||
-                  model.toLowerCase().contains(searchText.toLowerCase()))) {
-            return Container(); // Return an empty container if not matching
-          }
-          return Column(
-            children: [
-              SizedBox(height: 5),
-              Container(
-                padding: EdgeInsets.all(12),
-                decoration: boxDecoration(
-                  radius: 10,
-                  showShadow: true,
-                  bgColor: Colors.white,
-                ),
-                child: ListTile(
-                  title: Text(
-                    vehicles[index].model,
-                    style: TextStyle(
-                        color: Colors.amber[900], fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('VIN: ${vehicles[index].vin}'),
-                      Text('lOT: ${vehicles[index].lot}'),
-                      Text('Unit Remaining: ${vehicles[index].unitRemaining}'),
-                    ],
-                  ),
-                  // trailing: CircleAvatar(
-                  //   radius: 15,
-                  //   backgroundColor:
-                  //       categoryColor, // Use the category color here
-                  // child: Icon(
-                  //   Icons.arrow_forward_ios,
-                  //   size: 10,
-                  //   color: Colors.white,
-                  // ),
-                  // ),
-                  trailing: Container(
-                      decoration: BoxDecoration(
-                          border: Border.all(color: categoryColor),
-                          borderRadius:
-                              BorderRadius.only(topRight: Radius.circular(10))),
-                      child: TextButton(
-                        onPressed: () {
-                          showInDialog(context,
-                              builder: (context) => ChooseComponent(),
-                              dialogAnimation:
-                                  DialogAnimation.SLIDE_TOP_BOTTOM);
-                        },
-                        child: Text(
-                          "SELECT",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
+      body: isLoading
+          ? Center(
+              child: Container(
+                width: double.infinity,
+                child: FacebookLikeShimmer(),
+              ),
+            )
+          : message.isNotEmpty
+              ? ErrorMessageWidget(
+                  errorMessage: message,
+                  onRetry: () {
+                    fetchData();
+                  },
+                ) // Show message for success or failure
+              : ListView.builder(
+                  itemCount: vehicles.length,
+                  itemBuilder: (context, index) {
+                    Color categoryColor = colors[index % colors.length];
+                    var vin = vehicles[index].vin;
+                    var model = vehicles[index].model;
+                    var UnitRemaining = 'All';
+                    if (vehicles[index].cabin_cockpit_moved == '1') {
+                      UnitRemaining = 'Chassis';
+                    } else if (vehicles[index].chasis_moved == '1') {
+                      UnitRemaining = 'Cabin Or Cockpit';
+                    }
+
+                    if (searchText.isNotEmpty &&
+                        !(vin
+                                .toLowerCase()
+                                .contains(searchText.toLowerCase()) ||
+                            model
+                                .toLowerCase()
+                                .contains(searchText.toLowerCase()))) {
+                      return Container(); // Return an empty container if not matching
+                    }
+                    return Column(
+                      children: [
+                        SizedBox(height: 5),
+                        Container(
+                          padding: EdgeInsets.all(12),
+                          decoration: boxDecoration(
+                            radius: 10,
+                            showShadow: true,
+                            bgColor: Colors.white,
+                          ),
+                          child: ListTile(
+                            contentPadding: EdgeInsets.all(0),
+                            leading: CircleAvatar(
+                              backgroundColor: Color.fromARGB(255, 168, 88, 32),
+                              foregroundColor: Colors.white,
+                              child: Text("${index + 1}"),
+                            ),
+                            title: Text(
+                              vehicles[index].model,
+                              style: TextStyle(
+                                  color: Colors.amber[900],
+                                  fontWeight: FontWeight.bold),
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('VIN: ${vehicles[index].vin}'),
+                                Row(
+                                  children: [
+                                    Text('lOT: ${vehicles[index].lot}'),
+                                    width(),
+                                    Text('JOB: ${vehicles[index].job}'),
+                                  ],
+                                ),
+                                Row(
+                                  children: [
+                                    Text('UNIT REMAINING:'),
+                                    SizedBox(width: 5),
+                                    Text(
+                                      '${UnitRemaining}',
+                                      style: TextStyle(
+                                          color: Colors.amber[900],
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            // trailing: CircleAvatar(
+                            //   radius: 15,
+                            //   backgroundColor:
+                            //       categoryColor, // Use the category color here
+                            // child: Icon(
+                            //   Icons.arrow_forward_ios,
+                            //   size: 10,
+                            //   color: Colors.white,
+                            // ),
+                            // ),
+                            trailing: Container(
+                                decoration: BoxDecoration(
+                                    border: Border.all(color: categoryColor),
+                                    borderRadius: BorderRadius.only(
+                                        topRight: Radius.circular(10))),
+                                child: TextButton(
+                                  onPressed: () {
+                                    showInDialog(context,
+                                        builder: (context) => ChooseComponent(),
+                                        dialogAnimation:
+                                            DialogAnimation.SLIDE_TOP_BOTTOM);
+                                  },
+                                  child: Text(
+                                    "SELECT",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                )),
+                            onTap: () {
+                              // Navigate to vehicle details page passing the selected vehicle
+                              // Navigator.push(
+                              //   context,
+                              //   MaterialPageRoute(
+                              //     builder: (context) => VehicleDetailsPage(
+                              //         vehicle: vehicles[index]),
+                              //   ),
+                              // );
+                            },
                           ),
                         ),
-                      )),
-                  onTap: () {
-                    // Navigate to vehicle details page passing the selected vehicle
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            VehicleDetailsPage(vehicle: vehicles[index]),
-                      ),
+                        SizedBox(height: 10),
+                      ],
                     );
                   },
                 ),
-              ),
-              SizedBox(height: 10),
-            ],
-          );
-        },
-      ),
     );
   }
 }
