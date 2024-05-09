@@ -1,13 +1,17 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:nb_utils/nb_utils.dart';
+import 'package:path_provider/path_provider.dart';
 
 class SingleQuestion extends StatefulWidget {
   final int id;
   final String question;
   final ValueChanged<String> onValueChanged;
+  final ValueChanged<String> onValueChanged2;
   final String? initialRadioValue;
   final can_sign;
   final checkanswered;
@@ -15,6 +19,7 @@ class SingleQuestion extends StatefulWidget {
       {super.key,
       required this.id,
       required this.onValueChanged,
+      required this.onValueChanged2,
       required this.question,
       this.initialRadioValue,
       this.can_sign,
@@ -48,57 +53,80 @@ class _SingleQuestionState extends State<SingleQuestion>
               ),
               Column(
                 children: [
-                  Row(
-                    children: [
-                      Radio(
-                        value: "ok",
-                        groupValue: okay ?? widget.initialRadioValue,
-                        onChanged: widget.initialRadioValue != null
-                            ? null
-                            : (value) {
-                                setState(() {
-                                  okay = value as String;
-                                  widget.onValueChanged(okay!);
-                                });
-                              },
-                        activeColor: Colors.green,
-                        materialTapTargetSize: widget.initialRadioValue != null
-                            ? MaterialTapTargetSize.shrinkWrap
-                            : MaterialTapTargetSize.padded,
-                      ),
-                      Text(
-                        'OK',
-                        style: TextStyle(
-                          color: okay == "ok" ? Colors.green : Colors.black,
+                  widget.initialRadioValue != null
+                      ? Row(
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(10),
+                                  color: widget.initialRadioValue == 'NOK'
+                                      ? Colors.red
+                                      : Colors.green),
+                              padding: EdgeInsets.all(8),
+                              child: Text(
+                                "${widget.initialRadioValue}",
+                                style: TextStyle(
+                                  color: textWhite,
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                      : Row(
+                          children: [
+                            Radio(
+                              value: "OK",
+                              groupValue: okay ?? widget.initialRadioValue,
+                              onChanged: widget.initialRadioValue != null
+                                  ? null
+                                  : (value) {
+                                      setState(() {
+                                        okay = value as String;
+                                        widget.onValueChanged(okay!);
+                                      });
+                                    },
+                              activeColor: Colors.green,
+                              materialTapTargetSize:
+                                  widget.initialRadioValue != null
+                                      ? MaterialTapTargetSize.shrinkWrap
+                                      : MaterialTapTargetSize.padded,
+                            ),
+                            Text(
+                              'OK',
+                              style: TextStyle(
+                                color:
+                                    okay == "OK" ? Colors.green : Colors.black,
+                              ),
+                            ),
+                            const SizedBox(
+                                width:
+                                    16), // Add some spacing between the radio buttons
+                            Radio(
+                              value: "NOK",
+                              groupValue: okay ?? widget.initialRadioValue,
+                              onChanged: widget.initialRadioValue != null
+                                  ? null
+                                  : (value) {
+                                      setState(() {
+                                        okay = value as String;
+                                        widget.onValueChanged(okay!);
+                                      });
+                                    },
+                              activeColor: Colors.red,
+                              materialTapTargetSize:
+                                  widget.initialRadioValue != null
+                                      ? MaterialTapTargetSize.shrinkWrap
+                                      : MaterialTapTargetSize.padded,
+                            ),
+                            Text(
+                              'NOK',
+                              style: TextStyle(
+                                color:
+                                    okay == "NOK" ? Colors.red : Colors.black,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(
-                          width:
-                              16), // Add some spacing between the radio buttons
-                      Radio(
-                        value: "nok",
-                        groupValue: okay ?? widget.initialRadioValue,
-                        onChanged: widget.initialRadioValue != null
-                            ? null
-                            : (value) {
-                                setState(() {
-                                  okay = value as String;
-                                  widget.onValueChanged(okay!);
-                                });
-                              },
-                        activeColor: Colors.red,
-                        materialTapTargetSize: widget.initialRadioValue != null
-                            ? MaterialTapTargetSize.shrinkWrap
-                            : MaterialTapTargetSize.padded,
-                      ),
-                      Text(
-                        'NOK',
-                        style: TextStyle(
-                          color: okay == "nok" ? Colors.red : Colors.black,
-                        ),
-                      ),
-                    ],
-                  ),
                 ],
               ),
             ],
@@ -153,11 +181,21 @@ class _SingleQuestionState extends State<SingleQuestion>
                   onPressed: () {
                     showInDialog(context,
                         builder: (context) => SignatureField(
-                              onSignatureChanged: (signature) {
+                              onSignatureChanged: (signature) async {
                                 // Do something with the signature
                                 setState(() {
                                   _signatureImage = signature;
                                 });
+                                final directory =
+                                    await getApplicationDocumentsDirectory();
+                                final imagePath =
+                                    '${directory.path}/signature.png';
+                                print(imagePath);
+                                final imageFile = File(imagePath);
+                                await imageFile.writeAsBytes(_signatureImage!);
+
+                                // Pass the file path to the callback
+                                widget.onValueChanged2(imagePath);
                                 // print('Signature saved');
                                 Navigator.pop(context);
                               },

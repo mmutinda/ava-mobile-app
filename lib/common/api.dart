@@ -3,7 +3,6 @@ class Api {
   static String main_url = "http://172.16.16.57:80";
   static String api_url = "$main_url/api/user/";
 
-
   // response codes
   static int codeOK = 200;
   static int codeValidationFailed = 400;

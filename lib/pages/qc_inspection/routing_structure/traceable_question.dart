@@ -1,3 +1,4 @@
+import 'dart:io';
 
 import 'package:awesome_top_snackbar/awesome_top_snackbar.dart';
 import 'package:flutter/material.dart';
@@ -6,21 +7,26 @@ import 'package:honeywell_mobility_sdk/honeywell_mobility_sdk.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:nb_utils/nb_utils.dart';
+import 'package:path_provider/path_provider.dart';
 
 class TraceableQuestion extends StatefulWidget {
   final int id;
   final String question;
   final can_sign;
   final checkanswered;
+  final answer_given;
   final ValueChanged<String> onValueChanged;
+  final ValueChanged<String> onValueChanged2;
 
   const TraceableQuestion({
     Key? key,
     required this.id,
     required this.question,
     required this.onValueChanged,
+    required this.onValueChanged2,
     this.can_sign,
     this.checkanswered,
+    this.answer_given,
   }) : super(key: key);
 
   @override
@@ -45,7 +51,9 @@ class _TraceableQuestionState extends State<TraceableQuestion>
     super.initState();
     // _initiatescanner();
     inputController = TextEditingController();
+    inputController = TextEditingController(text: widget.answer_given);
     inputController.addListener(_handleValueChanged);
+    // inputController.addListener(_handleValueChanged);
     Future.delayed(const Duration(seconds: 1), () {
       _scanfun();
     });
@@ -134,7 +142,7 @@ class _TraceableQuestionState extends State<TraceableQuestion>
 
   @override
   Widget build(BuildContext context) {
-    // print(scaned);
+    print(widget.answer_given == '');
     super.build(context);
     return Container(
       padding: const EdgeInsets.all(5),
@@ -156,62 +164,63 @@ class _TraceableQuestionState extends State<TraceableQuestion>
             height: 5,
           ),
           TextFormField(
+            enabled: widget.answer_given == '' ? true : false,
             controller: inputController,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter some text';
-              }
-              return null;
-            },
             onChanged: (value) {
               print(value);
             },
             decoration: InputDecoration(
-                labelText: 'Input',
-                isDense: true,
-                hintText: 'Enter input Here',
-                floatingLabelBehavior: FloatingLabelBehavior.always,
-                border: OutlineInputBorder(),
-                suffixIcon: Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: InkWell(
-                    onTap: () async {
-                      _initiatescanner().then((value) async {
-                        await _invoke(
-                          (reader) => reader.setProperty(
-                            BarcodeReaderProperty.trigger
-                                .scanMode(TriggerScanMode.oneShot),
-                          ),
-                        ).then((value) {});
-                        final supported =
-                            await _invoke((reader) => reader.claim());
-                        if (supported) {
-                          await _invoke((reader) =>
-                              reader.softwareTrigger(true).then((value) {}));
-                          setState(() {
-                            // isButtonEnabled = false;
-                          });
-                          Future.delayed(
-                            const Duration(seconds: 2),
-                            () async {
-                              await _invoke(
-                                  (reader) => reader.softwareTrigger(false));
-                              // await _invoke((reader) => reader.release());
-                              setState(() {
-                                // isButtonEnabled = true;
-                              });
-                            },
-                          );
-                        }
-                      });
-                    },
-                    child: Icon(
-                      Icons.qr_code_scanner_rounded,
-                      color: mycolor,
-                      size: 35,
-                    ),
-                  ),
-                )),
+              labelText: 'Input',
+              isDense: true,
+              hintText: 'Enter input Here',
+              floatingLabelBehavior: FloatingLabelBehavior.always,
+              border: OutlineInputBorder(),
+              suffixIcon: Padding(
+                padding: EdgeInsets.all(8.0),
+                child: InkWell(
+                  onTap: () async {
+                    _initiatescanner().then((value) async {
+                      await _invoke(
+                        (reader) => reader.setProperty(
+                          BarcodeReaderProperty.trigger
+                              .scanMode(TriggerScanMode.oneShot),
+                        ),
+                      ).then((value) {});
+                      final supported =
+                          await _invoke((reader) => reader.claim());
+                      if (supported) {
+                        await _invoke((reader) =>
+                            reader.softwareTrigger(true).then((value) {}));
+                        setState(() {
+                          // isButtonEnabled = false;
+                        });
+                        Future.delayed(
+                          const Duration(seconds: 2),
+                          () async {
+                            await _invoke(
+                                (reader) => reader.softwareTrigger(false));
+                            // await _invoke((reader) => reader.release());
+                            setState(() {
+                              // isButtonEnabled = true;
+                            });
+                          },
+                        );
+                      }
+                    });
+                  },
+                  child: widget.answer_given == ''
+                      ? Icon(
+                          Icons.qr_code_scanner_rounded,
+                          color: mycolor,
+                          size: 35,
+                        )
+                      : Icon(
+                          Icons.done,
+                          color: mycolor,
+                        ),
+                ),
+              ),
+            ),
           ),
           if (widget.can_sign == 'Yes' && widget.checkanswered == false) ...[
             if (_signatureImage != null) ...[
@@ -263,11 +272,21 @@ class _TraceableQuestionState extends State<TraceableQuestion>
                   onPressed: () {
                     showInDialog(context,
                         builder: (context) => SignatureField(
-                              onSignatureChanged: (signature) {
+                              onSignatureChanged: (signature) async {
                                 // Do something with the signature
                                 setState(() {
                                   _signatureImage = signature;
                                 });
+                                final directory =
+                                    await getApplicationDocumentsDirectory();
+                                final imagePath =
+                                    '${directory.path}/signature.png';
+                                print(imagePath);
+                                final imageFile = File(imagePath);
+                                await imageFile.writeAsBytes(_signatureImage!);
+
+                                // Pass the file path to the callback
+                                widget.onValueChanged2(imagePath);
                                 // print('Signature saved');
                                 Navigator.pop(context);
                               },

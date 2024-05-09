@@ -38,7 +38,7 @@ Future httppost(
 }
 
 Future httppostwithtoken(
-    String url, token, Map<String, dynamic> data, BuildContext context) async {
+    String url, token,  data, BuildContext context) async {
   try {
     var vardata = data;
 

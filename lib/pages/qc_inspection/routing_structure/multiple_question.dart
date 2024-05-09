@@ -1,20 +1,24 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 import 'package:nb_utils/nb_utils.dart';
+import 'package:path_provider/path_provider.dart';
 
 class MultipleQuestion extends StatefulWidget {
   final int id;
   final options;
   final can_sign;
   final checkanswered;
+  final String? initialRadioValue;
   // final List options;
   final String question;
   final ValueChanged<List<dynamic>> onValuesChanged;
   final ValueChanged<String> onRadioChanged;
-
+  final ValueChanged<String> onValueChanged2;
   const MultipleQuestion({
     Key? key,
     required this.id,
@@ -25,6 +29,8 @@ class MultipleQuestion extends StatefulWidget {
     this.options,
     this.can_sign,
     this.checkanswered,
+    required this.onValueChanged2,
+    this.initialRadioValue,
   }) : super(key: key);
 
   @override
@@ -43,6 +49,7 @@ class _MultipleQuestionState extends State<MultipleQuestion>
   bool get wantKeepAlive => true;
   @override
   Widget build(BuildContext context) {
+    // print(selectedValues);
     List<String> indexedNames = [];
     for (int index = 0; index < widget.options.length; index++) {
       indexedNames.add("${widget.options[index]['option_value']}");
@@ -73,50 +80,83 @@ class _MultipleQuestionState extends State<MultipleQuestion>
               ),
               Column(
                 children: [
-                  Row(
-                    children: [
-                      Radio(
-                        value: "ok",
-                        groupValue: okay,
-                        onChanged: (value) {
-                          setState(() {
-                            okay = value as String;
-                            selectedValues =
-                                []; // Clear selected values when changing the radio option
+                  widget.initialRadioValue != null
+                      ? Row(
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(10),
+                                  color: widget.initialRadioValue == 'NOK'
+                                      ? Colors.red
+                                      : Colors.green),
+                              padding: EdgeInsets.all(8),
+                              child: Text(
+                                "${widget.initialRadioValue}",
+                                style: TextStyle(
+                                  color: textWhite,
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                      : Row(
+                          children: [
+                            Radio(
+                              value: "OK",
+                              groupValue: okay ?? widget.initialRadioValue,
+                              onChanged: widget.initialRadioValue != null
+                                  ? null
+                                  : (value) {
+                                      setState(() {
+                                        okay = value as String;
+                                        selectedValues =
+                                            []; // Clear selected values when changing the radio option
 
-                            widget.onRadioChanged(okay!);
-                          });
-                        },
-                        activeColor: Colors.green,
-                      ),
-                      Text(
-                        'OK',
-                        style: TextStyle(
-                          color: okay == "ok" ? Colors.green : Colors.black,
+                                        widget.onRadioChanged(okay!);
+                                      });
+                                    },
+                              activeColor: Colors.green,
+                              materialTapTargetSize:
+                                  widget.initialRadioValue != null
+                                      ? MaterialTapTargetSize.shrinkWrap
+                                      : MaterialTapTargetSize.padded,
+                            ),
+                            Text(
+                              'OK',
+                              style: TextStyle(
+                                color:
+                                    okay == "OK" ? Colors.green : Colors.black,
+                              ),
+                            ),
+                            const SizedBox(
+                              width: 16,
+                            ), // Add some spacing between the radio buttons
+                            Radio(
+                              value: "NOK",
+                              groupValue: okay ?? widget.initialRadioValue,
+                              onChanged: widget.initialRadioValue != null
+                                  ? null
+                                  : (value) {
+                                      setState(() {
+                                        okay = value as String;
+                                      });
+                                      widget.onRadioChanged(okay!);
+                                    },
+                              activeColor: Colors.red,
+                              materialTapTargetSize:
+                                  widget.initialRadioValue != null
+                                      ? MaterialTapTargetSize.shrinkWrap
+                                      : MaterialTapTargetSize.padded,
+                            ),
+                            Text(
+                              'NOK',
+                              style: TextStyle(
+                                color:
+                                    okay == "NOK" ? Colors.red : Colors.black,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(
-                        width: 16,
-                      ), // Add some spacing between the radio buttons
-                      Radio(
-                        value: "nok",
-                        groupValue: okay,
-                        onChanged: (value) {
-                          setState(() {
-                            okay = value as String;
-                          });
-                          widget.onRadioChanged(okay!);
-                        },
-                        activeColor: Colors.red,
-                      ),
-                      Text(
-                        'NOK',
-                        style: TextStyle(
-                          color: okay == "nok" ? Colors.red : Colors.black,
-                        ),
-                      ),
-                    ],
-                  ),
                 ],
               ),
             ],
@@ -124,7 +164,7 @@ class _MultipleQuestionState extends State<MultipleQuestion>
           const SizedBox(
             height: 5,
           ),
-          okay == "nok"
+          okay == "NOK"
               ? MultiSelectDialogField(
                   items: indexedNames
                       .map((name) => MultiSelectItem<String>(name, name))
@@ -200,11 +240,21 @@ class _MultipleQuestionState extends State<MultipleQuestion>
                   onPressed: () {
                     showInDialog(context,
                         builder: (context) => SignatureField(
-                              onSignatureChanged: (signature) {
+                              onSignatureChanged: (signature) async {
                                 // Do something with the signature
                                 setState(() {
                                   _signatureImage = signature;
                                 });
+                                final directory =
+                                    await getApplicationDocumentsDirectory();
+                                final imagePath =
+                                    '${directory.path}/signature.png';
+                                print(imagePath);
+                                final imageFile = File(imagePath);
+                                await imageFile.writeAsBytes(_signatureImage!);
+
+                                // Pass the file path to the callback
+                                widget.onValueChanged2(imagePath);
                                 // print('Signature saved');
                                 Navigator.pop(context);
                               },

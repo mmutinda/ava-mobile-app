@@ -1,22 +1,30 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:nb_utils/nb_utils.dart';
-
+import 'package:path_provider/path_provider.dart';
 
 class NumericQuestion extends StatefulWidget {
   final int id;
   final String question;
   final ValueChanged<String> onValueChanged;
-    final can_sign;
+  final ValueChanged<String> onValueChanged2;
+  final String? initialDecripValue;
+  final can_sign;
   final checkanswered;
 
   const NumericQuestion({
     Key? key,
     required this.id,
     required this.question,
-    required this.onValueChanged, this.can_sign, this.checkanswered,
+    required this.onValueChanged,
+    required this.onValueChanged2,
+    this.can_sign,
+    this.checkanswered,
+    this.initialDecripValue,
   }) : super(key: key);
 
   @override
@@ -35,6 +43,7 @@ class _NumericQuestionState extends State<NumericQuestion>
   void initState() {
     super.initState();
     inputController = TextEditingController();
+    inputController = TextEditingController(text: widget.initialDecripValue);
     inputController.addListener(_handleValueChanged);
   }
 
@@ -72,23 +81,27 @@ class _NumericQuestionState extends State<NumericQuestion>
           ),
           TextFormField(
             controller: inputController,
+            enabled: widget.initialDecripValue == null ? true : false,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter some number';
-              }
-              return null;
-            },
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Input',
               floatingLabelBehavior: FloatingLabelBehavior.always,
               isDense: true,
               hintText: 'Enter input Here',
               border: OutlineInputBorder(),
+              suffixIcon: Padding(
+                padding: EdgeInsets.all(8.0),
+                child: widget.initialDecripValue == null
+                    ? null
+                    : Icon(
+                        Icons.done,
+                        color: mycolor,
+                      ),
+              ),
             ),
           ),
           gap(),
-           if (widget.can_sign == 'Yes' && widget.checkanswered == false) ...[
+          if (widget.can_sign == 'Yes' && widget.checkanswered == false) ...[
             if (_signatureImage != null) ...[
               Container(
                 height: 80,
@@ -138,11 +151,20 @@ class _NumericQuestionState extends State<NumericQuestion>
                   onPressed: () {
                     showInDialog(context,
                         builder: (context) => SignatureField(
-                              onSignatureChanged: (signature) {
-                                // Do something with the signature
+                              onSignatureChanged: (signature) async {
                                 setState(() {
                                   _signatureImage = signature;
                                 });
+                                final directory =
+                                    await getApplicationDocumentsDirectory();
+                                final imagePath =
+                                    '${directory.path}/signature.png';
+                                print(imagePath);
+                                final imageFile = File(imagePath);
+                                await imageFile.writeAsBytes(_signatureImage!);
+
+                                // Pass the file path to the callback
+                                widget.onValueChanged2(imagePath);
                                 // print('Signature saved');
                                 Navigator.pop(context);
                               },
