@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:isuze_pqcs/common/logo.dart';
 import 'form_content.dart';
 
 class Login extends StatelessWidget {

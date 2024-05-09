@@ -84,6 +84,7 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
   bool _isSearching = false;
   @override
   Widget build(BuildContext context) {
+    // print(user['data']['token']);
     Widget _buildSearchField() {
       return TextField(
         autofocus: true,
@@ -238,13 +239,6 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
                                 )),
                             onTap: () {
                               // Navigate to vehicle details page passing the selected vehicle
-                              // Navigator.push(
-                              //   context,
-                              //   MaterialPageRoute(
-                              //     builder: (context) => VehicleDetailsPage(
-                              //         vehicle: vehicles[index]),
-                              //   ),
-                              // );
                             },
                           ),
                         ),

@@ -48,6 +48,8 @@ dependencies:
   honeywell_mobility_sdk: ^1.0.1
   awesome_dialog: ^3.2.1
   progress_dialog_null_safe: ^2.0.0
+  multi_select_flutter: ^4.1.3
+  syncfusion_flutter_signaturepad: ^25.2.3
 
 dev_dependencies:
   flutter_test:

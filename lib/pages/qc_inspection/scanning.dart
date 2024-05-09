@@ -1,17 +1,14 @@
 import 'dart:convert';
 
-import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:awesome_top_snackbar/awesome_top_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
-import 'package:isuze_pqcs/common/loader.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/models/qc_inpection.dart';
-import 'package:isuze_pqcs/pages/qc_inspection/blank.dart';
-import 'package:isuze_pqcs/pages/qc_inspection/chooseComponent.dart';
+import 'package:isuze_pqcs/pages/qc_inspection/qcCategoryQuestions.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/scheduleUnits.dart';
 import 'package:nb_utils/nb_utils.dart';
 import 'package:honeywell_mobility_sdk/honeywell_mobility_sdk.dart';
@@ -32,7 +29,7 @@ class _ScanningState extends State<Scanning> {
     Colors.indigo,
     Colors.teal,
   ];
-  List<Vehicle> vehicles = []; // List to hold vehicles fetched from API
+  List<Vehicle2> vehicles = []; // List to hold vehicles fetched from API
   var user = {};
   bool isLoading = false;
   String message = '';
@@ -89,7 +86,8 @@ class _ScanningState extends State<Scanning> {
     setState(() {
       isLoading = true;
     });
-    var url = "${Api.api_url}sheduledunits";
+    var url = "${Api.api_url}unitsinshop/${widget.shopId}";
+    print(url);
 
     try {
       var response = await httpget(url, user['data']['token'], context);
@@ -102,9 +100,9 @@ class _ScanningState extends State<Scanning> {
 
       if (response['success'] && response['data'] != null) {
         List<dynamic> responseData = response['data'];
-
-        List<Vehicle> fetchedVehicles = responseData.map((vehicleData) {
-          return Vehicle.fromJson(vehicleData);
+        print(responseData);
+        List<Vehicle2> fetchedVehicles = responseData.map((vehicleData) {
+          return Vehicle2.fromJson(vehicleData);
         }).toList();
 
         setState(() {
@@ -133,7 +131,7 @@ class _ScanningState extends State<Scanning> {
     String url = "${Api.api_url}checkunitshop/$sku/${widget.shopId}";
     print(url);
     var response = await httpget(url, user['data']['token'], context);
-    log(jsonEncode(response));
+    // log(jsonEncode(response));
     return response;
   }
 
@@ -146,7 +144,7 @@ class _ScanningState extends State<Scanning> {
             isDismissible: false,
             showLogs: true);
         pr.style(
-          widgetAboveTheDialog: CustomLoader(),
+          // widgetAboveTheDialog: CustomLoader(),
           // message: 'Fetching Item...',
           // child: CustomLoader(),
           borderRadius: 8,
@@ -178,8 +176,19 @@ class _ScanningState extends State<Scanning> {
                           color: Colors.red,
                         ),
                       )
-                    : Blank(res: res).launch(context,
-                        pageRouteAnimation: PageRouteAnimation.Slide);
+                    : res["data"]['unitcheck'] == false
+                        ? showInDialog(context,
+                            builder: (context) => showPosition(
+                                errorMessage:
+                                    res["data"]['currentposion'].toString()),
+                            dialogAnimation: DialogAnimation.SLIDE_TOP_BOTTOM)
+                        // : Blank(res: res).launch(context,
+                        //     pageRouteAnimation: PageRouteAnimation.Slide);
+                        : QcCategories(
+                            ShopId: widget.shopId,
+                            res: res,
+                          ).launch(context,
+                            pageRouteAnimation: PageRouteAnimation.Slide);
           });
         });
         error = null;
@@ -282,9 +291,11 @@ class _ScanningState extends State<Scanning> {
                       child: ListView.builder(
                         itemCount: vehicles.length,
                         itemBuilder: (context, index) {
+                          // ignore: unused_local_variable
                           Color categoryColor = colors[index % colors.length];
                           var vin = vehicles[index].vin;
                           var model = vehicles[index].model;
+                          // ignore: unused_local_variable
                           var UnitRemaining = 'All';
                           if (vehicles[index].cabin_cockpit_moved == '1') {
                             UnitRemaining = 'Chassis';
@@ -351,14 +362,14 @@ class _ScanningState extends State<Scanning> {
 
                                   onTap: () {
                                     // Navigate to vehicle details page passing the selected vehicle
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            VehicleDetailsPage(
-                                                vehicle: vehicles[index]),
-                                      ),
-                                    );
+                                    // Navigator.push(
+                                    //   context,
+                                    //   MaterialPageRoute(
+                                    //     builder: (context) =>
+                                    //         VehicleDetailsPage(
+                                    //             vehicle: vehicles[index]),
+                                    //   ),
+                                    // );
                                   },
                                 ),
                               ),
