@@ -108,11 +108,8 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                         var get = questions[index];
                         var can_sign = get['can_sign'];
                         var checkanswered = get['checkanswered'];
-                        print(get);
-                        // var noptions = get["options"];
-                        // List<dynamic> responseData = noptions;
-                        // print(responseData);
-                        // print(get["quiz_type"]);
+                        print(checkanswered);
+
                         if (get["quiz_type"] == "traceable") {
                           //traceable
                           return TraceableQuestion(

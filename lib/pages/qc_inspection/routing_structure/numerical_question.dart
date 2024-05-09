@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
+import 'package:nb_utils/nb_utils.dart';
 
 
 class NumericQuestion extends StatefulWidget {
   final int id;
   final String question;
   final ValueChanged<String> onValueChanged;
+    final can_sign;
+  final checkanswered;
 
   const NumericQuestion({
     Key? key,
     required this.id,
     required this.question,
-    required this.onValueChanged,
+    required this.onValueChanged, this.can_sign, this.checkanswered,
   }) : super(key: key);
 
   @override
@@ -22,6 +27,7 @@ class NumericQuestion extends StatefulWidget {
 class _NumericQuestionState extends State<NumericQuestion>
     with AutomaticKeepAliveClientMixin {
   late TextEditingController inputController;
+  Uint8List? _signatureImage;
 
   @override
   bool get wantKeepAlive => true;
@@ -82,6 +88,71 @@ class _NumericQuestionState extends State<NumericQuestion>
             ),
           ),
           gap(),
+           if (widget.can_sign == 'Yes' && widget.checkanswered == false) ...[
+            if (_signatureImage != null) ...[
+              Container(
+                height: 80,
+                width: 100,
+                // decoration: BoxDecoration(
+                //   border: Border.all(color: Colors.grey),
+                // ),
+                // child: Image.memory(_signatureImage!),
+                child: Stack(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 0),
+                      child: SizedBox(
+                        child: Image.memory(
+                          _signatureImage!,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      left: 70,
+                      child: InkWell(
+                        onTap: () {
+                          print("tapped");
+                          setState(() {
+                            _signatureImage = null;
+                          });
+                        },
+                        child: Container(
+                          child: CircleAvatar(
+                            backgroundColor: app_colorPrimary,
+                            radius: 15,
+                            child: Icon(
+                              Icons.close,
+                              color: textWhite,
+                              size: 15,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ] else ...[
+              TextButton.icon(
+                  onPressed: () {
+                    showInDialog(context,
+                        builder: (context) => SignatureField(
+                              onSignatureChanged: (signature) {
+                                // Do something with the signature
+                                setState(() {
+                                  _signatureImage = signature;
+                                });
+                                // print('Signature saved');
+                                Navigator.pop(context);
+                              },
+                            ),
+                        dialogAnimation: DialogAnimation.SLIDE_TOP_BOTTOM);
+                  },
+                  icon: Icon(Icons.edit),
+                  label: Text("Sign Here")),
+            ]
+          ],
           const Divider()
         ],
       ),

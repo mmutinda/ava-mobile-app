@@ -100,7 +100,7 @@ class _ScanningState extends State<Scanning> {
 
       if (response['success'] && response['data'] != null) {
         List<dynamic> responseData = response['data'];
-        print(responseData);
+        // print(responseData);
         List<Vehicle2> fetchedVehicles = responseData.map((vehicleData) {
           return Vehicle2.fromJson(vehicleData);
         }).toList();
@@ -359,18 +359,6 @@ class _ScanningState extends State<Scanning> {
                                   //   color: Colors.white,
                                   // ),
                                   // ),
-
-                                  onTap: () {
-                                    // Navigate to vehicle details page passing the selected vehicle
-                                    // Navigator.push(
-                                    //   context,
-                                    //   MaterialPageRoute(
-                                    //     builder: (context) =>
-                                    //         VehicleDetailsPage(
-                                    //             vehicle: vehicles[index]),
-                                    //   ),
-                                    // );
-                                  },
                                 ),
                               ),
                               SizedBox(height: 10),
@@ -423,53 +411,6 @@ class _ScanningState extends State<Scanning> {
                     ),
                   ],
                 ),
-    );
-  }
-}
-
-class VehicleDetailsPage extends StatelessWidget {
-  final Vehicle vehicle;
-
-  const VehicleDetailsPage({Key? key, required this.vehicle}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Vehicle Details'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Model: ${vehicle.model}',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 10),
-            Text(
-              'VIN: ${vehicle.vin}',
-              style: TextStyle(fontSize: 18),
-            ),
-            SizedBox(height: 10),
-            Text(
-              'Lot: ${vehicle.lot}',
-              style: TextStyle(fontSize: 18),
-            ),
-            SizedBox(height: 10),
-            Text(
-              'Job: ${vehicle.job}',
-              style: TextStyle(fontSize: 18),
-            ),
-            SizedBox(height: 10),
-            Text(
-              'Units Remaining: ${vehicle.unitRemaining}',
-              style: TextStyle(fontSize: 18),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

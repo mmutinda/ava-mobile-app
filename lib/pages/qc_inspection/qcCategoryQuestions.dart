@@ -45,7 +45,7 @@ class _QcCategoriesState extends State<QcCategories> {
 
   @override
   Widget build(BuildContext context) {
-    print(widget.res);
+    // print(widget.res);
     return Scaffold(
       appBar: AppBar(
         title: Text(
