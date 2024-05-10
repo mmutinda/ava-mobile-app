@@ -57,9 +57,9 @@ class _ScanningState extends State<Scanning> {
     Future<void> Function(BarcodeReader reader) callback,
   ) async {
     if (_barcodeReader == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unsupported device.')),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   const SnackBar(content: Text('Unsupported device.')),
+      // );
       return false;
     }
 
