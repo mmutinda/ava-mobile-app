@@ -34,6 +34,7 @@ class ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
+  // ignore: must_call_super
   void dispose() {
     nameController.dispose();
   }
