@@ -396,9 +396,15 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                         btnOkOnPress: () {},
                                       )..show();
                                     } else {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(snackBar(
-                                              res["msg"], Colors.blue));
+                                      AwesomeDialog(
+                                        context: context,
+                                        dialogType: DialogType.error,
+                                        animType: AnimType.rightSlide,
+                                        title: '${res["msg"]}',
+                                        btnOkColor: mycolor,
+                                        onDismissCallback: (type) {},
+                                        btnOkOnPress: () {},
+                                      )..show();
                                     }
                                   });
                                 });
