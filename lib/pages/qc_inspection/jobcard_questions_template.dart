@@ -83,17 +83,6 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
           overflow: TextOverflow.ellipsis,
           maxLines: 2,
         ),
-        actions: [
-          InkWell(
-            onTap: () {
-              fetchQuestions();
-            },
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Icon(Icons.refresh),
-            ),
-          ),
-        ],
       ),
       body: Form(
         key: _formKey,

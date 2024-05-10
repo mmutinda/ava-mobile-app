@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:isuze_pqcs/pages/action.dart';
 import 'package:isuze_pqcs/pages/home.dart';
+import 'package:isuze_pqcs/pages/profile_screen.dart';
 
 import '../widgets/bottom_persistent_nav.dart';
 
@@ -32,11 +33,11 @@ class _DashboardState extends State<Dashboard> {
           title: 'Action',
           navigatorkey: _tab2navigatorKey,
         ),
-        // PersistentTabItem(
-        //   tab: const ProfileTab(),
-        //   icon: Icons.person_2_outlined,
-        //   title: 'Profile',
-        // ),
+        PersistentTabItem(
+          tab: ProfileScreen(),
+          icon: Icons.person_2_outlined,
+          title: 'Profile',
+        ),
       ],
     );
   }

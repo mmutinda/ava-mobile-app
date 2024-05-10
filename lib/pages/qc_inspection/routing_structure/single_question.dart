@@ -1,11 +1,10 @@
-import 'dart:io';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:nb_utils/nb_utils.dart';
-import 'package:path_provider/path_provider.dart';
 
 class SingleQuestion extends StatefulWidget {
   final int id;
@@ -183,19 +182,13 @@ class _SingleQuestionState extends State<SingleQuestion>
                         builder: (context) => SignatureField(
                               onSignatureChanged: (signature) async {
                                 // Do something with the signature
-                                setState(() {
+                               setState(() {
                                   _signatureImage = signature;
                                 });
-                                final directory =
-                                    await getApplicationDocumentsDirectory();
-                                final imagePath =
-                                    '${directory.path}/signature.png';
-                                print(imagePath);
-                                final imageFile = File(imagePath);
-                                await imageFile.writeAsBytes(_signatureImage!);
-
-                                // Pass the file path to the callback
-                                widget.onValueChanged2(imagePath);
+                                String base64Image = 'data:image/png;base64,' +
+                                    base64Encode(_signatureImage!);
+                             
+                                widget.onValueChanged2(base64Image);
                                 // print('Signature saved');
                                 Navigator.pop(context);
                               },

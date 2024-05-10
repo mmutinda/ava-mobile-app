@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:convert';
 
 import 'package:dropdown_textfield/dropdown_textfield.dart';
 import 'package:flutter/material.dart';
@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:nb_utils/nb_utils.dart';
-import 'package:path_provider/path_provider.dart';
 
 class Others extends StatefulWidget {
   final int id;
@@ -229,19 +228,13 @@ class _OthersState extends State<Others> with AutomaticKeepAliveClientMixin {
                     showInDialog(context,
                         builder: (context) => SignatureField(
                               onSignatureChanged: (signature) async {
-                                setState(() {
+                             setState(() {
                                   _signatureImage = signature;
                                 });
-                                final directory =
-                                    await getApplicationDocumentsDirectory();
-                                final imagePath =
-                                    '${directory.path}/signature.png';
-                                print(imagePath);
-                                final imageFile = File(imagePath);
-                                await imageFile.writeAsBytes(_signatureImage!);
-
-                                // Pass the file path to the callback
-                                widget.onValueChanged2(imagePath);
+                                String base64Image = 'data:image/png;base64,' +
+                                    base64Encode(_signatureImage!);
+                             
+                                widget.onValueChanged2(base64Image);
                                 // print('Signature saved');
                                 Navigator.pop(context);
                               },

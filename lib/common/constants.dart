@@ -22,3 +22,4 @@ const snackred = Colors.red;
 const green = Color.fromARGB(255, 80, 183, 83);
 const internetmessage = "Kindly check your internet connection and try again";
 const int dismissseconds = 300;
+const String DEFAULT_USER = 'assets/images/default-avatar.jpg';

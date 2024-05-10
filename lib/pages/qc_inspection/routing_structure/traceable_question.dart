@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:convert';
 
 import 'package:awesome_top_snackbar/awesome_top_snackbar.dart';
 import 'package:flutter/material.dart';
@@ -7,7 +7,6 @@ import 'package:honeywell_mobility_sdk/honeywell_mobility_sdk.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:nb_utils/nb_utils.dart';
-import 'package:path_provider/path_provider.dart';
 
 class TraceableQuestion extends StatefulWidget {
   final int id;
@@ -142,14 +141,13 @@ class _TraceableQuestionState extends State<TraceableQuestion>
 
   @override
   Widget build(BuildContext context) {
-    print(widget.answer_given == '');
+    // print(widget.answer_given == '');
     super.build(context);
     return Container(
       padding: const EdgeInsets.all(5),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Text(scaned),
           Row(
             children: [
               Expanded(
@@ -277,16 +275,10 @@ class _TraceableQuestionState extends State<TraceableQuestion>
                                 setState(() {
                                   _signatureImage = signature;
                                 });
-                                final directory =
-                                    await getApplicationDocumentsDirectory();
-                                final imagePath =
-                                    '${directory.path}/signature.png';
-                                print(imagePath);
-                                final imageFile = File(imagePath);
-                                await imageFile.writeAsBytes(_signatureImage!);
-
-                                // Pass the file path to the callback
-                                widget.onValueChanged2(imagePath);
+                                String base64Image = 'data:image/png;base64,' +
+                                    base64Encode(_signatureImage!);
+                             
+                                widget.onValueChanged2(base64Image);
                                 // print('Signature saved');
                                 Navigator.pop(context);
                               },

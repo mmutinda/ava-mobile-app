@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:isuze_pqcs/common/constants.dart';
+import 'package:nb_utils/nb_utils.dart';
 import 'package:shimmer/shimmer.dart';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -231,7 +232,7 @@ class _SignatureFieldState extends State<SignatureField> {
               padding: const EdgeInsets.all(16.0),
               child: SfSignaturePad(
                 key: _signaturePadKey,
-                backgroundColor: Colors.grey[200]!,
+                backgroundColor: white,
               ),
             ),
           ),

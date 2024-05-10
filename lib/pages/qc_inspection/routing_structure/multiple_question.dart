@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,7 +6,6 @@ import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 import 'package:nb_utils/nb_utils.dart';
-import 'package:path_provider/path_provider.dart';
 
 class MultipleQuestion extends StatefulWidget {
   final int id;
@@ -54,16 +53,8 @@ class _MultipleQuestionState extends State<MultipleQuestion>
     for (int index = 0; index < widget.options.length; index++) {
       indexedNames.add("${widget.options[index]['option_value']}");
     }
-    // print(indexedNames);
-    // You can return your widget here
 
     super.build(context);
-    // final defects = widget.options
-    //     .map((option) => MultiSelectItem(option, option))
-    //     .toList();
-    // List<MultiSelectItem<dynamic>> items = widget.data.map((item) {
-    //   return MultiSelectItem<dynamic>(item['option_value'], item);
-    // }).toList();
 
     return Container(
       padding: const EdgeInsets.all(5),
@@ -241,20 +232,13 @@ class _MultipleQuestionState extends State<MultipleQuestion>
                     showInDialog(context,
                         builder: (context) => SignatureField(
                               onSignatureChanged: (signature) async {
-                                // Do something with the signature
                                 setState(() {
                                   _signatureImage = signature;
                                 });
-                                final directory =
-                                    await getApplicationDocumentsDirectory();
-                                final imagePath =
-                                    '${directory.path}/signature.png';
-                                print(imagePath);
-                                final imageFile = File(imagePath);
-                                await imageFile.writeAsBytes(_signatureImage!);
+                                String base64Image = 'data:image/png;base64,' +
+                                    base64Encode(_signatureImage!);
 
-                                // Pass the file path to the callback
-                                widget.onValueChanged2(imagePath);
+                                widget.onValueChanged2(base64Image);
                                 // print('Signature saved');
                                 Navigator.pop(context);
                               },
