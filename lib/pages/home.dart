@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/pages/qc_inpection_home.dart';
 import 'package:isuze_pqcs/widgets/menu_item.dart';
@@ -31,42 +32,13 @@ class _HomeState extends State<Home> {
     // print(user['data']['token']);
 
     return Scaffold(
-      // floatingActionButton: SpeedDial(
-      //   animatedIcon: AnimatedIcons.menu_close,
-      //   children: [
-      //     SpeedDialChild(
-      //       child: Icon(Icons.add),
-      //       label: 'Add',
-      //       onTap: () {
-      //         // Add your action here
-      //         print('Add button pressed');
-      //       },
-      //     ),
-      //     SpeedDialChild(
-      //       child: Icon(Icons.edit),
-      //       label: 'Edit',
-      //       onTap: () {
-      //         // Add your action here
-      //         print('Edit button pressed');
-      //       },
-      //     ),
-      //     SpeedDialChild(
-      //       child: Icon(Icons.delete),
-      //       label: 'Delete',
-      //       onTap: () {
-      //         // Add your action here
-      //         print('Delete button pressed');
-      //       },
-      //     ),
-      //   ],
-      // ),
       backgroundColor: Color.fromARGB(255, 168, 88, 32),
       appBar: AppBar(
         toolbarHeight: 80,
         leading: Icon(Icons.home),
         title: Text(
-          "PQCS",
-          style: TextStyle(),
+          "PQCS SYSTEM",
+        style: boldTextStyle(size: 24, color: textWhite)
         ),
         actions: [
           _buildPopupMenuButton(),

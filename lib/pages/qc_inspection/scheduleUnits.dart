@@ -201,8 +201,9 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
                                     Text(
                                       '${UnitRemaining}',
                                       style: TextStyle(
-                                          color: Colors.amber[900],
-                                          fontWeight: FontWeight.bold),
+                                        color: Colors.amber[900],
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -226,9 +227,20 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
                                 child: TextButton(
                                   onPressed: () {
                                     showInDialog(context,
-                                        builder: (context) => ChooseComponent(),
-                                        dialogAnimation:
-                                            DialogAnimation.SLIDE_TOP_BOTTOM);
+                                            builder: (context) =>
+                                                ChooseComponent(
+                                                  vehicle_id:
+                                                      vehicles[index].id,
+                                                  job_no: vehicles[index].job,
+                                                  route_id:
+                                                      vehicles[index].route,
+                                                ),
+                                            dialogAnimation:
+                                                DialogAnimation.SCALE)
+                                        .then((value) {
+                                      fetchData();
+                                      setState(() {});
+                                    });
                                   },
                                   child: Text(
                                     "SELECT",

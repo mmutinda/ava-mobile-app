@@ -72,8 +72,6 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
   final _formKey = GlobalKey<FormState>();
   @override
   Widget build(BuildContext context) {
-    // print(Category);
-    // log(jsonEncode(Category));
     return Scaffold(
       appBar: AppBar(
         title: Text(

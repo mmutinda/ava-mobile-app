@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
@@ -47,6 +48,21 @@ class _QcCategoriesState extends State<QcCategories> {
   Widget build(BuildContext context) {
     // print(widget.res);
     return Scaffold(
+      floatingActionButton: SpeedDial(
+        // overlayColor: Colors.transparent,
+        overlayOpacity: 0.1,
+        animatedIcon: AnimatedIcons.menu_close,
+        children: [
+          SpeedDialChild(
+            child: Icon(Icons.check),
+            label: 'Correct Defects',
+            onTap: () {
+              // Add your action here
+              print('Add button pressed');
+            },
+          ),
+        ],
+      ),
       appBar: AppBar(
         title: Text(
           "${widget.res['data']['vehicledata']['vin_no']}",

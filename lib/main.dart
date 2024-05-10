@@ -25,11 +25,12 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'PQCS',
+      title: 'PQCS SYSTEM',
       theme: ThemeData(
         // scaffoldBackgroundColor: bgColor,
         scaffoldBackgroundColor: Colors.grey.shade100,
         appBarTheme: AppBarTheme(
+          centerTitle: true,
           foregroundColor: Colors.white,
           backgroundColor: Color.fromARGB(255, 168, 88, 32),
         ),
