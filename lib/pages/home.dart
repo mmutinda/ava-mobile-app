@@ -1,12 +1,10 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/pages/qc_inpection_home.dart';
 import 'package:isuze_pqcs/widgets/menu_item.dart';
 import 'package:nb_utils/nb_utils.dart';
-
 class Home extends StatefulWidget {
   const Home({super.key});
 

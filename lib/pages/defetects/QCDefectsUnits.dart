@@ -4,7 +4,7 @@ import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/models/qc_inpection.dart';
-import 'package:isuze_pqcs/pages/defetects/QclistDefects.dart';
+import 'package:isuze_pqcs/pages/defetects/QcViewlistDefects.dart';
 import 'package:nb_utils/nb_utils.dart';
 
 class DefectsUnit extends StatefulWidget {

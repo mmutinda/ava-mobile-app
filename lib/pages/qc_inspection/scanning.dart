@@ -121,7 +121,7 @@ class _ScanningState extends State<Scanning> {
       setState(() {
         isLoading = false;
         message = 'Network Problem';
-      });
+    });
       // message = '${"Network Problem"}';
       print('Error fetching data: $e');
     }

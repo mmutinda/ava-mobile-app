@@ -23,19 +23,19 @@ class _DashboardState extends State<Dashboard> {
       items: [
         PersistentTabItem(
           tab: const Home(),
-          icon: Icons.home_outlined,
+          icon: Icons.home,
           title: 'Home',
           navigatorkey: _tab1navigatorKey,
         ),
         PersistentTabItem(
           tab: ActionsTab(),
-          icon: Icons.build_outlined,
-          title: 'Action',
+          icon: Icons.pending_actions_outlined,
+          title: 'Actions',
           navigatorkey: _tab2navigatorKey,
         ),
         PersistentTabItem(
           tab: ProfileScreen(),
-          icon: Icons.person_2_outlined,
+          icon: Icons.account_circle,
           title: 'Profile',
         ),
       ],

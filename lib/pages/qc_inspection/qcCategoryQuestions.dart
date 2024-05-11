@@ -1,6 +1,5 @@
 import 'dart:convert';
-import 'dart:developer';
-import 'package:awesome_dialog/awesome_dialog.dart';
+import 'package:awesome_top_snackbar/awesome_top_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:isuze_pqcs/common/api.dart';
@@ -8,13 +7,11 @@ import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/loader.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
+import 'package:isuze_pqcs/pages/home.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/jobcard_questions_template.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/scheduleUnits.dart';
-
+import 'package:nb_utils/nb_utils.dart';
 import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
-import 'package:top_snackbar_flutter/custom_snack_bar.dart';
-import 'package:top_snackbar_flutter/top_snack_bar.dart';
-
 class QcCategories extends StatefulWidget {
   final ShopId;
   final res;
@@ -46,7 +43,9 @@ class _QcCategoriesState extends State<QcCategories> {
 
   @override
   Widget build(BuildContext context) {
-    // print(widget.res);
+    print(
+      widget.res['data']['vehicledata']['id'],
+    );
     return Scaffold(
       floatingActionButton: SpeedDial(
         // overlayColor: Colors.transparent,
@@ -54,7 +53,8 @@ class _QcCategoriesState extends State<QcCategories> {
         animatedIcon: AnimatedIcons.menu_close,
         children: [
           SpeedDialChild(
-            child: Icon(Icons.check),
+            labelStyle: TextStyle(fontWeight: FontWeight.bold),
+            child: Icon(Icons.menu_open_outlined),
             label: 'Correct Defects',
             onTap: () {
               // Add your action here
@@ -196,165 +196,124 @@ class _QcCategoriesState extends State<QcCategories> {
           ),
           categories.isEmpty
               ? Container()
-              : Container(
-                  margin:
-                      const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton.icon(
-                        icon: Icon(Icons.save),
-                        style: ElevatedButton.styleFrom(
-                            backgroundColor: mycolor,
-                            shape: const RoundedRectangleBorder(),
-                            foregroundColor: textWhite),
-                        onPressed: () async {
-                          await saveData(categories);
-                          print("object");
-                        },
-                        label: const Text('Save Data')),
-                  ),
-                )
+              : isLoading2
+                  ? CustomLoader()
+                  : Container(
+                      margin: const EdgeInsets.symmetric(
+                          vertical: 10, horizontal: 10),
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                                backgroundColor:
+                                    datacheck == '0' ? Colors.red : mycolor,
+                                shape: const RoundedRectangleBorder(),
+                                foregroundColor: textWhite),
+                            onPressed: () async {
+                              if (defect_exist) {
+                                if (widget.ShopId == '15' ||
+                                    widget.ShopId == '16' ||
+                                    widget.ShopId == '28') {
+                                  showConfirmDialog(
+                                      context, 'Unit  will hit DRR Score!!',
+                                      onAccept: (context) async {
+                                    showDialog(
+                                      context: context,
+                                      barrierDismissible: false,
+                                      builder: (BuildContext context) {
+                                        return Center(
+                                          child: CustomLoader(),
+                                        );
+                                      },
+                                    );
+                                    await saveData();
+                                  },
+                                      positiveText: 'Push',
+                                      negativeText: "Don't Push");
+                                } else {
+                                  showConfirmDialogCustom(
+                                      primaryColor: Colors.amber[900],
+                                      context,
+                                      title: 'Unit has uncorrected defects!!',
+                                      onAccept: (context) async {
+                                    // Navigator.pop(context);
+                                    await saveData();
+                                  },
+                                      positiveText: 'Push',
+                                      negativeText: "Don't Push");
+                                }
+                              } else {
+                                showConfirmDialog(
+                                  context,
+                                  'Do you want to Push',
+                                  onAccept: (context) async {
+                                    await saveData();
+                                  },
+                                );
+                              }
+                            },
+                            child: const Text('PUSH TO THE NEXT SHOP')),
+                      ),
+                    )
         ],
       ),
     );
   }
 
-  Future saveData(categories) async {
-    var validate = true;
-    for (var i = 0; i < categories.length; i++) {
-      var category = categories[i];
+  Future<void> saveData() async {
+    setState(() {
+      isLoading2 = true; // Use assignment operator '=' instead of '=='
+    });
+    print(isLoading2);
+    String url = Api.api_url + "moveunit";
 
-      List<dynamic> question = category["question"];
-      if ((category["answers_count"] != question[0]["questionitems_count"]) &&
-          (question[0]["questionitems_count"] != 0)) {
-        setState(() {
-          validate = false;
-        });
+    var payload = {
+      "shop_id": widget.ShopId,
+      "vehicle_id": widget.res['data']['vehicledata']['id'],
+      "model_id": widget.res['data']['vehicledata']['model_id'],
+      "defect_exist": defect_exist,
+    };
 
-        break;
+    var response = await httppostwithtoken(
+      url,
+      "${user['data']['token']}",
+      payload,
+      context,
+    );
+
+    setState(() {
+      isLoading2 =
+          false; // Update isLoading2 after the asynchronous operation is complete
+    });
+
+    if (response['success'] != null) {
+      // Check if 'success' key exists and not null
+
+      if (response['success']) {
+        Home().launch(context, isNewTask: true);
+        awesomeTopSnackbar(
+          context,
+          "${response["msg"]}",
+          iconWithDecoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(),
+            color: Colors.white,
+          ),
+          backgroundColor: Colors.green,
+        );
+      } else {
+        awesomeTopSnackbar(
+          context,
+          "${response["msg"]}",
+          iconWithDecoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(),
+            color: Colors.white,
+          ),
+          backgroundColor: Colors.red,
+        );
       }
-    }
-    if (validate == true) {
-      showDialog(
-          context: context,
-          builder: (context) {
-            return AlertDialog(
-              title: Align(
-                alignment: Alignment.center,
-                child: const Text('Finalize Routing'),
-              ),
-              shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(5))),
-              content: IntrinsicHeight(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ElevatedButton(
-                        onPressed: () async {
-                          final ProgressDialog progressDialog =
-                              ProgressDialog(context);
-                          progressDialog.style(
-                            message: 'Finalizing routing...',
-                            child: CustomLoader(),
-                            progressWidget: CircularProgressIndicator(),
-                          );
-                          await progressDialog.show();
-
-                          try {
-                            String url = Api.api_url + "apiCloseFabricationQc";
-                            var payload = {"project_id": widget.ShopId};
-                            print(payload);
-                            print(url);
-                            var response = await httppostwithtoken(
-                                url, user["token"], payload, context);
-                            log(jsonEncode(response['msg']));
-                            if (response['success']) {
-                              Navigator.pop(context);
-                              print("done");
-                              showTopSnackBar(
-                                Overlay.of(context),
-                                CustomSnackBar.info(
-                                  message: "${response['msg']}",
-                                ),
-                              );
-                            } else {
-                              Navigator.pop(context);
-                              print("done");
-                              showTopSnackBar(
-                                Overlay.of(context),
-                                CustomSnackBar.error(
-                                  message: "${response['msg']}",
-                                ),
-                              );
-                            }
-                            return response;
-                          } catch (e) {
-                            print("error : $e");
-                          } finally {
-                            await progressDialog.hide();
-                          }
-                          // ProgressDialog pr = ProgressDialog(context,
-                          //     type: ProgressDialogType.normal,
-                          //     isDismissible: false,
-                          //     showLogs: true);
-                          // pr.style(
-                          //   message: 'Finalizing routing...',
-                          //   borderRadius: 8,
-                          //   backgroundColor: Colors.white,
-                          //   progressWidget: const SizedBox(
-                          //       width: 20,
-                          //       height: 20,
-                          //       child:
-                          //           Center(child: CircularProgressIndicator())),
-                          //   elevation: 10.0,
-                          //   insetAnimCurve: Curves.easeInOut,
-                          // );
-
-                          // pr.show();
-                          // finalizeRouting(widget.VehicleId).then((res) {
-                          //   pr
-                          //       .hide()
-                          //       .then((value) => ScaffoldMessenger.of(context)
-                          //           .showSnackBar(
-                          //               snackBar(res["message"], Colors.grey)))
-                          //       .then((value) {
-                          //     print("ok");
-                          //     Navigator.of(context).pop();
-                          //   });
-                          // });
-
-                          // Future.delayed(
-                          //     const Duration(seconds: dismissseconds), () {
-                          //   if (pr.isShowing()) {
-                          //     pr.hide();
-                          //     ScaffoldMessenger.of(context).showSnackBar(
-                          //         snackBar(internetmessage, snackred));
-                          //   }
-                          // });
-                        },
-                        style: ElevatedButton.styleFrom(
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(5)),
-                            foregroundColor: textWhite),
-                        child: const Text('Complete routing')),
-                  ],
-                ),
-              ),
-            );
-          }).then((value) {
-        Navigator.of(context).pop(true);
-      });
-    } else {
-      AwesomeDialog(
-        context: context,
-        dialogType: DialogType.error,
-        animType: AnimType.rightSlide,
-        title: 'Failed!',
-        desc: 'Please Answer All Categories Above',
-        btnOkColor: mycolor,
-        btnOkOnPress: () {},
-      )..show();
     }
   }
 
@@ -370,7 +329,11 @@ class _QcCategoriesState extends State<QcCategories> {
   }
 
   bool isLoading = false;
+  bool isLoading2 = false;
   String message = '';
+  String datacheck = '';
+  late bool defect_exist;
+
   Future fetchCategories(id) async {
     setState(() {
       isLoading = true;
@@ -384,14 +347,17 @@ class _QcCategoriesState extends State<QcCategories> {
     print(url);
     var responsedata = await httpget(url, user['data']["token"], context);
     // print(responsedata);
-    log(jsonEncode(responsedata));
+    // log(jsonEncode(responsedata));
     if (responsedata != null) {
       if (responsedata["data"] != null) {
         pr.hide().whenComplete(() {
           setState(() {
             // categories = responsedata["category"]["routingitems"];
             categories = responsedata['data']["category"];
+            datacheck = responsedata['data']['datacheck'].toString();
+            defect_exist = responsedata['data']['defect_exist'];
             isLoading = false;
+            isLoading2 = false;
             message = '';
           });
         });

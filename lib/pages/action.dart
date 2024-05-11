@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/pages/defetects/GCAListDefects%20copy.dart';
-import 'package:isuze_pqcs/pages/defetects/TTMSistDefects.dart';
-import 'package:isuze_pqcs/pages/defetects/defectsUnits.dart';
+import 'package:isuze_pqcs/pages/defetects/TTMSListDefects.dart';
+import 'package:isuze_pqcs/pages/defetects/QCDefectsUnits.dart';
 import 'package:nb_utils/nb_utils.dart';
 
 class ActionsTab extends StatefulWidget {
