@@ -5,6 +5,9 @@ import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/pages/qc_inpection_home.dart';
 import 'package:isuze_pqcs/widgets/menu_item.dart';
 import 'package:nb_utils/nb_utils.dart';
+import 'package:quickalert/models/quickalert_type.dart';
+import 'package:quickalert/widgets/quickalert_dialog.dart';
+
 class Home extends StatefulWidget {
   const Home({super.key});
 
@@ -34,13 +37,8 @@ class _HomeState extends State<Home> {
       appBar: AppBar(
         toolbarHeight: 80,
         leading: Icon(Icons.home),
-        title: Text(
-          "PQCS SYSTEM",
-        style: boldTextStyle(size: 24, color: textWhite)
-        ),
-        actions: [
-          _buildPopupMenuButton(),
-        ],
+        title: Text("PQCS SYSTEM",
+            style: boldTextStyle(size: 24, color: textWhite)),
       ),
       body: Container(
         width: double.infinity,
@@ -68,7 +66,15 @@ class _HomeState extends State<Home> {
                   Expanded(
                     child: MenuItem(
                       name: "GCA",
-                      onTap: () {},
+                      onTap: () {
+                        QuickAlert.show(
+                            confirmBtnColor: mycolor,
+                            confirmBtnTextStyle:
+                                TextStyle(fontWeight: FontWeight.bold),
+                            context: context,
+                            type: QuickAlertType.info,
+                            title: 'Module Under Construction!!');
+                      },
                       iconData: Icons.book_outlined,
                     ),
                   ),
@@ -83,56 +89,21 @@ class _HomeState extends State<Home> {
                       child: MenuItem(
                           iconData: Icons.star,
                           name: "Tightening Torque Management(TTMS)",
-                          onTap: () {})),
+                          onTap: () {
+                            QuickAlert.show(
+                                confirmBtnColor: mycolor,
+                                confirmBtnTextStyle:
+                                    TextStyle(fontWeight: FontWeight.bold),
+                                context: context,
+                                type: QuickAlertType.info,
+                                title: 'Module Under Construction!!');
+                          })),
                 ],
               ),
             ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildPopupMenuButton() {
-    return PopupMenuButton<String>(
-      itemBuilder: (BuildContext context) {
-        return ['Profile', 'Logout'].map((String choice) {
-          return PopupMenuItem<String>(
-            value: choice,
-            child: Text(choice),
-          );
-        }).toList();
-      },
-      onSelected: (String choice) async {
-        if (choice == 'Logout') {
-          // ProgressDialog pr = ProgressDialog(context, isDismissible: true);
-          // pr.style(message: "Logging you out...");
-          // pr.show();
-          // SharedPreferences prefs = await SharedPreferences.getInstance();
-          // await prefs.clear().then((value) {
-          //   pr.hide().whenComplete(() {
-          //     Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-          //       MaterialPageRoute(
-          //         builder: (BuildContext context) {
-          //           return const Login();
-          //         },
-          //       ),
-          //       (_) => false,
-          //     );
-          //   });
-          // });
-
-          print('Logout selected');
-        } else if (choice == 'Profile') {
-          // Navigate to the user's profile screen or show profile details
-          // Navigator.push(context, MaterialPageRoute(
-          //   builder: (context) {
-          //     return ProfileTab();
-          //   },
-          // ));
-          print('Profile selected');
-        }
-      },
     );
   }
 }

@@ -8,10 +8,12 @@ import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/loader.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/pages/home.dart';
+import 'package:isuze_pqcs/pages/qc_inspection/QcViewlistDefects.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/jobcard_questions_template.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/scheduleUnits.dart';
 import 'package:nb_utils/nb_utils.dart';
 import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
+
 class QcCategories extends StatefulWidget {
   final ShopId;
   final res;
@@ -48,7 +50,6 @@ class _QcCategoriesState extends State<QcCategories> {
     );
     return Scaffold(
       floatingActionButton: SpeedDial(
-        // overlayColor: Colors.transparent,
         overlayOpacity: 0.1,
         animatedIcon: AnimatedIcons.menu_close,
         children: [
@@ -57,8 +58,9 @@ class _QcCategoriesState extends State<QcCategories> {
             child: Icon(Icons.menu_open_outlined),
             label: 'Correct Defects',
             onTap: () {
-              // Add your action here
-              print('Add button pressed');
+              QCDefectsPage(vehileId: widget.res['data']['vehicledata']['id'])
+                  .launch(context,
+                      pageRouteAnimation: PageRouteAnimation.Slide);
             },
           ),
         ],
@@ -101,16 +103,13 @@ class _QcCategoriesState extends State<QcCategories> {
                           onRetry: () {
                             fetchCategories(widget.ShopId);
                           },
-                        ) // Show message for success or failure
+                        )
                       : ListView.builder(
                           shrinkWrap: true,
                           itemCount: categories.length,
                           itemBuilder: (context, index) {
                             var category = categories[index];
-                            // List<dynamic> question = category["question"];
                             Color categoryColor = colors[index % colors.length];
-                            // print("+++");
-                            // print(category['queries_count']);
                             return GestureDetector(
                               onTap: () async {
                                 // ignore: unused_local_variable
@@ -138,7 +137,6 @@ class _QcCategoriesState extends State<QcCategories> {
                                   showShadow: true,
                                   bgColor: Colors.white,
                                 ),
-                                // padding: const EdgeInsets.all(16),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -164,10 +162,7 @@ class _QcCategoriesState extends State<QcCategories> {
                                                     fontWeight:
                                                         FontWeight.bold),
                                               ),
-
                                               const SizedBox(height: 5),
-                                              // Text(
-                                              //     '${category["answers_count"]} out ${question.isEmpty ? 0 : question[0]["questionitems_count"]} Answered'),
                                               Text(
                                                   '${category["queryanswers"].length} out ${category["queries_count"]} Answered'),
                                             ],
@@ -175,8 +170,7 @@ class _QcCategoriesState extends State<QcCategories> {
                                         ),
                                         CircleAvatar(
                                           radius: 15,
-                                          backgroundColor:
-                                              categoryColor, // Use the category color here
+                                          backgroundColor: categoryColor,
                                           child: Icon(
                                             Icons.arrow_forward_ios,
                                             size: 10,
@@ -263,7 +257,7 @@ class _QcCategoriesState extends State<QcCategories> {
 
   Future<void> saveData() async {
     setState(() {
-      isLoading2 = true; // Use assignment operator '=' instead of '=='
+      isLoading2 = true;
     });
     print(isLoading2);
     String url = Api.api_url + "moveunit";
@@ -283,13 +277,10 @@ class _QcCategoriesState extends State<QcCategories> {
     );
 
     setState(() {
-      isLoading2 =
-          false; // Update isLoading2 after the asynchronous operation is complete
+      isLoading2 = false;
     });
 
     if (response['success'] != null) {
-      // Check if 'success' key exists and not null
-
       if (response['success']) {
         Home().launch(context, isNewTask: true);
         awesomeTopSnackbar(
@@ -323,8 +314,6 @@ class _QcCategoriesState extends State<QcCategories> {
     var payload = {"project_id": vehicleId};
     var response =
         await httppostwithtoken(url, user["token"], payload, context);
-    // print(payload);
-    // log(jsonEncode(response));
     return response;
   }
 
@@ -346,13 +335,10 @@ class _QcCategoriesState extends State<QcCategories> {
         "${Api.api_url}${"quizcategory"}/${widget.ShopId}/${widget.res['data']['vehicledata']['model_id']}/${widget.res['data']['vehicledata']['id']}";
     print(url);
     var responsedata = await httpget(url, user['data']["token"], context);
-    // print(responsedata);
-    // log(jsonEncode(responsedata));
     if (responsedata != null) {
       if (responsedata["data"] != null) {
         pr.hide().whenComplete(() {
           setState(() {
-            // categories = responsedata["category"]["routingitems"];
             categories = responsedata['data']["category"];
             datacheck = responsedata['data']['datacheck'].toString();
             defect_exist = responsedata['data']['defect_exist'];
@@ -367,11 +353,8 @@ class _QcCategoriesState extends State<QcCategories> {
             isLoading = false;
             message = '${responsedata["message"]}';
           });
-          // ScaffoldMessenger.of(context)
-          //     .showSnackBar(snackBar(responsedata["message"], Colors.red[500]));
         });
       }
     }
-    // Dismiss the progress dialog after a few seconds
   }
 }

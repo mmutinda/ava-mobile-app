@@ -17,7 +17,7 @@ class GCADefectsPage extends StatefulWidget {
 
 class _GCADefectsPageState extends State<GCADefectsPage> {
   String term = '';
-  List<dynamic> data = []; // Define your data list
+  List<dynamic> data = [];
   var user = {};
   bool isLoading = false;
   String message = '';
@@ -44,7 +44,6 @@ class _GCADefectsPageState extends State<GCADefectsPage> {
       log(jsonEncode(response));
       if (response == null) {
         print("No Internet");
-        // Handle no internet scenario
         return;
       }
 
@@ -57,7 +56,6 @@ class _GCADefectsPageState extends State<GCADefectsPage> {
           message = '';
         });
       } else {
-        // Handle other scenarios
         setState(() {
           isLoading = false;
           message = '${response['msg']}';
@@ -68,7 +66,6 @@ class _GCADefectsPageState extends State<GCADefectsPage> {
         isLoading = false;
         message = 'Network Problem';
       });
-      // message = '${"Network Problem"}';
       print('Error fetching data: $e');
     }
   }
@@ -105,7 +102,7 @@ class _GCADefectsPageState extends State<GCADefectsPage> {
                           fetchData();
                         },
                       ),
-                    ) // Show message for success or failure
+                    )
                   : Expanded(
                       child: ListView.builder(
                       itemCount: data.length,
@@ -141,9 +138,7 @@ class _GCADefectsPageState extends State<GCADefectsPage> {
                             ],
                           ),
                           trailing: ElevatedButton(
-                            onPressed: () {
-                              // solveAction(widget.data[index]);
-                            },
+                            onPressed: () {},
                             child: Text('Resolve'),
                           ),
                           children: <Widget>[
@@ -180,18 +175,6 @@ class _GCADefectsPageState extends State<GCADefectsPage> {
                                     children: [
                                       Text(
                                           'Category: ${data[index]['audit_category']['name']}'),
-                                    ],
-                                  ),
-                                  Row(
-                                    children: [
-                                      // Text(
-                                      //     'Vin: ${data[index]['vehicle']['vin_no']}'),
-                                    ],
-                                  ),
-                                  Row(
-                                    children: [
-                                      // Text(
-                                      //     'Lot & Job: Lot ${data[index]['vehicle']['lot_no']} Job ${data[index]['vehicle']['job_no']}'),
                                     ],
                                   ),
                                   Row(

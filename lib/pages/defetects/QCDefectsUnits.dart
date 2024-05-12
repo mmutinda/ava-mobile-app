@@ -18,7 +18,7 @@ class _DefectsUnitState extends State<DefectsUnit> {
     Colors.indigo,
     Colors.teal,
   ];
-  List<Vehicle> vehicles = []; // List to hold vehicles fetched from API
+  List<Vehicle> vehicles = [];
   var user = {};
   bool isLoading = false;
   String message = '';
@@ -31,7 +31,6 @@ class _DefectsUnitState extends State<DefectsUnit> {
       });
       fetchData();
     });
-    // fetchData(); // Fetch data when the page is initialized
   }
 
   Future<void> fetchData() async {
@@ -45,7 +44,6 @@ class _DefectsUnitState extends State<DefectsUnit> {
       log(jsonEncode(response));
       if (response == null) {
         print("No Internet");
-        // Handle no internet scenario
         return;
       }
 
@@ -62,7 +60,6 @@ class _DefectsUnitState extends State<DefectsUnit> {
           message = '';
         });
       } else {
-        // Handle other scenarios
         setState(() {
           isLoading = false;
           message = '${response['msg']}';
@@ -73,7 +70,6 @@ class _DefectsUnitState extends State<DefectsUnit> {
         isLoading = false;
         message = 'Network Problem';
       });
-      // message = '${"Network Problem"}';
       print('Error fetching data: $e');
     }
   }
@@ -83,7 +79,6 @@ class _DefectsUnitState extends State<DefectsUnit> {
   bool _isSearching = false;
   @override
   Widget build(BuildContext context) {
-    // print(user['data']['token']);
     Widget _buildSearchField() {
       return TextField(
         autofocus: true,
@@ -136,7 +131,7 @@ class _DefectsUnitState extends State<DefectsUnit> {
                   onRetry: () {
                     fetchData();
                   },
-                ) // Show message for success or failure
+                )
               : ListView.builder(
                   itemCount: vehicles.length,
                   itemBuilder: (context, index) {
@@ -158,7 +153,7 @@ class _DefectsUnitState extends State<DefectsUnit> {
                             model
                                 .toLowerCase()
                                 .contains(searchText.toLowerCase()))) {
-                      return Container(); // Return an empty container if not matching
+                      return Container();
                     }
                     return Column(
                       children: [
@@ -215,9 +210,7 @@ class _DefectsUnitState extends State<DefectsUnit> {
                                     ),
                                   ),
                                 )),
-                            onTap: () {
-                              // Navigate to vehicle details page passing the selected vehicle
-                            },
+                            onTap: () {},
                           ),
                         ),
                         SizedBox(height: 10),
@@ -225,53 +218,6 @@ class _DefectsUnitState extends State<DefectsUnit> {
                     );
                   },
                 ),
-    );
-  }
-}
-
-class VehicleDetailsPage extends StatelessWidget {
-  final Vehicle vehicle;
-
-  const VehicleDetailsPage({Key? key, required this.vehicle}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Vehicle Details'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Model: ${vehicle.model}',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 10),
-            Text(
-              'VIN: ${vehicle.vin}',
-              style: TextStyle(fontSize: 18),
-            ),
-            SizedBox(height: 10),
-            Text(
-              'Lot: ${vehicle.lot}',
-              style: TextStyle(fontSize: 18),
-            ),
-            SizedBox(height: 10),
-            Text(
-              'Job: ${vehicle.job}',
-              style: TextStyle(fontSize: 18),
-            ),
-            SizedBox(height: 10),
-            Text(
-              'Units Remaining: ${vehicle.unitRemaining}',
-              style: TextStyle(fontSize: 18),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
