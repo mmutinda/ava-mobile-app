@@ -85,6 +85,7 @@ class _ScanningState extends State<Scanning> {
   Future<void> fetchData() async {
     setState(() {
       isLoading = true;
+      message = '';
     });
     var url = "${Api.api_url}unitsinshop/${widget.shopId}";
     print(url);
@@ -121,7 +122,7 @@ class _ScanningState extends State<Scanning> {
       setState(() {
         isLoading = false;
         message = 'Network Problem';
-    });
+      });
       // message = '${"Network Problem"}';
       print('Error fetching data: $e');
     }

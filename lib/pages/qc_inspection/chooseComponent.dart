@@ -272,11 +272,17 @@ class _ChooseComponentState extends State<ChooseComponent> {
                             },
                           );
                         } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Please select a component.'),
-                            ),
-                          );
+                          awesomeTopSnackbar(
+                              context, "'Please select component.')",
+                              iconWithDecoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(),
+                                  color: Colors.white),
+                              icon: Icon(
+                                Icons.close,
+                                color: Colors.red,
+                              ),
+                              backgroundColor: Colors.red[900]);
                         }
                       },
                     ),

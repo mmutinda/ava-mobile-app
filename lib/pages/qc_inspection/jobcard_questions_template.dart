@@ -3,7 +3,7 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
-import 'package:awesome_dialog/awesome_dialog.dart';
+import 'package:awesome_top_snackbar/awesome_top_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
@@ -56,6 +56,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
   List<File> selectedImage = [];
   late File signature;
   List vehicles = [];
+  bool isButtonEnabled = true;
   var jobCardId;
   @override
   void initState() {
@@ -269,163 +270,200 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
             )),
             questions.isEmpty
                 ? Container()
-                : Container(
-                    margin: const EdgeInsets.only(
-                        top: 10, bottom: 5, left: 10, right: 10),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                              shape: const RoundedRectangleBorder(),
-                              backgroundColor: mycolor,
-                              foregroundColor: textWhite),
-                          onPressed: () async {
-                            if (_formKey.currentState!.validate()) {
-                              questionValues
-                                  .clear(); // Clear the map before fetching new values
+                : isButtonEnabled
+                    ? Container(
+                        margin: const EdgeInsets.only(
+                            top: 10, bottom: 5, left: 10, right: 10),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                  shape: const RoundedRectangleBorder(),
+                                  backgroundColor: mycolor,
+                                  foregroundColor: textWhite),
+                              onPressed: () async {
+                                if (_formKey.currentState!.validate()) {
+                                  questionValues
+                                      .clear(); // Clear the map before fetching new values
 
-                              var answers = [];
+                                  var answers = [];
 
-                              for (var quest in questions) {
-                                final int questionId = quest["id"];
+                                  for (var quest in questions) {
+                                    final int questionId = quest["id"];
 
-                                // var answer = {
-                                //   "project_id": widget.shop_id,
-                                //   "question_idd": question["id"],
-                                //   "question_id": questionId,
-                                //   "routing_category_id":
-                                //       question["route_question_item_id"],
-                                //   "stage_id": widget.vehicle_id,
-                                //   "quiz_type": question["quiz_type"],
-                                //   "defects":
-                                //       null, // Default value if no defects are recorded
-                                //   "answer":
-                                //       null, // Default value if no specific answer is set
-                                //   "description": null,
-                                //   // Additional fields
-                                //   "user_id": user["user"]["id"],
-                                //   "ins": user["user"]["ins"],
-                                // };
-                                var answer = {
-                                  "vehicle_id": widget.vehicle_id,
-                                  "shop_id": widget.shop_id,
-                                  "quiz_id": Category['id'],
-                                  "item_id": quest['id'],
-                                  "item_name": quest['query_name'],
-                                  "quiz_type": quest["quiz_type"],
-                                  "checkanswered": quest["checkanswered"],
-                                  "options": quest["options"],
-                                  "total_options": quest["total_options"],
-                                  "correct_answers": quest["correct_answers"],
-                                  "haserror": quest['haserror'],
-                                  "can_sign": quest['can_sign'],
-                                  "answer_given": quest['answer_given'],
-                                  "answer": '',
-                                  "defects": '',
-                                  "signature": traceableSignature[questionId],
-                                };
+                                    // var answer = {
+                                    //   "project_id": widget.shop_id,
+                                    //   "question_idd": question["id"],
+                                    //   "question_id": questionId,
+                                    //   "routing_category_id":
+                                    //       question["route_question_item_id"],
+                                    //   "stage_id": widget.vehicle_id,
+                                    //   "quiz_type": question["quiz_type"],
+                                    //   "defects":
+                                    //       null, // Default value if no defects are recorded
+                                    //   "answer":
+                                    //       null, // Default value if no specific answer is set
+                                    //   "description": null,
+                                    //   // Additional fields
+                                    //   "user_id": user["user"]["id"],
+                                    //   "ins": user["user"]["ins"],
+                                    // };
+                                    var answer = {
+                                      "vehicle_id": widget.vehicle_id,
+                                      "shop_id": widget.shop_id,
+                                      "quiz_id": Category['id'],
+                                      "item_id": quest['id'],
+                                      "item_name": quest['query_name'],
+                                      "quiz_type": quest["quiz_type"],
+                                      "checkanswered": quest["checkanswered"],
+                                      "options": quest["options"],
+                                      "total_options": quest["total_options"],
+                                      "correct_answers":
+                                          quest["correct_answers"],
+                                      "haserror": quest['haserror'],
+                                      "can_sign": quest['can_sign'],
+                                      "answer_given": quest['answer_given'],
+                                      "answer": '',
+                                      "defects": '',
+                                      "signature":
+                                          traceableSignature[questionId],
+                                    };
 
-                                if (quest["quiz_type"] == "traceable") {
-                                  // Retrieve value from TraceableQuestion
-                                  String? value = traceableValues[questionId];
-                                  answer["answer"] = value;
-                                } else if (quest["quiz_type"] == "multiple") {
-                                  // Retrieve values from MultipleQuestion
-                                  List<dynamic>? values =
-                                      multipleValues[questionId];
-                                  String? value = multipleValue[questionId];
+                                    if (quest["quiz_type"] == "traceable") {
+                                      // Retrieve value from TraceableQuestion
+                                      String? value =
+                                          traceableValues[questionId];
+                                      answer["answer"] = value;
+                                    } else if (quest["quiz_type"] ==
+                                        "multiple") {
+                                      // Retrieve values from MultipleQuestion
+                                      List<dynamic>? values =
+                                          multipleValues[questionId];
+                                      String? value = multipleValue[questionId];
 
-                                  answer["defects"] = values;
-                                  answer["answer"] = value;
-                                } else if (quest["quiz_type"] == "single") {
-                                  // Retrieve values from SingleQuestion
-                                  String? value = singleValues[questionId];
-                                  answer["answer"] = value;
-                                } else if (quest["quiz_type"] == "numeric") {
-                                  // Retrieve values from NumericQuestion
-                                  String? value = numericValues[questionId];
-                                  answer["answer"] = value;
-                                } else if (quest["quiz_type"] == "others") {
-                                  // Retrieve values from NumericQuestion
-                                  String? value =
-                                      singleDescipTextValues[questionId];
-                                  String? values =
-                                      singleDescripCategory[questionId];
-                                  answer["answer"] = value;
-                                  answer["defects"] = values;
-                                }
-                                if (answer["answer"] != null) {
-                                  answers.add(answer);
-                                }
-                              }
-
-                              if (answers.isNotEmpty) {
-                                //For normal dialog
-                                ProgressDialog pr = ProgressDialog(context,
-                                    type: ProgressDialogType.normal,
-                                    isDismissible: true,
-                                    showLogs: true);
-                                pr.style(
-                                  message: 'Saving answers...',
-                                  borderRadius: 8,
-                                  backgroundColor: Colors.white,
-                                  progressWidget: const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: Center(
-                                          child: CircularProgressIndicator())),
-                                  elevation: 10.0,
-                                  insetAnimCurve: Curves.easeInOut,
-                                );
-
-                                pr.show();
-                                saveanswers(answers).then((res) {
-                                  pr.hide().then((value) {
-                                    if (res["success"]) {
-                                      AwesomeDialog(
-                                        context: context,
-                                        dialogType: DialogType.success,
-                                        animType: AnimType.rightSlide,
-                                        title: '${res["msg"]}',
-                                        btnOkColor: mycolor,
-                                        onDismissCallback: (type) {
-                                          Navigator.pop(context);
-                                        },
-                                        btnOkOnPress: () {},
-                                      )..show();
-                                    } else {
-                                      AwesomeDialog(
-                                        context: context,
-                                        dialogType: DialogType.error,
-                                        animType: AnimType.rightSlide,
-                                        title: '${res["msg"]}',
-                                        btnOkColor: mycolor,
-                                        onDismissCallback: (type) {},
-                                        btnOkOnPress: () {},
-                                      )..show();
+                                      answer["defects"] = values;
+                                      answer["answer"] = value;
+                                    } else if (quest["quiz_type"] == "single") {
+                                      // Retrieve values from SingleQuestion
+                                      String? value = singleValues[questionId];
+                                      answer["answer"] = value;
+                                    } else if (quest["quiz_type"] ==
+                                        "numeric") {
+                                      // Retrieve values from NumericQuestion
+                                      String? value = numericValues[questionId];
+                                      answer["answer"] = value;
+                                    } else if (quest["quiz_type"] == "others") {
+                                      // Retrieve values from NumericQuestion
+                                      String? value =
+                                          singleDescipTextValues[questionId];
+                                      String? values =
+                                          singleDescripCategory[questionId];
+                                      answer["answer"] = value;
+                                      answer["defects"] = values;
                                     }
-                                  });
-                                });
-                                Future.delayed(
-                                    const Duration(seconds: dismissseconds),
-                                    () {
-                                  if (pr.isShowing()) {
-                                    pr.hide();
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                        snackBar(internetmessage, snackred));
+                                    if (answer["answer"] != null) {
+                                      answers.add(answer);
+                                    }
                                   }
-                                });
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                    snackBar(
+
+                                  if (answers.isNotEmpty) {
+                                    //For normal dialog
+                                    setState(() {
+                                      isButtonEnabled = false;
+                                    });
+                                    ProgressDialog pr = ProgressDialog(context,
+                                        type: ProgressDialogType.normal,
+                                        isDismissible: true,
+                                        showLogs: true);
+                                    pr.style(
+                                      message: 'Saving answers...',
+                                      borderRadius: 8,
+                                      backgroundColor: Colors.white,
+                                      progressWidget: const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: Center(
+                                              child:
+                                                  CircularProgressIndicator())),
+                                      elevation: 10.0,
+                                      insetAnimCurve: Curves.easeInOut,
+                                    );
+
+                                    pr.show();
+                                    saveanswers(answers).then((res) {
+                                      pr.hide().then((value) {
+                                        setState(() {
+                                          isButtonEnabled = true;
+                                        });
+                                        if (res["success"]) {
+                                          Navigator.pop(context);
+                                          awesomeTopSnackbar(
+                                            context,
+                                            '${res["msg"]}',
+                                            iconWithDecoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                              border: Border.all(),
+                                              color: Colors.white,
+                                            ),
+                                            icon: Icon(
+                                              Icons.done,
+                                              color: Colors.green[900],
+                                            ),
+                                          );
+                                        } else {
+                                          awesomeTopSnackbar(
+                                            backgroundColor: Colors.red,
+                                            context,
+                                            '${res["msg"]}',
+                                            iconWithDecoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                              border: Border.all(),
+                                              color: Colors.white,
+                                            ),
+                                          );
+                                        }
+                                      });
+                                    });
+                                    Future.delayed(
+                                        const Duration(seconds: dismissseconds),
+                                        () {
+                                      if (pr.isShowing()) {
+                                        pr.hide();
+                                        setState(() {
+                                          isButtonEnabled = true;
+                                        });
+                                        awesomeTopSnackbar(
+                                          backgroundColor: Colors.red,
+                                          context,
+                                          "Something Wrong or Check internet Connection",
+                                          iconWithDecoration: BoxDecoration(
+                                            borderRadius:
+                                                BorderRadius.circular(20),
+                                            border: Border.all(),
+                                            color: Colors.white,
+                                          ),
+                                        );
+                                      }
+                                    });
+                                  } else {
+                                    awesomeTopSnackbar(context,
                                         "Please Answer at least one question",
-                                        const Color.fromARGB(255, 56, 56, 56)));
-                              }
-                            }
-                          },
-                          child: const Text('SAVE')),
-                    ),
-                  )
+                                        iconWithDecoration: BoxDecoration(
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                          border: Border.all(),
+                                          color: Colors.white,
+                                        ),
+                                        backgroundColor: mycolor);
+                                  }
+                                }
+                              },
+                              child: const Text('SAVE')),
+                        ),
+                      )
+                    : Container()
           ],
         ),
       ),
