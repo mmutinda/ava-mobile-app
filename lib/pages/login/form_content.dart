@@ -53,8 +53,8 @@ class FormContentState extends State<FormContent> {
                 return null;
               },
               decoration: const InputDecoration(
-                labelText: 'Email',
-                hintText: 'Enter your email',
+                labelText: 'Username',
+                hintText: 'Enter your username',
                 prefixIcon: Icon(Icons.email_outlined),
                 border: OutlineInputBorder(),
               ),

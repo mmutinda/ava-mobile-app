@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
+import 'package:isuze_pqcs/pages/QCA_home.dart/QCAhome.dart';
 import 'package:isuze_pqcs/pages/qc_inpection_home.dart';
 import 'package:isuze_pqcs/widgets/menu_item.dart';
 import 'package:nb_utils/nb_utils.dart';
@@ -67,13 +68,16 @@ class _HomeState extends State<Home> {
                     child: MenuItem(
                       name: "GCA",
                       onTap: () {
-                        QuickAlert.show(
-                            confirmBtnColor: mycolor,
-                            confirmBtnTextStyle:
-                                TextStyle(fontWeight: FontWeight.bold),
-                            context: context,
-                            type: QuickAlertType.info,
-                            title: 'Module Under Construction!!');
+                        // QuickAlert.show(
+                        //     confirmBtnColor: mycolor,
+                        //     confirmBtnTextStyle:
+                        //         TextStyle(fontWeight: FontWeight.bold),
+                        //     context: context,
+                        //     type: QuickAlertType.info,
+                        //     title: 'Module Under Construction!!');
+                        
+                        QCAHome().launch(context,
+                            pageRouteAnimation: PageRouteAnimation.Fade);
                       },
                       iconData: Icons.book_outlined,
                     ),
@@ -86,18 +90,20 @@ class _HomeState extends State<Home> {
               child: Row(
                 children: [
                   Expanded(
-                      child: MenuItem(
-                          iconData: Icons.star,
-                          name: "Tightening Torque Management(TTMS)",
-                          onTap: () {
-                            QuickAlert.show(
-                                confirmBtnColor: mycolor,
-                                confirmBtnTextStyle:
-                                    TextStyle(fontWeight: FontWeight.bold),
-                                context: context,
-                                type: QuickAlertType.info,
-                                title: 'Module Under Construction!!');
-                          })),
+                    child: MenuItem(
+                      iconData: Icons.star,
+                      name: "Tightening Torque Management(TTMS)",
+                      onTap: () {
+                        QuickAlert.show(
+                            confirmBtnColor: mycolor,
+                            confirmBtnTextStyle:
+                                TextStyle(fontWeight: FontWeight.bold),
+                            context: context,
+                            type: QuickAlertType.info,
+                            title: 'Module Under Construction!!');
+                      },
+                    ),
+                  ),
                 ],
               ),
             ),

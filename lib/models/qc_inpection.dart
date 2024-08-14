@@ -73,3 +73,38 @@ class Vehicle2 {
     );
   }
 }
+
+class AuditsHome {
+  final id;
+  final String vehicle_type;
+  final String title;
+  final String description;
+  final String audit_time;
+  final String position;
+  var queries;
+  final auditdone;
+
+  AuditsHome({
+    required this.id,
+    required this.vehicle_type,
+    required this.title,
+    required this.description,
+    required this.audit_time,
+    required this.position,
+    required this.queries,
+    required this.auditdone,
+  });
+
+  factory AuditsHome.fromJson(Map<String, dynamic> json) {
+    return AuditsHome(
+      id: json['id'].toString(),
+      vehicle_type: json['vehicle_type'].toString(),
+      title: json['title'].toString(),
+      audit_time: json['audit_time'].toString(),
+      position: json['position'].toString(),
+      description: json['description'].toString(),
+      queries: json['queries'],
+      auditdone: json['auditdone'],
+    );
+  }
+}

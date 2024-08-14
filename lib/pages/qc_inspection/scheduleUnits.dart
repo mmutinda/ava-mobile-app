@@ -23,6 +23,7 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
   var user = {};
   bool isLoading = false;
   String message = '';
+
   @override
   void initState() {
     super.initState();
@@ -209,16 +210,6 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
                                 ),
                               ],
                             ),
-                            // trailing: CircleAvatar(
-                            //   radius: 15,
-                            //   backgroundColor:
-                            //       categoryColor, // Use the category color here
-                            // child: Icon(
-                            //   Icons.arrow_forward_ios,
-                            //   size: 10,
-                            //   color: Colors.white,
-                            // ),
-                            // ),
                             trailing: Container(
                                 decoration: BoxDecoration(
                                     border: Border.all(color: categoryColor),

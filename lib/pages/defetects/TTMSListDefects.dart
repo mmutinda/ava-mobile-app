@@ -6,6 +6,8 @@ import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:nb_utils/nb_utils.dart';
+import 'package:quickalert/models/quickalert_type.dart';
+import 'package:quickalert/widgets/quickalert_dialog.dart';
 
 class TTMSDefectsPage extends StatefulWidget {
   const TTMSDefectsPage({
@@ -149,7 +151,13 @@ class _TTMSDefectsPageState extends State<TTMSDefectsPage> {
                                   ),
                                   trailing: ElevatedButton(
                                     onPressed: () {
-                                      // solveAction(data[index]);
+                                       QuickAlert.show(
+                            confirmBtnColor: mycolor,
+                            confirmBtnTextStyle:
+                                TextStyle(fontWeight: FontWeight.bold),
+                            context: context,
+                            type: QuickAlertType.info,
+                            title: 'Module Under Construction!!');
                                     },
                                     child: Text('Resolve'),
                                   ),

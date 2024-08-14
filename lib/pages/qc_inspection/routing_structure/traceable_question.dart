@@ -277,7 +277,7 @@ class _TraceableQuestionState extends State<TraceableQuestion>
                                 });
                                 String base64Image = 'data:image/png;base64,' +
                                     base64Encode(_signatureImage!);
-                             
+
                                 widget.onValueChanged2(base64Image);
                                 // print('Signature saved');
                                 Navigator.pop(context);

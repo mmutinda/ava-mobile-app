@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:isuze_pqcs/common/logo.dart';
 import 'form_content.dart';
 
 class Login extends StatelessWidget {
@@ -16,9 +17,8 @@ class Login extends StatelessWidget {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Logo(),
+                        Logo(),
                         FormContent(),
-  
                       ],
                     ),
                   )

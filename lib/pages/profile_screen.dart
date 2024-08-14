@@ -137,42 +137,96 @@ class ProfileScreenState extends State<ProfileScreen> {
                 Container(
                   margin: EdgeInsets.symmetric(horizontal: 30),
                   decoration: BoxDecoration(
-                      color: mycolor, borderRadius: BorderRadius.circular(20)),
-                  width: double.infinity,
-                  child: TextButton.icon(
-                    onPressed: () {
-                      showConfirmDialog(
-                        context,
-                        'Do you want to logout from the PQCS System?',
-                        onAccept: (context) async {
-                          ProgressDialog pr =
-                              ProgressDialog(context, isDismissible: true);
-                          pr.style(message: "Logging you out...");
-                          pr.show();
-                          SharedPreferences prefs =
-                              await SharedPreferences.getInstance();
-                          await prefs.clear().then((value) {
-                            pr.hide().whenComplete(() {
-                              Navigator.of(context, rootNavigator: true)
-                                  .pushAndRemoveUntil(
-                                MaterialPageRoute(
-                                  builder: (BuildContext context) {
-                                    return const Login();
-                                  },
-                                ),
-                                (_) => false,
-                              );
-                            });
-                          });
-                        },
-                      );
-                    },
-                    label: Text('LogOut', style: TextStyle(color: textWhite)),
-                    icon: Icon(
-                      Icons.logout,
-                      color: textWhite,
-                    ),
+                    color: mycolor,
+                    borderRadius: BorderRadius.circular(20),
                   ),
+                  width: double.infinity,
+                  // child: TextButton.icon(
+                  //   onPressed: () {
+                  //     showConfirmDialog(
+                  //       context,
+                  //       'Do you want to logout from the PQCS System?',
+                  //       onAccept: (context) async {
+                  //         ProgressDialog pr =
+                  //             ProgressDialog(context, isDismissible: true);
+                  //         pr.style(message: "Logging you out...");
+                  //         pr.show();
+                  //         SharedPreferences prefs =
+                  //             await SharedPreferences.getInstance();
+                  //         await prefs.clear().then((value) {
+                  //           pr.hide().whenComplete(() {
+                  //             Navigator.of(context, rootNavigator: true)
+                  //                 .pushAndRemoveUntil(
+                  //               MaterialPageRoute(
+                  //                 builder: (BuildContext context) {
+                  //                   return Login();
+                  //                 },
+                  //               ),
+                  //               (_) => false,
+                  //             );
+                  //           });
+                  //         });
+                  //       },
+                  //     );
+                  //   },
+                  //   label: Text('LogOut', style: TextStyle(color: textWhite)),
+                  //   icon: Icon(
+                  //     Icons.logout,
+                  //     color: textWhite,
+                  //   ),
+                  // ),
+                  child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: mycolor,
+                        foregroundColor: textWhite,
+                      ),
+                      onPressed: () async {
+                        ProgressDialog pr =
+                            ProgressDialog(context, isDismissible: true);
+                        pr.style(message: "Logging you out...");
+                        pr.show();
+                        SharedPreferences prefs =
+                            await SharedPreferences.getInstance();
+                        await prefs.clear().then((value) {
+                          pr.hide().whenComplete(() {
+                            Navigator.of(context, rootNavigator: true)
+                                .pushAndRemoveUntil(
+                              MaterialPageRoute(
+                                builder: (BuildContext context) {
+                                  return Login();
+                                },
+                              ),
+                              (_) => false,
+                            );
+                          });
+                        });
+                        // showConfirmDialog(
+                        //   context,
+                        //   'Do you want to logout from the PQCS System?',
+                        //   onAccept: (context) async {
+                        //     ProgressDialog pr =
+                        //         ProgressDialog(context, isDismissible: true);
+                        //     pr.style(message: "Logging you out...");
+                        //     pr.show();
+                        //     SharedPreferences prefs =
+                        //         await SharedPreferences.getInstance();
+                        //     await prefs.clear().then((value) {
+                        //       pr.hide().whenComplete(() {
+                        //         Navigator.of(context, rootNavigator: true)
+                        //             .pushAndRemoveUntil(
+                        //           MaterialPageRoute(
+                        //             builder: (BuildContext context) {
+                        //               return Login();
+                        //             },
+                        //           ),
+                        //           (_) => false,
+                        //         );
+                        //       });
+                        //     });
+                        //   },
+                        // );
+                      },
+                      child: Text("LogOut")),
                 ),
                 SizedBox(height: 16),
               ],

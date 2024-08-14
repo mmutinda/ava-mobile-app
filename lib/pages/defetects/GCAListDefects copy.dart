@@ -6,6 +6,7 @@ import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:nb_utils/nb_utils.dart';
+import 'package:quickalert/quickalert.dart';
 
 class GCADefectsPage extends StatefulWidget {
   const GCADefectsPage({
@@ -138,7 +139,15 @@ class _GCADefectsPageState extends State<GCADefectsPage> {
                             ],
                           ),
                           trailing: ElevatedButton(
-                            onPressed: () {},
+                            onPressed: () {
+                              QuickAlert.show(
+                                  confirmBtnColor: mycolor,
+                                  confirmBtnTextStyle:
+                                      TextStyle(fontWeight: FontWeight.bold),
+                                  context: context,
+                                  type: QuickAlertType.info,
+                                  title: 'Module Under Construction!!');
+                            },
                             child: Text('Resolve'),
                           ),
                           children: <Widget>[
