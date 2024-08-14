@@ -126,7 +126,7 @@ class _QcCategoriesState extends State<QcCategories> {
                                     ),
                                   ),
                                 ).then(
-                                    (value) => fetchCategories(widget.ShopId));
+                                    (value) => fetchCategories2(widget.ShopId));
                               },
                               child: Container(
                                 padding: EdgeInsets.all(12),
@@ -325,12 +325,13 @@ class _QcCategoriesState extends State<QcCategories> {
 
   Future fetchCategories(id) async {
     setState(() {
+      message = '';
       isLoading = true;
     });
     ProgressDialog pr = ProgressDialog(context,
         type: ProgressDialogType.normal, showLogs: true, isDismissible: true);
 
-    pr.show();
+    // pr.show();
     String url =
         "${Api.api_url}${"quizcategory"}/${widget.ShopId}/${widget.res['data']['vehicledata']['model_id']}/${widget.res['data']['vehicledata']['id']}";
     print(url);
@@ -354,6 +355,33 @@ class _QcCategoriesState extends State<QcCategories> {
             message = '${responsedata["message"]}';
           });
         });
+      }
+    }
+  }
+
+  Future fetchCategories2(id) async {
+    ProgressDialog pr = ProgressDialog(context,
+        type: ProgressDialogType.normal, showLogs: true, isDismissible: true);
+
+    // pr.show();
+    String url =
+        "${Api.api_url}${"quizcategory"}/${widget.ShopId}/${widget.res['data']['vehicledata']['model_id']}/${widget.res['data']['vehicledata']['id']}";
+    print(url);
+    var responsedata = await httpget(url, user['data']["token"], context);
+    if (responsedata != null) {
+      if (responsedata["data"] != null) {
+        pr.hide().whenComplete(() {
+          setState(() {
+            categories = responsedata['data']["category"];
+            datacheck = responsedata['data']['datacheck'].toString();
+            defect_exist = responsedata['data']['defect_exist'];
+            isLoading = false;
+            isLoading2 = false;
+            message = '';
+          });
+        });
+      } else {
+        pr.hide().whenComplete(() {});
       }
     }
   }

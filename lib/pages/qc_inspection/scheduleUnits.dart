@@ -39,6 +39,7 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
   Future<void> fetchData() async {
     setState(() {
       isLoading = true;
+      message = '';
     });
     var url = "${Api.api_url}sheduledunits";
 
@@ -75,6 +76,36 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
         isLoading = false;
         message = 'Network Problem';
       });
+      // message = '${"Network Problem"}';
+      print('Error fetching data: $e');
+    }
+  }
+
+  Future<void> fetchData2() async {
+    var url = "${Api.api_url}sheduledunits";
+
+    try {
+      var response = await httpget(url, user['data']['token'], context);
+      log(jsonEncode(response));
+      if (response == null) {
+        // Handle no internet scenario
+        return;
+      }
+
+      if (response['success'] && response['data'] != null) {
+        List<dynamic> responseData = response['data'];
+
+        List<Vehicle> fetchedVehicles = responseData.map((vehicleData) {
+          return Vehicle.fromJson(vehicleData);
+        }).toList();
+
+        setState(() {
+          vehicles = fetchedVehicles;
+        });
+      } else {
+        // Handle other scenarios
+      }
+    } catch (e) {
       // message = '${"Network Problem"}';
       print('Error fetching data: $e');
     }
@@ -229,7 +260,7 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
                                             dialogAnimation:
                                                 DialogAnimation.SCALE)
                                         .then((value) {
-                                      fetchData();
+                                      fetchData2();
                                       setState(() {});
                                     });
                                   },
