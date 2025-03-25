@@ -1,0 +1,184 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_feather_icons/flutter_feather_icons.dart';
+import 'package:isuze_pqcs/common/slider.dart';
+import 'package:isuze_pqcs/pages/profile_screen.dart';
+import 'package:isuze_pqcs/pages/qc_inpection_home.dart';
+import 'package:isuze_pqcs/pages/qc_inspection/scheduleUnits.dart';
+import 'package:nb_utils/nb_utils.dart';
+
+class HomeScrean extends StatefulWidget {
+  @override
+  _HomeScreanState createState() => _HomeScreanState();
+}
+
+class _HomeScreanState extends State<HomeScrean> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  int _selectedPage = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    ThemeData theme = Theme.of(context);
+    final List<Map<String, String>> sliderItems = [
+      {
+        'image': 'images/pic1.jpg',
+        'title': 'Precision Engineering',
+        'description': 'Ensuring Excellence in Every Component!',
+      },
+      {
+        'image': 'images/pic2.jpg',
+        'title': 'Quality Assurance',
+        'description': 'Rigorous Testing for Peak Performance!',
+      },
+      {
+        'image': 'images/pic3.jpg',
+        'title': 'Safety Standards',
+        'description': 'Built to Protect, Engineered for Reliability!',
+      },
+      {
+        'image': 'images/pic4.jpg',
+        'title': 'Final Inspection',
+        'description': 'Perfection in Every Detail Before the Road!',
+      },
+    ];
+    return Scaffold(
+      key: _scaffoldKey,
+      appBar: AppBar(
+        title: Text("Home", style: TextStyle(fontWeight: FontWeight.w600)),
+      ),
+      drawer: Drawer(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            DrawerHeader(
+              decoration: BoxDecoration(color: theme.primaryColor),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CircleAvatar(
+                    radius: 30,
+                    backgroundImage: AssetImage("images/profile1.jpg"),
+                  ),
+                  SizedBox(height: 10),
+                  Text("Admin PQCS",
+                      style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white)),
+                  Text("admin@admin.com",
+                      style: TextStyle(fontSize: 14, color: Colors.white70)),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                children: <Widget>[
+                  singleDrawerItem(FeatherIcons.home, "Dashboard", 0, theme),
+                  Divider(),
+                  singleDrawerItem(
+                      FeatherIcons.calendar, "Scheduled Units", 1, theme),
+                  singleDrawerItem(FeatherIcons.shoppingBag, "SHOPS", 2, theme),
+                  singleDrawerItem(
+                      FeatherIcons.checkCircle, "Actions", 3, theme),
+                  Divider(),
+                  singleDrawerItem(
+                      FeatherIcons.userCheck, "Attendance", 4, theme),
+                  Divider(),
+                  singleDrawerItem(FeatherIcons.alertCircle,
+                      "Actions to Quality Defects", 10, theme),
+                  singleDrawerItem(FeatherIcons.user, "Profile", 11, theme),
+                  singleDrawerItem(FeatherIcons.helpCircle, "Help", 13, theme),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      body: Column(
+        children: [
+          BeautySlider(items: sliderItems),
+          Expanded(
+            child: Center(
+              child: Text("Dashboard"),
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget singleDrawerItem(
+      IconData iconData, String title, int position, ThemeData theme) {
+    return ListTile(
+        leading: Icon(
+          iconData,
+          color:
+              _selectedPage == position ? theme.primaryColor : Colors.grey[700],
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontWeight:
+                _selectedPage == position ? FontWeight.w600 : FontWeight.w500,
+          ),
+        ),
+        onTap: () {
+          setState(() {
+            _selectedPage = position;
+          });
+          _scaffoldKey.currentState!.openEndDrawer();
+
+          // Navigate based on selected position
+          switch (position) {
+            case 0:
+              // Navigator.pushReplacement(
+              //   context,
+              //   MaterialPageRoute(builder: (context) => DashboardScreen()),
+              // );
+              break;
+            case 1:
+              SCheduleUnits().launch(context,
+                  pageRouteAnimation: PageRouteAnimation.Slide);
+              break;
+            case 2:
+              // Navigator.push(
+              //   context,
+              //   MaterialPageRoute(builder: (context) => ShopsScreen()),
+              // );
+              Qc_Home().launch(context,
+                  pageRouteAnimation: PageRouteAnimation.Slide);
+
+              break;
+            case 3:
+              // Navigator.push(
+              //   context,
+              //   MaterialPageRoute(builder: (context) => ActionsScreen()),
+              // );
+              break;
+            case 4:
+              // Navigator.push(
+              //   context,
+              //   MaterialPageRoute(builder: (context) => AttendanceScreen()),
+              // );
+              break;
+            case 10:
+              // Navigator.push(
+              //   context,
+              //   MaterialPageRoute(builder: (context) => QualityDefectsScreen()),
+              // );
+              break;
+            case 11:
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ProfileTab()),
+              );
+              break;
+            case 13:
+              // Navigator.push(
+              //   context,
+              //   MaterialPageRoute(builder: (context) => HelpScreen()),
+              // );
+              break;
+          }
+        });
+  }
+}

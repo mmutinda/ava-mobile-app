@@ -34,7 +34,7 @@ class _DashboardState extends State<Dashboard> {
           navigatorkey: _tab2navigatorKey,
         ),
         PersistentTabItem(
-          tab: ProfileScreen(),
+          tab: ProfileTab(),
           icon: Icons.account_circle,
           title: 'Profile',
         ),

@@ -137,7 +137,7 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
 
     return Scaffold(
       appBar: AppBar(
-        title: _isSearching ? _buildSearchField() : Text('Schedule Units'),
+        title: _isSearching ? _buildSearchField() : Text('Scheduled  Units'),
         actions: [
           Padding(
             padding: const EdgeInsets.all(8.0),

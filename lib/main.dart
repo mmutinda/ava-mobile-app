@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:isuze_pqcs/common/constants.dart';
+import 'package:isuze_pqcs/common/HomePage.dart';
 import 'package:isuze_pqcs/pages/dashboard.dart';
 import 'package:isuze_pqcs/pages/login/login.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -39,7 +40,8 @@ class MyApp extends StatelessWidget {
         buttonTheme: ButtonThemeData(textTheme: ButtonTextTheme.primary),
         //
       ),
-      home: userdata == null ? Login() : Dashboard(),
+      // home: userdata == null ? Login() : Dashboard(),
+      home: HomeScrean(),
     );
   }
 }
