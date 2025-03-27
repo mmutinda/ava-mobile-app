@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/HomePage.dart';
 import 'package:isuze_pqcs/pages/dashboard.dart';
@@ -14,6 +15,7 @@ Future<void> main() async {
       userdata: userdata,
     ),
   );
+  configLoading();
 }
 
 class MyApp extends StatelessWidget {
@@ -27,8 +29,10 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'PQCS SYSTEM',
+      builder: EasyLoading.init(), // ✅ Initialize EasyLoading here
       theme: ThemeData(
         // scaffoldBackgroundColor: bgColor,
+
         scaffoldBackgroundColor: Colors.grey.shade100,
         appBarTheme: AppBarTheme(
           centerTitle: true,
@@ -40,8 +44,24 @@ class MyApp extends StatelessWidget {
         buttonTheme: ButtonThemeData(textTheme: ButtonTextTheme.primary),
         //
       ),
-      // home: userdata == null ? Login() : Dashboard(),
-      home: HomeScrean(),
+      home: userdata == null ? Login() : HomeScrean(),
+      // home: HomeScrean(),
     );
   }
+}
+
+void configLoading() {
+  EasyLoading.instance
+    // ..indicatorType = EasyLoadingIndicatorType.cubeGrid
+    ..loadingStyle = EasyLoadingStyle.dark
+    ..indicatorSize = 50.0
+    ..radius = 0.0
+    ..progressColor = Colors.blue
+    // ..backgroundColor = Colors.white
+    ..backgroundColor = Colors.white
+    ..indicatorColor = Colors.blue
+    ..textColor = Colors.black
+    ..maskType = EasyLoadingMaskType.none
+    ..userInteractions = false
+    ..dismissOnTap = false;
 }

@@ -1,16 +1,59 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
-class BeautySlider extends StatelessWidget {
+class BeautySlider extends StatefulWidget {
   final List<Map<String, String>> items;
 
   BeautySlider({required this.items});
+
+  @override
+  _BeautySliderState createState() => _BeautySliderState();
+}
+
+class _BeautySliderState extends State<BeautySlider> {
+  late PageController _pageController;
+  late int _currentPage;
+  late final List<Map<String, String>> items;
+
+  @override
+  void initState() {
+    super.initState();
+    items = widget.items;
+    _pageController = PageController();
+    _currentPage = 0;
+
+    // Auto slide functionality
+    Future.delayed(Duration(seconds: 3), _autoSlide);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  // Auto slide function
+  void _autoSlide() {
+    if (_currentPage < items.length - 1) {
+      _currentPage++;
+    } else {
+      _currentPage = 0;
+    }
+
+    _pageController.animateToPage(
+      _currentPage,
+      duration: Duration(milliseconds: 500),
+      curve: Curves.easeInOut,
+    );
+
+    Future.delayed(Duration(seconds: 3), _autoSlide);
+  }
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       height: 200,
       child: PageView.builder(
+        controller: _pageController,
         itemCount: items.length,
         itemBuilder: (context, index) {
           return Padding(
@@ -20,18 +63,6 @@ class BeautySlider extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // CachedNetworkImage(
-                  //   imageUrl: items[index]['image']!,
-                  //   fit: BoxFit.cover,
-                  //   placeholder: (context, url) => const Center(
-                  //     child: CircularProgressIndicator(),
-                  //   ),
-                  //   errorWidget: (context, url, error) => const Icon(
-                  //     Icons.broken_image,
-                  //     size: 50,
-                  //     color: Colors.grey,
-                  //   ),
-                  // ),
                   Image.asset(
                     items[index]['image']!,
                     fit: BoxFit.cover,

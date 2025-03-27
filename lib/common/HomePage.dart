@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
 import 'package:isuze_pqcs/common/slider.dart';
 import 'package:isuze_pqcs/pages/profile_screen.dart';
-import 'package:isuze_pqcs/pages/qc_inpection_home.dart';
+import 'package:isuze_pqcs/pages/ShopsScrean.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/scheduleUnits.dart';
 import 'package:nb_utils/nb_utils.dart';
 
@@ -144,7 +144,7 @@ class _HomeScreanState extends State<HomeScrean> {
               //   context,
               //   MaterialPageRoute(builder: (context) => ShopsScreen()),
               // );
-              Qc_Home().launch(context,
+              ShopsScrean().launch(context,
                   pageRouteAnimation: PageRouteAnimation.Slide);
 
               break;

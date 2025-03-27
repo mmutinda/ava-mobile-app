@@ -8,6 +8,7 @@ import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/loader.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/pages/home.dart';
+import 'package:isuze_pqcs/pages/ShopsScrean.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/QcViewlistDefects.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/jobcard_questions_template.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/scheduleUnits.dart';
@@ -282,7 +283,7 @@ class _QcCategoriesState extends State<QcCategories> {
 
     if (response['success'] != null) {
       if (response['success']) {
-        Home().launch(context, isNewTask: true);
+        ShopsScrean().launch(context, isNewTask: true);
         awesomeTopSnackbar(
           context,
           "${response["msg"]}",

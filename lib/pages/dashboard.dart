@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:isuze_pqcs/pages/action.dart';
 import 'package:isuze_pqcs/pages/home.dart';
 import 'package:isuze_pqcs/pages/profile_screen.dart';
+import 'package:isuze_pqcs/pages/ShopsScrean.dart';
 
 import '../widgets/bottom_persistent_nav.dart';
 
@@ -22,7 +23,7 @@ class _DashboardState extends State<Dashboard> {
     return PersistentBottomBarScaffold(
       items: [
         PersistentTabItem(
-          tab: const Home(),
+          tab: const ShopsScrean(),
           icon: Icons.home,
           title: 'Home',
           navigatorkey: _tab1navigatorKey,

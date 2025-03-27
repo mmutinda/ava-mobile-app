@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
@@ -38,9 +39,17 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
 
   Future<void> fetchData() async {
     setState(() {
-      isLoading = true;
+      isLoading = vehicles.isEmpty ? true : false;
       message = '';
     });
+    if (vehicles.isEmpty) {
+      EasyLoading.show(
+          status: "Loading sheduled units...",
+          maskType: EasyLoadingMaskType.black);
+    } else {
+      EasyLoading.dismiss(); // Dismiss if vehicles are loaded
+    }
+
     var url = "${Api.api_url}sheduledunits";
 
     try {
@@ -49,6 +58,8 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
       if (response == null) {
         print("No Internet");
         // Handle no internet scenario
+        message = 'Something Wrong, or check your Internet Connections';
+        EasyLoading.dismiss();
         return;
       }
 
@@ -64,51 +75,32 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
           isLoading = false;
           message = '';
         });
+        EasyLoading.dismiss();
       } else {
         // Handle other scenarios
         setState(() {
           isLoading = false;
           message = '${response['msg']}';
         });
+        EasyLoading.dismiss();
       }
     } catch (e) {
       setState(() {
         isLoading = false;
         message = 'Network Problem';
       });
+      EasyLoading.dismiss();
       // message = '${"Network Problem"}';
       print('Error fetching data: $e');
     }
   }
 
-  Future<void> fetchData2() async {
-    var url = "${Api.api_url}sheduledunits";
-
-    try {
-      var response = await httpget(url, user['data']['token'], context);
-      log(jsonEncode(response));
-      if (response == null) {
-        // Handle no internet scenario
-        return;
-      }
-
-      if (response['success'] && response['data'] != null) {
-        List<dynamic> responseData = response['data'];
-
-        List<Vehicle> fetchedVehicles = responseData.map((vehicleData) {
-          return Vehicle.fromJson(vehicleData);
-        }).toList();
-
-        setState(() {
-          vehicles = fetchedVehicles;
-        });
-      } else {
-        // Handle other scenarios
-      }
-    } catch (e) {
-      // message = '${"Network Problem"}';
-      print('Error fetching data: $e');
+  @override
+  void dispose() {
+    if (isLoading) {
+      EasyLoading.dismiss(); // Dismiss loading when navigating away
     }
+    super.dispose();
   }
 
   TextEditingController searchController = TextEditingController();
@@ -157,12 +149,7 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
         ],
       ),
       body: isLoading
-          ? Center(
-              child: Container(
-                width: double.infinity,
-                child: FacebookLikeShimmer(),
-              ),
-            )
+          ? Center(child: SizedBox.shrink()) // Keep an empty widget
           : message.isNotEmpty
               ? ErrorMessageWidget(
                   errorMessage: message,
@@ -260,7 +247,7 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
                                             dialogAnimation:
                                                 DialogAnimation.SCALE)
                                         .then((value) {
-                                      fetchData2();
+                                      fetchData();
                                       setState(() {});
                                     });
                                   },
