@@ -77,6 +77,12 @@ class _ShopsScreanState extends State<ShopsScrean> {
           isLoading = false;
           message = '';
         });
+        if (shop.isEmpty) {
+          setState(() {
+            message = "No Shops Found";
+          });
+        }
+
         EasyLoading.dismiss();
       } else {
         setState(() {
@@ -106,6 +112,7 @@ class _ShopsScreanState extends State<ShopsScrean> {
 
   @override
   Widget build(BuildContext context) {
+  
     return Scaffold(
       appBar: AppBar(
         title: const Text("Shops"),

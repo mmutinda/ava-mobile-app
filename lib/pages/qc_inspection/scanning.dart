@@ -3,9 +3,11 @@ import 'dart:convert';
 import 'package:awesome_top_snackbar/awesome_top_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
+import 'package:isuze_pqcs/common/loader.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/models/qc_inpection.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/qcCategoryQuestions.dart';
@@ -111,6 +113,11 @@ class _ScanningState extends State<Scanning> {
           isLoading = false;
           message = '';
         });
+        if (vehicles.isEmpty) {
+          setState(() {
+            message = "No Units Found";
+          });
+        }
       } else {
         // Handle other scenarios
         setState(() {
@@ -134,6 +141,87 @@ class _ScanningState extends State<Scanning> {
     var response = await httpget(url, user['data']['token'], context);
     // log(jsonEncode(response));
     return response;
+  }
+
+  Future<void> processSKU(String sku) async {
+    ProgressDialog pr = ProgressDialog(
+      context,
+      type: ProgressDialogType.normal,
+      isDismissible: false,
+      showLogs: true,
+    );
+
+    pr.style(
+      borderRadius: 8,
+      backgroundColor: Colors.white,
+      progressWidget: const SizedBox(
+        width: 20,
+        height: 20,
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      elevation: 10.0,
+      insetAnimCurve: Curves.easeInOut,
+    );
+
+    // pr.show();
+    EasyLoading.show(
+        status: "Loading Categories...", maskType: EasyLoadingMaskType.black);
+
+    try {
+      final res = await fetchproduct(sku);
+
+      EasyLoading.dismiss().whenComplete(() {
+        if (res == null || res["data"] == null) {
+          awesomeTopSnackbar(
+            context,
+            "${res?["msg"] ?? "Item not found"}",
+            iconWithDecoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(),
+              color: Colors.white,
+            ),
+            icon: const Icon(Icons.close, color: Colors.red),
+          );
+          return;
+        }
+
+        if (res["data"]['unitcheck'] == false) {
+          showInDialog(
+            context,
+            builder: (context) => showPosition(
+              errorMessage: res["data"]['currentposion'].toString(),
+            ),
+            dialogAnimation: DialogAnimation.SLIDE_TOP_BOTTOM,
+          );
+        } else {
+          QcCategories(
+            ShopId: widget.shopId,
+            res: res,
+          ).launch(
+            context,
+            pageRouteAnimation: PageRouteAnimation.Slide,
+          );
+        }
+      });
+    } catch (e) {
+      // pr.hide();
+      EasyLoading.dismiss();
+      awesomeTopSnackbar(
+        context,
+        "Something went wrong",
+        iconWithDecoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(),
+          color: Colors.white,
+        ),
+        icon: const Icon(Icons.close, color: Colors.red),
+        backgroundColor: Colors.red[900],
+      );
+    }
+
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   Future<void> _initiatescanner() async {
@@ -231,6 +319,15 @@ class _ScanningState extends State<Scanning> {
   TextEditingController searchController = TextEditingController();
   String searchText = '';
   bool _isSearching = false;
+
+  @override
+  void dispose() {
+    if (isLoading) {
+      EasyLoading.dismiss(); // Dismiss loading when navigating away
+    }
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     Widget _buildSearchField() {
@@ -276,7 +373,7 @@ class _ScanningState extends State<Scanning> {
           ? Center(
               child: Container(
                 width: double.infinity,
-                child: FacebookLikeShimmer(),
+                child: CustomLoader(),
               ),
             )
           : message.isNotEmpty
@@ -324,6 +421,9 @@ class _ScanningState extends State<Scanning> {
                                   bgColor: Colors.white,
                                 ),
                                 child: ListTile(
+                                  onTap: () {
+                                    processSKU(vehicles[index].vin);
+                                  },
                                   contentPadding: EdgeInsets.all(0),
                                   leading: CircleAvatar(
                                     backgroundColor: mycolor,
@@ -350,16 +450,6 @@ class _ScanningState extends State<Scanning> {
                                       ),
                                     ],
                                   ),
-                                  // trailing: CircleAvatar(
-                                  //   radius: 15,
-                                  //   backgroundColor:
-                                  //       categoryColor, // Use the category color here
-                                  // child: Icon(
-                                  //   Icons.arrow_forward_ios,
-                                  //   size: 10,
-                                  //   color: Colors.white,
-                                  // ),
-                                  // ),
                                 ),
                               ),
                               SizedBox(height: 10),

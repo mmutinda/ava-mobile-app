@@ -1,6 +1,6 @@
 // ignore_for_file: non_constant_identifier_names
 class Api {
-  static String main_url = "http://172.16.16.57:80";
+  static String main_url = "http://164.68.121.149";
   static String api_url = "$main_url/api/user/";
 
   // response codes

@@ -11,7 +11,7 @@ class CustomLoader extends StatelessWidget {
         child: SizedBox(
           child: LoadingAnimationWidget.threeArchedCircle(
             color: mycolor,
-            size: 50,
+            size: 80,
           ),
         ),
       ),

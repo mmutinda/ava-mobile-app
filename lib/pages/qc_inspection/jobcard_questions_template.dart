@@ -5,6 +5,7 @@ import 'dart:developer';
 import 'dart:io';
 import 'package:awesome_top_snackbar/awesome_top_snackbar.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
@@ -72,6 +73,12 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
 
   final _formKey = GlobalKey<FormState>();
   @override
+  void dispose() {
+    EasyLoading.dismiss();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -92,9 +99,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                 child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10),
               child: questions.isEmpty
-                  ? Center(
-                      child: Text(textLoading),
-                    )
+                  ? Center(child: SizedBox.shrink())
                   : Column(
                       children: [
                         if (Category['imageUri'].toString() !=
@@ -150,6 +155,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                 );
                               } else if (get["quiz_type"] == "multiple") {
                                 return MultipleQuestion(
+                                    index: index + 1,
                                     id: get['id'],
                                     options: get["options"],
                                     onRadioChanged: (value) {
@@ -486,7 +492,8 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
     ProgressDialog pr = ProgressDialog(context,
         type: ProgressDialogType.normal, showLogs: true, isDismissible: true);
     pr.style(message: 'Fetching questions...');
-    pr.show();
+    EasyLoading.show(
+        status: "Loading Questions...", maskType: EasyLoadingMaskType.black);
     String url =
         "${Api.api_url}quiz/${widget.query_id}/${widget.vehicle_id}/${widget.shop_id}";
     print(" fetching question url");
@@ -499,7 +506,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
 
     if (responseData != null) {
       if (responseData["data"] != null) {
-        pr.hide().whenComplete(() {
+        EasyLoading.dismiss().whenComplete(() {
           setState(() {
             // question = responseData["data"];
             questions = responseData["data"]["query"];
@@ -507,7 +514,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
           });
         });
       } else {
-        pr.hide().whenComplete(() {
+        EasyLoading.dismiss().whenComplete(() {
           ScaffoldMessenger.of(context)
               .showSnackBar(snackBar(responseData["message"], Colors.red[500]));
         });

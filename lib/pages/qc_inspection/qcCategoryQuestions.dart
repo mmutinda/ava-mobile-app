@@ -3,6 +3,7 @@ import 'package:awesome_top_snackbar/awesome_top_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:isuze_pqcs/common/api.dart';
+import 'package:isuze_pqcs/common/confirmationDialog.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/loader.dart';
@@ -95,7 +96,7 @@ class _QcCategoriesState extends State<QcCategories> {
                   ? Center(
                       child: Container(
                         width: double.infinity,
-                        child: FacebookLikeShimmer(),
+                        child: CustomLoader(),
                       ),
                     )
                   : message.isNotEmpty
@@ -206,47 +207,118 @@ class _QcCategoriesState extends State<QcCategories> {
                                 shape: const RoundedRectangleBorder(),
                                 foregroundColor: textWhite),
                             onPressed: () async {
+                              var validate = true;
+                              // for (var i = 0; i < categories.length; i++) {
+                              //   var category = categories[i];
+                              //   // List<dynamic> question = category["question"];
+
+                              //   if ((category["queryanswers"].length !=
+                              //       category["queries_count"].length)) {
+                              //     setState(() {
+                              //       validate = false;
+                              //     });
+                              //     break;
+                              //   }
+                              // }
+                              // if (validate == true) {
                               if (defect_exist) {
                                 if (widget.ShopId == '15' ||
                                     widget.ShopId == '16' ||
                                     widget.ShopId == '28') {
-                                  showConfirmDialog(
-                                      context, 'Unit  will hit DRR Score!!',
-                                      onAccept: (context) async {
-                                    showDialog(
-                                      context: context,
-                                      barrierDismissible: false,
-                                      builder: (BuildContext context) {
-                                        return Center(
-                                          child: CustomLoader(),
-                                        );
-                                      },
-                                    );
-                                    await saveData();
-                                  },
-                                      positiveText: 'Push',
-                                      negativeText: "Don't Push");
+                                  // showConfirmDialog(
+                                  //     context, 'Unit  will hit DRR Score!!',
+                                  //     onAccept: (context) async {
+                                  //   showDialog(
+                                  //     context: context,
+                                  //     barrierDismissible: false,
+                                  //     builder: (BuildContext context) {
+                                  //       return Center(
+                                  //         child: CustomLoader(),
+                                  //       );
+                                  //     },
+                                  //   );
+                                  //   await saveData();
+                                  // },
+                                  //     positiveText: 'Push',
+                                  //     negativeText: "Don't Push");
+                                  CustomConfirmDialog.show(
+                                    context: context,
+                                    title: 'Confirm Push',
+                                    message: 'Unit will hit DRR Score!!',
+                                    confirmText: 'Push',
+                                    cancelText: "Don't Push",
+                                    icon: Icons.warning_amber_rounded,
+                                    iconColor: Colors.orange,
+                                    confirmColor: Colors.deepOrange,
+                                    onConfirm: () async {
+                                      showDialog(
+                                        context: context,
+                                        barrierDismissible: false,
+                                        builder: (BuildContext context) =>
+                                            Center(child: CustomLoader()),
+                                      );
+                                      await saveData();
+                                      Navigator.of(context)
+                                          .pop(); // dismiss loader
+                                    },
+                                  );
                                 } else {
-                                  showConfirmDialogCustom(
-                                      primaryColor: Colors.amber[900],
-                                      context,
-                                      title: 'Unit has uncorrected defects!!',
-                                      onAccept: (context) async {
-                                    // Navigator.pop(context);
-                                    await saveData();
-                                  },
-                                      positiveText: 'Push',
-                                      negativeText: "Don't Push");
+                                  // showConfirmDialogCustom(
+                                  //     primaryColor: Colors.amber[900],
+                                  //     context,
+                                  //     title: 'Unit has uncorrected defects!!',
+                                  //     onAccept: (context) async {
+                                  //   // Navigator.pop(context);
+                                  //   await saveData();
+                                  // },
+                                  //     positiveText: 'Push',
+                                  //     negativeText: "Don't Push");
+                                  CustomConfirmDialog.show(
+                                    context: context,
+                                    title: 'Confirm Push',
+                                    message: "Unit has uncorrected defects!!",
+                                    confirmText: 'Push',
+                                    cancelText: "Don't Push",
+                                    icon: Icons.warning_amber_rounded,
+                                    iconColor: Colors.orange,
+                                    confirmColor: Colors.deepOrange,
+                                    onConfirm: () async {
+                                      showDialog(
+                                        context: context,
+                                        barrierDismissible: false,
+                                        builder: (BuildContext context) =>
+                                            Center(child: CustomLoader()),
+                                      );
+                                      await saveData();
+                                      Navigator.of(context)
+                                          .pop(); // dismiss loader
+                                    },
+                                  );
                                 }
                               } else {
-                                showConfirmDialog(
-                                  context,
-                                  'Do you want to Push',
-                                  onAccept: (context) async {
+                                CustomConfirmDialog.show(
+                                  context: context,
+                                  title: 'Confirm Action',
+                                  message:
+                                      'Do you want to push ${widget.res['data']['vehicledata']['vin_no']}?',
+                                  onConfirm: () async {
                                     await saveData();
                                   },
                                 );
                               }
+                              // }
+                              // else {
+                              //   awesomeTopSnackbar(
+                              //     context,
+                              //     "Please answer all questions",
+                              //     iconWithDecoration: BoxDecoration(
+                              //       borderRadius: BorderRadius.circular(20),
+                              //       border: Border.all(),
+                              //       color: Colors.white,
+                              //     ),
+                              //     backgroundColor: Colors.red,
+                              //   );
+                              // }
                             },
                             child: const Text('PUSH TO THE NEXT SHOP')),
                       ),

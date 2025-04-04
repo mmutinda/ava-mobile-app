@@ -9,6 +9,7 @@ import 'package:nb_utils/nb_utils.dart';
 
 class MultipleQuestion extends StatefulWidget {
   final int id;
+  final int index;
   final options;
   final can_sign;
   final checkanswered;
@@ -21,6 +22,7 @@ class MultipleQuestion extends StatefulWidget {
   const MultipleQuestion({
     Key? key,
     required this.id,
+    required this.index,
     // required this.options,
     required this.question,
     required this.onValuesChanged,

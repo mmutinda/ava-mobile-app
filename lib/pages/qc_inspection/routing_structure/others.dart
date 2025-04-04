@@ -130,11 +130,11 @@ class _OthersState extends State<Others> with AutomaticKeepAliveClientMixin {
                             decoration: InputDecoration(
                               labelText: 'Description',
                               isDense: true,
-                              hintText: 'Enter Description Here',
+                              hintText: '',
                               floatingLabelBehavior:
                                   FloatingLabelBehavior.always,
                               border: OutlineInputBorder(),
-                              filled: true,
+                              // filled: true,
                               fillColor: mycolor.withOpacity(0.06),
                             ),
                           ),
@@ -228,12 +228,12 @@ class _OthersState extends State<Others> with AutomaticKeepAliveClientMixin {
                     showInDialog(context,
                         builder: (context) => SignatureField(
                               onSignatureChanged: (signature) async {
-                             setState(() {
+                                setState(() {
                                   _signatureImage = signature;
                                 });
                                 String base64Image = 'data:image/png;base64,' +
                                     base64Encode(_signatureImage!);
-                             
+
                                 widget.onValueChanged2(base64Image);
                                 // print('Signature saved');
                                 Navigator.pop(context);
