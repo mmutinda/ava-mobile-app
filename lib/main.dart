@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:isuze_pqcs/common/constants.dart';
-import 'package:isuze_pqcs/common/HomePage.dart';
+import 'package:isuze_pqcs/HomePage.dart';
 import 'package:isuze_pqcs/pages/login/login.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -19,7 +19,6 @@ Future<void> main() async {
 
 class MyApp extends StatelessWidget {
   final userdata;
-
   const MyApp({super.key, this.userdata});
 
   // This widget is the root of your application.

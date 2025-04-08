@@ -170,7 +170,7 @@ class _TraceableQuestionState extends State<TraceableQuestion>
             decoration: InputDecoration(
               labelText: 'Input',
               isDense: true,
-              hintText: 'Enter input Here',
+              hintText: '',
               floatingLabelBehavior: FloatingLabelBehavior.always,
               border: OutlineInputBorder(),
               suffixIcon: Padding(

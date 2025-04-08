@@ -246,10 +246,12 @@ class _ScanningState extends State<Scanning> {
           insetAnimCurve: Curves.easeInOut,
         );
 
-        pr.show();
+        EasyLoading.show(
+            status: "Loading Categories...",
+            maskType: EasyLoadingMaskType.black);
 
         fetchproduct(sku).then((res) {
-          pr.hide().whenComplete(() {
+          EasyLoading.dismiss().whenComplete(() {
             res == null
                 ? null
                 : res["data"] == null
@@ -271,8 +273,6 @@ class _ScanningState extends State<Scanning> {
                                 errorMessage:
                                     res["data"]['currentposion'].toString()),
                             dialogAnimation: DialogAnimation.SLIDE_TOP_BOTTOM)
-                        // : Blank(res: res).launch(context,
-                        //     pageRouteAnimation: PageRouteAnimation.Slide);
                         : QcCategories(
                             ShopId: widget.shopId,
                             res: res,

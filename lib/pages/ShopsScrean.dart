@@ -7,6 +7,7 @@ import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/models/shops.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/scanning.dart';
+import 'package:isuze_pqcs/services/sqlite_db_helper.dart';
 import 'package:isuze_pqcs/widgets/shops.dart';
 
 import 'package:nb_utils/nb_utils.dart';
@@ -43,64 +44,124 @@ class _ShopsScreanState extends State<ShopsScrean> {
 
   Future<void> fetchData() async {
     print("Fetching Data...");
-    setState(() {
-      isLoading = true;
-    });
+    // setState(() {
+    //   isLoading = true;
+    // });
+    // Step 1: Load from SQLite first
+    List<shops> cachedShops = await DBHelper.getCachedShops();
     EasyLoading.show(
-        status: "Loading Shops...", maskType: EasyLoadingMaskType.black);
+      status: "Loading Shops...",
+      maskType: EasyLoadingMaskType.black,
+    );
+
+    if (cachedShops.isNotEmpty) {
+      setState(() {
+        shop = cachedShops;
+        message = '';
+      });
+      EasyLoading.dismiss(); // Always dismiss loader
+    }
 
     var url = "${Api.api_url}home";
-    print("API URL: $url");
-
+    print(url);
     try {
       var response = await httpget(url, user['data']['token'], context);
 
-      if (response == null) {
-        print("No Internet Connection");
-        setState(() {
-          isLoading = false;
-          message = "No Internet Connection";
-        });
-        EasyLoading.dismiss();
-        return;
-      }
-
-      if (response['success'] && response['data'] != null) {
+      if (response != null && response['success'] && response['data'] != null) {
         List<dynamic> responseData = response['data']['shop'];
-
         List<shops> fetchedShops = responseData.map((shopData) {
           return shops.fromJson(shopData);
         }).toList();
 
-        setState(() {
-          shop = fetchedShops;
-          isLoading = false;
-          message = '';
-        });
-        if (shop.isEmpty) {
+        if (fetchedShops.isNotEmpty) {
+          setState(() {
+            shop = fetchedShops;
+            message = '';
+          });
+          await DBHelper.insertShops(fetchedShops); // Update SQLite
+        } else {
           setState(() {
             message = "No Shops Found";
           });
         }
-
-        EasyLoading.dismiss();
+        EasyLoading.dismiss(); // Always dismiss loader
       } else {
         setState(() {
-          isLoading = false;
-
           message = response['msg'] ?? "Failed to fetch data";
         });
-        EasyLoading.dismiss();
+        EasyLoading.dismiss(); // Always dismiss loader
       }
     } catch (e) {
-      setState(() {
-        isLoading = false;
-        message = "Network Problem";
-      });
-      EasyLoading.dismiss();
+      EasyLoading.dismiss(); // Always dismiss loaders
       print("Error fetching data: $e");
+      if (cachedShops.isEmpty) {
+        setState(() {
+          message = "Network Problem";
+        });
+      }
     }
   }
+
+  // Future<void> fetchData() async {
+  //   print("Fetching Data...");
+  //   setState(() {
+  //     isLoading = true;
+  //   });
+  //   EasyLoading.show(
+  //       status: "Loading Shops...", maskType: EasyLoadingMaskType.black);
+
+  //   var url = "${Api.api_url}home";
+  //   print("API URL: $url");
+
+  //   try {
+  //     var response = await httpget(url, user['data']['token'], context);
+
+  //     if (response == null) {
+  //       print("No Internet Connection");
+  //       setState(() {
+  //         isLoading = false;
+  //         message = "No Internet Connection";
+  //       });
+  //       EasyLoading.dismiss();
+  //       return;
+  //     }
+
+  //     if (response['success'] && response['data'] != null) {
+  //       List<dynamic> responseData = response['data']['shop'];
+
+  //       List<shops> fetchedShops = responseData.map((shopData) {
+  //         return shops.fromJson(shopData);
+  //       }).toList();
+
+  //       setState(() {
+  //         shop = fetchedShops;
+  //         isLoading = false;
+  //         message = '';
+  //       });
+  //       if (shop.isEmpty) {
+  //         setState(() {
+  //           message = "No Shops Found";
+  //         });
+  //       }
+
+  //       EasyLoading.dismiss();
+  //     } else {
+  //       setState(() {
+  //         isLoading = false;
+
+  //         message = response['msg'] ?? "Failed to fetch data";
+  //       });
+  //       EasyLoading.dismiss();
+  //     }
+  //   } catch (e) {
+  //     setState(() {
+  //       isLoading = false;
+  //       message = "Network Problem";
+  //     });
+  //     EasyLoading.dismiss();
+  //     print("Error fetching data: $e");
+  //   }
+  // }
 
   @override
   void dispose() {
@@ -112,10 +173,10 @@ class _ShopsScreanState extends State<ShopsScrean> {
 
   @override
   Widget build(BuildContext context) {
-  
+    // print(shop);
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Shops"),
+        title: Text("Shops", style: TextStyle(fontWeight: FontWeight.w600)),
       ),
       body: Padding(
         padding: const EdgeInsets.all(10.0),

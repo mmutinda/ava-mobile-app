@@ -40,10 +40,10 @@ class _QCDefectsPageState extends State<QCDefectsPage> {
 
   Future<void> fetchData() async {
     setState(() {
-      isLoading = true;
+      isLoading = data.isEmpty ? true : false;
     });
     var url = "${Api.api_url}qdefects/${widget.vehileId}";
-    // print(url);
+    print(url);
 
     try {
       var response = await httpget(url, user['data']['token'], context);
@@ -62,6 +62,12 @@ class _QCDefectsPageState extends State<QCDefectsPage> {
           isLoading = false;
           message = '';
         });
+
+        if (data.isEmpty) {
+          setState(() {
+            message = "no any deffects found";
+          });
+        }
       } else {
         // Handle other scenarios
         setState(() {

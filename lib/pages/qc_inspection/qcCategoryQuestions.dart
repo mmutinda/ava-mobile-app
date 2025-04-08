@@ -355,7 +355,13 @@ class _QcCategoriesState extends State<QcCategories> {
 
     if (response['success'] != null) {
       if (response['success']) {
-        ShopsScrean().launch(context, isNewTask: true);
+        // ShopsScrean().launch(context, isNewTask: true,);
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => ShopsScrean()),
+          (route) => route
+              .isFirst, // Keeps only the first route (Home screen) in the stack
+        );
         awesomeTopSnackbar(
           context,
           "${response["msg"]}",

@@ -86,7 +86,7 @@ class _NumericQuestionState extends State<NumericQuestion>
               labelText: 'Input',
               floatingLabelBehavior: FloatingLabelBehavior.always,
               isDense: true,
-              hintText: 'Enter input Here',
+              hintText: '',
               border: OutlineInputBorder(),
               suffixIcon: Padding(
                 padding: EdgeInsets.all(8.0),
@@ -151,12 +151,12 @@ class _NumericQuestionState extends State<NumericQuestion>
                     showInDialog(context,
                         builder: (context) => SignatureField(
                               onSignatureChanged: (signature) async {
-                               setState(() {
+                                setState(() {
                                   _signatureImage = signature;
                                 });
                                 String base64Image = 'data:image/png;base64,' +
                                     base64Encode(_signatureImage!);
-                             
+
                                 widget.onValueChanged2(base64Image);
                                 // print('Signature saved');
                                 Navigator.pop(context);

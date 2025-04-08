@@ -1,7 +1,7 @@
 class shops {
-  final String id;
-  final String name;
-  final String number;
+  final id;
+  final name;
+  final number;
 
   shops({
     required this.id,
@@ -12,8 +12,15 @@ class shops {
   factory shops.fromJson(Map<String, dynamic> json) {
     return shops(
       id: json['id'].toString(),
-      name: json['shop_name'],
+      name: json['shop_name'].toString(),
       number: "${json['unitmovement'].length}",
     );
+  }
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'number': number,
+    };
   }
 }

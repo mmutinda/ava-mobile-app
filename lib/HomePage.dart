@@ -1,5 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
+import 'package:isuze_pqcs/RunningShopsDashboardWidget.dart';
+import 'package:isuze_pqcs/common/constants.dart';
+import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/slider.dart';
 import 'package:isuze_pqcs/pages/profile_screen.dart';
 import 'package:isuze_pqcs/pages/ShopsScrean.dart';
@@ -14,6 +19,20 @@ class HomeScrean extends StatefulWidget {
 class _HomeScreanState extends State<HomeScrean> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _selectedPage = 0;
+  Map<String, dynamic> user = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final data = await getuserdata();
+    setState(() {
+      user = jsonDecode(data);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,12 +78,12 @@ class _HomeScreanState extends State<HomeScrean> {
                     backgroundImage: AssetImage("images/profile1.jpg"),
                   ),
                   SizedBox(height: 10),
-                  Text("Admin PQCS",
+                  Text("${user['data']['name']}",
                       style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
                           color: Colors.white)),
-                  Text("admin@admin.com",
+                  Text("${user['data']['email']}",
                       style: TextStyle(fontSize: 14, color: Colors.white70)),
                 ],
               ),
@@ -77,14 +96,14 @@ class _HomeScreanState extends State<HomeScrean> {
                   singleDrawerItem(
                       FeatherIcons.calendar, "Scheduled Units", 1, theme),
                   singleDrawerItem(FeatherIcons.shoppingBag, "SHOPS", 2, theme),
-                  singleDrawerItem(
-                      FeatherIcons.checkCircle, "Actions", 3, theme),
+                  // singleDrawerItem(
+                  //     FeatherIcons.checkCircle, "Actions", 3, theme),
                   Divider(),
                   singleDrawerItem(
                       FeatherIcons.userCheck, "Attendance", 4, theme),
                   Divider(),
-                  singleDrawerItem(FeatherIcons.alertCircle,
-                      "Actions to Quality Defects", 10, theme),
+                  // singleDrawerItem(FeatherIcons.alertCircle,
+                  //     "Actions to Quality Defects", 10, theme),
                   singleDrawerItem(FeatherIcons.user, "Profile", 11, theme),
                   singleDrawerItem(FeatherIcons.helpCircle, "Help", 13, theme),
                 ],
@@ -96,11 +115,8 @@ class _HomeScreanState extends State<HomeScrean> {
       body: Column(
         children: [
           BeautySlider(items: sliderItems),
-          Expanded(
-            child: Center(
-              child: Text("Dashboard"),
-            ),
-          )
+          SizedBox(height: 10),
+          Expanded(child: RunningShopsDashboardWidget()),
         ],
       ),
     );
@@ -134,33 +150,40 @@ class _HomeScreanState extends State<HomeScrean> {
               //   context,
               //   MaterialPageRoute(builder: (context) => DashboardScreen()),
               // );
+
               break;
             case 1:
               SCheduleUnits().launch(context,
                   pageRouteAnimation: PageRouteAnimation.Slide);
               break;
             case 2:
+
               // Navigator.push(
               //   context,
               //   MaterialPageRoute(builder: (context) => ShopsScreen()),
               // );
               ShopsScrean().launch(context,
                   pageRouteAnimation: PageRouteAnimation.Slide);
-
               break;
             case 3:
+              toasty(context, "comming soon",
+                  bgColor: mycolor, textColor: white);
               // Navigator.push(
               //   context,
               //   MaterialPageRoute(builder: (context) => ActionsScreen()),
               // );
               break;
             case 4:
+              toasty(context, "comming soon",
+                  bgColor: mycolor, textColor: white);
               // Navigator.push(
               //   context,
               //   MaterialPageRoute(builder: (context) => AttendanceScreen()),
               // );
               break;
             case 10:
+              toasty(context, "comming soon",
+                  bgColor: mycolor, textColor: white);
               // Navigator.push(
               //   context,
               //   MaterialPageRoute(builder: (context) => QualityDefectsScreen()),
@@ -173,6 +196,8 @@ class _HomeScreanState extends State<HomeScrean> {
               );
               break;
             case 13:
+              toasty(context, "comming soon",
+                  bgColor: mycolor, textColor: white);
               // Navigator.push(
               //   context,
               //   MaterialPageRoute(builder: (context) => HelpScreen()),

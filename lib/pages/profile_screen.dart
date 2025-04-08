@@ -188,14 +188,14 @@ class _ProfileTabState extends State<ProfileTab> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  "${user["user"]?["first_name"] ?? ''} ${user["user"]?["last_name"] ?? 'User Name'}",
+                  "${user["data"]?["name"] ?? ''}",
                   style: TextStyle(fontWeight: FontWeight.w900, fontSize: 26),
                 )
               ],
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: [Text("${user["user"]?["email"] ?? "Email"}")],
+              children: [Text("${user["data"]?["email"] ?? ""}")],
             ),
             const SizedBox(
               height: 15,
@@ -204,9 +204,9 @@ class _ProfileTabState extends State<ProfileTab> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  "${user["user"]?["role"]?["name"] ?? "User Role"}",
+                  "${user["data"]['username'] ?? ""}",
                   style: TextStyle(fontSize: 20),
-                )
+                ),
               ],
             ),
             const SizedBox(

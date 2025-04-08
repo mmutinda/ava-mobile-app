@@ -63,6 +63,8 @@ dependencies:
   overlay_loading_progress: ^1.0.0
   flutter_easyloading: ^3.0.5
   image_picker: ^1.1.2
+  sqflite: ^2.4.1
+  path: ^1.9.0
 
 dev_dependencies:
   flutter_test:

@@ -103,17 +103,26 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                   : Column(
                       children: [
                         if (Category['imageUri'].toString() !=
-                                'http://172.16.16.57/upload/default.jpg' &&
+                                '${Api.main_url}/upload/default.jpg' &&
                             Category['imageUri'].toString() != 'null')
                           Container(
-                            height: 150,
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(20),
                               child: Image.network(
                                 Category['imageUri'].toString(),
+                                height: 150,
+                                width: double.infinity,
                                 fit: BoxFit.fill,
-
-                                //
+                                errorBuilder: (context, error, stackTrace) {
+                                  return SizedBox.shrink();
+                                },
+                                loadingBuilder:
+                                    (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return const Center(
+                                    child: CircularProgressIndicator(),
+                                  );
+                                },
                               ),
                             ),
                           ),
