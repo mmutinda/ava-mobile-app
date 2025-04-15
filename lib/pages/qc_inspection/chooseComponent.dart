@@ -174,9 +174,7 @@ class _ChooseComponentState extends State<ChooseComponent> {
                     gap(),
                     TextFormField(
                       maxLines: null,
-                      enabled: widget.route_id == '4' || widget.route_id == '5'
-                          ? true
-                          : false,
+                      enabled: [4, 5].contains(int.tryParse(widget.route_id)),
                       controller: inputController,
                       decoration: InputDecoration(
                         labelText: 'Job No',

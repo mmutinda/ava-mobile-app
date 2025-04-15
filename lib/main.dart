@@ -30,7 +30,6 @@ class MyApp extends StatelessWidget {
       builder: EasyLoading.init(), // ✅ Initialize EasyLoading here
       theme: ThemeData(
         // scaffoldBackgroundColor: bgColor,
-
         scaffoldBackgroundColor: Colors.grey.shade100,
         appBarTheme: AppBarTheme(
           centerTitle: true,

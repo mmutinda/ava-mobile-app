@@ -37,61 +37,116 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
     // fetchData(); // Fetch data when the page is initialized
   }
 
+  // Future<void> fetchData() async {
+  //   setState(() {
+  //     isLoading = vehicles.isEmpty ? true : false;
+  //     message = '';
+  //   });
+  //   if (vehicles.isEmpty) {
+  //     EasyLoading.show(
+  //         status: "Loading sheduled units...",
+  //         maskType: EasyLoadingMaskType.black);
+  //   } else {
+  //     EasyLoading.dismiss(); // Dismiss if vehicles are loaded
+  //   }
+
+  //   var url = "${Api.api_url}sheduledunits";
+
+  //   try {
+  //     var response = await httpget(url, user['data']['token'], context);
+  //     // log(jsonEncode(response));
+  //     if (response == null) {
+  //       print("No Internet");
+  //       // Handle no internet scenario
+  //       message = 'Something Wrong, or check your Internet Connections';
+  //       EasyLoading.dismiss();
+  //       return;
+  //     }
+
+  //     if (response['success'] && response['data'] != null) {
+  //       List<dynamic> responseData = response['data'];
+
+  //       List<Vehicle> fetchedVehicles = responseData.map((vehicleData) {
+  //         return Vehicle.fromJson(vehicleData);
+  //       }).toList();
+
+  //       setState(() {
+  //         vehicles = fetchedVehicles;
+  //         isLoading = false;
+  //         message = '';
+  //       });
+  //       EasyLoading.dismiss();
+  //     } else {
+  //       // Handle other scenarios
+  //       setState(() {
+  //         isLoading = false;
+  //         message = '${response['msg']}';
+  //       });
+  //       EasyLoading.dismiss();
+  //     }
+  //   } catch (e) {
+  //     setState(() {
+  //       isLoading = false;
+  //       message = 'Network Problem';
+  //     });
+  //     EasyLoading.dismiss();
+  //     // message = '${"Network Problem"}';
+  //     print('Error fetching data: $e');
+  //   }
+  // }
   Future<void> fetchData() async {
-    setState(() {
-      isLoading = vehicles.isEmpty ? true : false;
-      message = '';
-    });
-    if (vehicles.isEmpty) {
+    final shouldShowLoading = vehicles.isEmpty;
+
+    if (shouldShowLoading) {
       EasyLoading.show(
-          status: "Loading sheduled units...",
-          maskType: EasyLoadingMaskType.black);
-    } else {
-      EasyLoading.dismiss(); // Dismiss if vehicles are loaded
+        status: "Loading scheduled units...",
+        maskType: EasyLoadingMaskType.black,
+      );
     }
 
-    var url = "${Api.api_url}sheduledunits";
+    setState(() {
+      isLoading = shouldShowLoading;
+      message = '';
+    });
+
+    final url = "${Api.api_url}sheduledunits";
 
     try {
-      var response = await httpget(url, user['data']['token'], context);
-      log(jsonEncode(response));
+      final response = await httpget(url, user['data']['token'], context);
+
       if (response == null) {
-        print("No Internet");
-        // Handle no internet scenario
-        message = 'Something Wrong, or check your Internet Connections';
+        setState(() {
+          isLoading = false;
+          message = 'Something went wrong. Check your internet connection.';
+        });
         EasyLoading.dismiss();
         return;
       }
 
       if (response['success'] && response['data'] != null) {
-        List<dynamic> responseData = response['data'];
-
-        List<Vehicle> fetchedVehicles = responseData.map((vehicleData) {
-          return Vehicle.fromJson(vehicleData);
-        }).toList();
+        final List<Vehicle> fetchedVehicles = (response['data'] as List)
+            .map((vehicleData) => Vehicle.fromJson(vehicleData))
+            .toList();
 
         setState(() {
           vehicles = fetchedVehicles;
           isLoading = false;
           message = '';
         });
-        EasyLoading.dismiss();
       } else {
-        // Handle other scenarios
         setState(() {
           isLoading = false;
-          message = '${response['msg']}';
+          message = response['msg'] ?? 'Unexpected error';
         });
-        EasyLoading.dismiss();
       }
     } catch (e) {
       setState(() {
         isLoading = false;
-        message = 'Network Problem';
+        message = 'Network problem: $e';
       });
-      EasyLoading.dismiss();
-      // message = '${"Network Problem"}';
       print('Error fetching data: $e');
+    } finally {
+      EasyLoading.dismiss();
     }
   }
 
@@ -108,7 +163,9 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
   bool _isSearching = false;
   @override
   Widget build(BuildContext context) {
-    // print(user['data']['token']);
+    vehicles.sort((a, b) =>
+        DateTime.parse(b.created_at).compareTo(DateTime.parse(a.created_at)));
+
     Widget _buildSearchField() {
       return TextField(
         autofocus: true,
@@ -182,87 +239,115 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
                     return Column(
                       children: [
                         SizedBox(height: 5),
-                        Container(
-                          padding: EdgeInsets.all(12),
-                          decoration: boxDecoration(
-                            radius: 10,
-                            showShadow: true,
-                            bgColor: Colors.white,
-                          ),
-                          child: ListTile(
-                            contentPadding: EdgeInsets.all(0),
-                            leading: CircleAvatar(
-                              backgroundColor: Color.fromARGB(255, 168, 88, 32),
-                              foregroundColor: Colors.white,
-                              child: Text("${index + 1}"),
+                        Stack(children: [
+                          Container(
+                            padding: EdgeInsets.all(12),
+                            decoration: boxDecoration(
+                              radius: 10,
+                              showShadow: true,
+                              bgColor: Colors.white,
                             ),
-                            title: Text(
-                              vehicles[index].model,
-                              style: TextStyle(
-                                  color: Colors.amber[900],
-                                  fontWeight: FontWeight.bold),
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('VIN: ${vehicles[index].vin}'),
-                                Row(
-                                  children: [
-                                    Text('lOT: ${vehicles[index].lot}'),
-                                    width(),
-                                    Text('JOB: ${vehicles[index].job}'),
-                                  ],
-                                ),
-                                Row(
-                                  children: [
-                                    Text('UNIT REMAINING:'),
-                                    SizedBox(width: 5),
-                                    Text(
-                                      '${UnitRemaining}',
+                            child: ListTile(
+                              contentPadding: EdgeInsets.all(0),
+                              leading: CircleAvatar(
+                                backgroundColor:
+                                    Color.fromARGB(255, 168, 88, 32),
+                                foregroundColor: Colors.white,
+                                child: Text("${index + 1}"),
+                              ),
+                              title: Text(
+                                vehicles[index].model,
+                                style: TextStyle(
+                                    color: Colors.amber[900],
+                                    fontWeight: FontWeight.bold),
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('VIN: ${vehicles[index].vin}'),
+                                  // Text('VIN: ${vehicles[index].vin}'),
+                                  Row(
+                                    children: [
+                                      Text('lOT: ${vehicles[index].lot}'),
+                                      width(),
+                                      Text('JOB: ${vehicles[index].job}'),
+                                    ],
+                                  ),
+                                  Row(
+                                    children: [
+                                      Text('UNIT REMAINING:'),
+                                      SizedBox(width: 5),
+                                      Text(
+                                        '${UnitRemaining}',
+                                        style: TextStyle(
+                                          color: Colors.amber[900],
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                              trailing: Container(
+                                  decoration: BoxDecoration(
+                                      border: Border.all(color: categoryColor),
+                                      borderRadius: BorderRadius.only(
+                                          topRight: Radius.circular(10))),
+                                  child: TextButton(
+                                    onPressed: () {
+                                      showInDialog(context,
+                                              builder: (context) =>
+                                                  ChooseComponent(
+                                                    vehicle_id:
+                                                        vehicles[index].id,
+                                                    job_no: vehicles[index].job,
+                                                    route_id:
+                                                        vehicles[index].route,
+                                                  ),
+                                              dialogAnimation:
+                                                  DialogAnimation.SCALE)
+                                          .then((value) {
+                                        fetchData();
+                                        setState(() {});
+                                      });
+                                    },
+                                    child: Text(
+                                      "SELECT",
                                       style: TextStyle(
-                                        color: Colors.amber[900],
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                  ],
-                                ),
-                              ],
+                                  )),
+                              onTap: () {
+                                // Navigate to vehicle details page passing the selected vehicle
+                              },
                             ),
-                            trailing: Container(
-                                decoration: BoxDecoration(
-                                    border: Border.all(color: categoryColor),
-                                    borderRadius: BorderRadius.only(
-                                        topRight: Radius.circular(10))),
-                                child: TextButton(
-                                  onPressed: () {
-                                    showInDialog(context,
-                                            builder: (context) =>
-                                                ChooseComponent(
-                                                  vehicle_id:
-                                                      vehicles[index].id,
-                                                  job_no: vehicles[index].job,
-                                                  route_id:
-                                                      vehicles[index].route,
-                                                ),
-                                            dialogAnimation:
-                                                DialogAnimation.SCALE)
-                                        .then((value) {
-                                      fetchData();
-                                      setState(() {});
-                                    });
-                                  },
-                                  child: Text(
-                                    "SELECT",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                )),
-                            onTap: () {
-                              // Navigate to vehicle details page passing the selected vehicle
-                            },
                           ),
-                        ),
+
+                          // 🔷 Badge (top-right)
+                          Positioned(
+                            right: 10,
+                            top: 0,
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: vehicles[index].customer_name != null
+                                    ? Colors.amber[900]
+                                    : null,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                vehicles[index].customer_name ?? '',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ]),
                         SizedBox(height: 10),
                       ],
                     );

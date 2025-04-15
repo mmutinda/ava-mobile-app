@@ -1,8 +1,10 @@
 class Vehicle {
   final String model;
+  final customer_name;
   final String vin;
   final String id;
   final String lot;
+  final String created_at;
   final String job;
   final String route;
   final String component_moved;
@@ -12,9 +14,11 @@ class Vehicle {
 
   Vehicle({
     required this.model,
+    required this.customer_name,
     required this.vin,
     required this.id,
     required this.lot,
+    required this.created_at,
     required this.job,
     required this.route,
     required this.component_moved,
@@ -26,9 +30,12 @@ class Vehicle {
   factory Vehicle.fromJson(Map<String, dynamic> json) {
     return Vehicle(
       model: json['model']['model_name'].toString(),
+      customer_name:
+          json['client_id'] != null ? json['client']['name'].toString() : null,
       vin: json['vin_no'].toString(),
       id: json['id'].toString(),
       lot: json['lot_no'].toString(),
+      created_at: json['created_at'].toString(),
       job: json['job_no'].toString(),
       route: json['route'].toString(),
       component_moved: json['component_moved'].toString(),
