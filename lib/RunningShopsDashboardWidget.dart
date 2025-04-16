@@ -99,11 +99,56 @@ class _RunningShopsDashboardWidgetState
       return const Center(child: CircularProgressIndicator());
     }
     if (message.isNotEmpty) {
-      return Text(message, style: TextStyle(color: Colors.red));
+      // return Text(message, style: TextStyle(color: Colors.red));
+      return Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                message,
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red),
+              ),
+              IconButton(
+                icon: Icon(Icons.refresh),
+                onPressed: () {
+                  fetchShops();
+                },
+              ),
+            ],
+          ),
+        ],
+      );
     }
 
     if (runningShops.isEmpty) {
-      return const Center(child: Text("No running shops"));
+      return Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                "No running shops",
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red),
+              ),
+              IconButton(
+                icon: Icon(Icons.refresh),
+                onPressed: () {
+                  fetchShops();
+                },
+              ),
+            ],
+          ),
+        ],
+      );
     }
 
     return Column(

@@ -204,7 +204,7 @@ class _ProfileTabState extends State<ProfileTab> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  "${user["data"]['username'] ?? ""}",
+                  "${user["data"]?['username'] ?? ""}",
                   style: TextStyle(fontSize: 20),
                 ),
               ],

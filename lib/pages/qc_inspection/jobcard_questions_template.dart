@@ -497,37 +497,72 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
     return responsedata;
   }
 
-  Future fetchQuestions() async {
-    ProgressDialog pr = ProgressDialog(context,
-        type: ProgressDialogType.normal, showLogs: true, isDismissible: true);
-    pr.style(message: 'Fetching questions...');
+  Future<void> fetchQuestions() async {
     EasyLoading.show(
-        status: "Loading Questions...", maskType: EasyLoadingMaskType.black);
-    String url =
+      status: "Loading Questions...",
+      maskType: EasyLoadingMaskType.black,
+    );
+
+    final url =
         "${Api.api_url}quiz/${widget.query_id}/${widget.vehicle_id}/${widget.shop_id}";
-    print(" fetching question url");
-    print(url);
+    print("Fetching questions from: $url");
 
-    var responseData = await httpget(url, user['data']["token"], context);
+    final responseData = await httpget(url, user['data']["token"], context);
 
-    // log(jsonEncode(responseData['data']['query']));
-    // print(responseData['data']);
+    EasyLoading.dismiss(); // Dismiss once, outside branching
 
-    if (responseData != null) {
-      if (responseData["data"] != null) {
-        EasyLoading.dismiss().whenComplete(() {
-          setState(() {
-            // question = responseData["data"];
-            questions = responseData["data"]["query"];
-            Category = responseData["data"]["category"];
-          });
-        });
-      } else {
-        EasyLoading.dismiss().whenComplete(() {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(snackBar(responseData["message"], Colors.red[500]));
-        });
-      }
+    if (responseData == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        snackBar("Failed to fetch data", Colors.red[500]),
+      );
+      return;
+    }
+
+    final data = responseData["data"];
+    if (data != null) {
+      setState(() {
+        questions = data["query"] ?? [];
+        Category = data["category"];
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        snackBar(
+            responseData["message"] ?? "Unexpected error", Colors.red[500]),
+      );
     }
   }
+
+  // Future fetchQuestions() async {
+  //   ProgressDialog pr = ProgressDialog(context,
+  //       type: ProgressDialogType.normal, showLogs: true, isDismissible: true);
+  //   pr.style(message: 'Fetching questions...');
+  //   EasyLoading.show(
+  //       status: "Loading Questions...", maskType: EasyLoadingMaskType.black);
+  //   String url =
+  //       "${Api.api_url}quiz/${widget.query_id}/${widget.vehicle_id}/${widget.shop_id}";
+  //   print(" fetching question url");
+  //   print(url);
+
+  //   var responseData = await httpget(url, user['data']["token"], context);
+
+  //   // log(jsonEncode(responseData['data']['query']));
+  //   // print(responseData['data']);
+
+  //   if (responseData != null) {
+  //     if (responseData["data"] != null) {
+  //       EasyLoading.dismiss().whenComplete(() {
+  //         setState(() {
+  //           // question = responseData["data"];
+  //           questions = responseData["data"]["query"];
+  //           Category = responseData["data"]["category"];
+  //         });
+  //       });
+  //     } else {
+  //       EasyLoading.dismiss().whenComplete(() {
+  //         ScaffoldMessenger.of(context)
+  //             .showSnackBar(snackBar(responseData["message"], Colors.red[500]));
+  //       });
+  //     }
+  //   }
+  // }
 }

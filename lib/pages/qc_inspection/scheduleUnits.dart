@@ -133,6 +133,12 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
           isLoading = false;
           message = '';
         });
+        if (vehicles.isEmpty) {
+          setState(() {
+            message = "No scheduled units found.";
+          });
+          EasyLoading.dismiss();
+        }
       } else {
         setState(() {
           isLoading = false;

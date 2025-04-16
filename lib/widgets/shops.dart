@@ -46,6 +46,7 @@ class ShopItems extends StatelessWidget {
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                 ),
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),

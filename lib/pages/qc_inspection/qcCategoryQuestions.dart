@@ -401,40 +401,46 @@ class _QcCategoriesState extends State<QcCategories> {
   String message = '';
   String datacheck = '';
   late bool defect_exist;
-
-  Future fetchCategories(id) async {
+  Future<void> fetchCategories(id) async {
     setState(() {
       message = '';
       isLoading = true;
+      isLoading2 = true;
     });
-    ProgressDialog pr = ProgressDialog(context,
-        type: ProgressDialogType.normal, showLogs: true, isDismissible: true);
 
-    // pr.show();
-    String url =
-        "${Api.api_url}${"quizcategory"}/${widget.ShopId}/${widget.res['data']['vehicledata']['model_id']}/${widget.res['data']['vehicledata']['id']}";
+    final url =
+        "${Api.api_url}quizcategory/${widget.ShopId}/${widget.res['data']['vehicledata']['model_id']}/${widget.res['data']['vehicledata']['id']}";
     print(url);
-    var responsedata = await httpget(url, user['data']["token"], context);
-    if (responsedata != null) {
-      if (responsedata["data"] != null) {
-        pr.hide().whenComplete(() {
-          setState(() {
-            categories = responsedata['data']["category"];
-            datacheck = responsedata['data']['datacheck'].toString();
-            defect_exist = responsedata['data']['defect_exist'];
-            isLoading = false;
-            isLoading2 = false;
-            message = '';
-          });
-        });
-      } else {
-        pr.hide().whenComplete(() {
-          setState(() {
-            isLoading = false;
-            message = '${responsedata["message"]}';
-          });
-        });
-      }
+
+    final responsedata = await httpget(url, user['data']["token"], context);
+
+    if (responsedata == null) {
+      setState(() {
+        message = 'Failed to load data.';
+        isLoading = false;
+        isLoading2 = false;
+      });
+      return;
+    }
+
+    final data = responsedata['data'];
+    if (data != null) {
+      final fetchedCategories = data["category"] ?? [];
+
+      setState(() {
+        categories = fetchedCategories;
+        datacheck = data['datacheck'].toString();
+        defect_exist = data['defect_exist'];
+        isLoading = false;
+        isLoading2 = false;
+        message = fetchedCategories.isEmpty ? 'No categories found' : '';
+      });
+    } else {
+      setState(() {
+        message = responsedata["message"] ?? 'Unknown error occurred';
+        isLoading = false;
+        isLoading2 = false;
+      });
     }
   }
 

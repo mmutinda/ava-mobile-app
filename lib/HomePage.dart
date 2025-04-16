@@ -74,10 +74,11 @@ class _HomeScreanState extends State<HomeScrean> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   CircleAvatar(
-                    radius: 30,
+                    radius: 40,
                     backgroundImage: AssetImage("images/profile1.jpg"),
                   ),
-                  SizedBox(height: 10),
+                  // SizedBox(height: 10),
+                  // SizedBox(height: 10),
                   Text("${user['data']?['name'] ?? ''}",
                       style: TextStyle(
                           fontSize: 18,
@@ -90,8 +91,12 @@ class _HomeScreanState extends State<HomeScrean> {
             ),
             Expanded(
               child: ListView(
+                padding: EdgeInsets.zero,
                 children: <Widget>[
                   singleDrawerItem(FeatherIcons.home, "Dashboard", 0, theme),
+                  Divider(),
+                  singleDrawerItem(
+                      FeatherIcons.truck, "Vehicle Receiving", 0, theme),
                   Divider(),
                   singleDrawerItem(
                       FeatherIcons.calendar, "Scheduled Units", 1, theme),
