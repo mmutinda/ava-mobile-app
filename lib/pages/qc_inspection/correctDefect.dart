@@ -515,7 +515,7 @@ class _CorrectDefectState extends State<CorrectDefect> {
                           print('${file.field}: ${file.filename}');
                         });
                       }
-                      print(responseData);
+                      log(jsonEncode(responseData));
                       if (responseData['success']) {
                         await progressDialog.hide();
 

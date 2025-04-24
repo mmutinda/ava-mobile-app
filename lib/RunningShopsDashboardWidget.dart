@@ -187,13 +187,7 @@ class _RunningShopsDashboardWidgetState
                 name: shop.name,
                 number: shop.number,
                 dividerColor: color,
-                onTap: () {
-                  toasty(
-                      context, "Navigate to the shop page to view the units.",
-                      bgColor: mycolor,
-                      textColor: Colors.white,
-                      gravity: ToastGravity.BOTTOM);
-                },
+                onTap: () {},
               );
             },
           ),

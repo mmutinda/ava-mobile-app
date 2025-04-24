@@ -135,7 +135,46 @@ Future uploadImagesWithToken(
     return 'Error uploading file: $error';
   }
 }
+Future uploadImagesWithToken2(
+    String vehicle_id, String url, List<File> images, String token) async {
+  var request = http.MultipartRequest('POST', Uri.parse(url));
+  // Add your headers, including the authorization token
+  request.headers.addAll({
+    'Accept': 'application/json',
+    'Content': 'application/json',
+    'Authorization': 'Bearer $token',
+  });
+  request.fields['vehicle_receiving_id'] = vehicle_id;
 
+  await Future.forEach(
+    images,
+    (file) async => {
+      request.files.add(
+        http.MultipartFile(
+          'images[]',
+          (http.ByteStream(file.openRead())).cast(),
+          await file.length(),
+          filename: file.path.split('/').last,
+        ),
+      )
+    },
+  );
+  try {
+    var response = await request.send();
+    var responseBody = await response.stream.bytesToString();
+    print(responseBody);
+    if (response.statusCode == 200) {
+      return {"status": response.statusCode, "message": 'Upload success'};
+    } else {
+      return {
+        "status": response.statusCode,
+        "message": 'Upload failed : ${responseBody}'
+      };
+    }
+  } catch (error) {
+    return 'Error uploading file: $error';
+  }
+}
 Future httpget(String url, token, BuildContext context) async {
   try {
     final response = await http.get(

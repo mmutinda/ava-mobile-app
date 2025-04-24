@@ -41,12 +41,12 @@ class DBHelper {
     ''');
 
       // Table 2: scheduledunits
-      await db.execute('''
-      CREATE TABLE scheduledunits (
-        id INTEGER PRIMARY KEY,
-        name TEXT,
-      )
-    ''');
+      //   await db.execute('''
+      //   CREATE TABLE scheduledunits (
+      //     id INTEGER PRIMARY KEY,
+      //     name TEXT,
+      //   )
+      // ''');
 
       // Table 3: Orders (example)
     });

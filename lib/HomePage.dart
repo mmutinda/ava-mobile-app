@@ -6,6 +6,8 @@ import 'package:isuze_pqcs/RunningShopsDashboardWidget.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/slider.dart';
+import 'package:isuze_pqcs/pages/Receiving/display_vehicles.dart';
+import 'package:isuze_pqcs/pages/Receiving/display_vehicles_dispatch.dart';
 import 'package:isuze_pqcs/pages/profile_screen.dart';
 import 'package:isuze_pqcs/pages/ShopsScrean.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/scheduleUnits.dart';
@@ -96,16 +98,18 @@ class _HomeScreanState extends State<HomeScrean> {
                   singleDrawerItem(FeatherIcons.home, "Dashboard", 0, theme),
                   Divider(),
                   singleDrawerItem(
-                      FeatherIcons.truck, "Vehicle Receiving", 0, theme),
+                      FeatherIcons.truck, "Vehicle Receiving", 5, theme),
+                  singleDrawerItem(
+                      FeatherIcons.image, "Receiving Images", 6, theme),
                   Divider(),
                   singleDrawerItem(
                       FeatherIcons.calendar, "Scheduled Units", 1, theme),
                   singleDrawerItem(FeatherIcons.shoppingBag, "SHOPS", 2, theme),
                   // singleDrawerItem(
                   //     FeatherIcons.checkCircle, "Actions", 3, theme),
-                  Divider(),
-                  singleDrawerItem(
-                      FeatherIcons.userCheck, "Attendance", 4, theme),
+                  // Divider(),
+                  // singleDrawerItem(
+                  //     FeatherIcons.userCheck, "Attendance", 4, theme),
                   Divider(),
                   // singleDrawerItem(FeatherIcons.alertCircle,
                   //     "Actions to Quality Defects", 10, theme),
@@ -146,11 +150,12 @@ class _HomeScreanState extends State<HomeScrean> {
           setState(() {
             _selectedPage = position;
           });
-          _scaffoldKey.currentState!.openEndDrawer();
+          // _scaffoldKey.currentState!.openEndDrawer();
 
           // Navigate based on selected position
           switch (position) {
             case 0:
+              _scaffoldKey.currentState!.openEndDrawer();
               // Navigator.pushReplacement(
               //   context,
               //   MaterialPageRoute(builder: (context) => DashboardScreen()),
@@ -185,6 +190,19 @@ class _HomeScreanState extends State<HomeScrean> {
               //   context,
               //   MaterialPageRoute(builder: (context) => AttendanceScreen()),
               // );
+              break;
+            case 5:
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => DisplayVehicles()),
+              );
+              break;
+            case 6:
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => DisplayVehiclesDispatch()),
+              );
               break;
             case 10:
               toasty(context, "comming soon",

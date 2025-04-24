@@ -15,7 +15,7 @@ import 'package:isuze_pqcs/pages/qc_inspection/routing_structure/numerical_quest
 import 'package:isuze_pqcs/pages/qc_inspection/routing_structure/others.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/routing_structure/single_question.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/routing_structure/traceable_question.dart';
-
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
 
 class JobCardQuestionsTemplate extends StatefulWidget {
@@ -43,6 +43,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
   Map<int, String> traceableValues = {};
   Map<int, String> openTextValues = {};
   Map<int, String> singleDescipTextValues = {};
+  Map<int, String> DescipTextValues = {};
   Map<int, String> numericValues = {};
   Map<int, String> singleValues = {};
   Map<int, String> singleDescripValues = {};
@@ -106,23 +107,27 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                 '${Api.main_url}/upload/default.jpg' &&
                             Category['imageUri'].toString() != 'null')
                           Container(
+                            height: 150,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              color:
+                                  Colors.grey[200], // background while loading
+                            ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(20),
-                              child: Image.network(
-                                Category['imageUri'].toString(),
-                                height: 150,
-                                width: double.infinity,
+                              child: CachedNetworkImage(
+                                imageUrl: Category['imageUri'].toString(),
                                 fit: BoxFit.fill,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return SizedBox.shrink();
-                                },
-                                loadingBuilder:
-                                    (context, child, loadingProgress) {
-                                  if (loadingProgress == null) return child;
-                                  return const Center(
-                                    child: CircularProgressIndicator(),
-                                  );
-                                },
+                                placeholder: (context, url) => const Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                                errorWidget: (context, url, error) => Container(
+                                  color: Colors.grey[300],
+                                  alignment: Alignment.center,
+                                  child: Icon(Icons.broken_image,
+                                      color: Colors.grey, size: 40),
+                                ),
                               ),
                             ),
                           ),
@@ -150,14 +155,14 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                     var qid = get['id'];
                                     setState(() {
                                       traceableValues[qid] = value;
-                                      print(traceableValues);
+                                      // print(traceableValues);
                                     });
                                   },
                                   onValueChanged2: (value) {
                                     var qid = get['id'];
                                     setState(() {
                                       traceableSignature[qid] = value;
-                                      print(traceableSignature);
+                                      // print(traceableSignature);
                                     });
                                   },
                                   question: get["query_name"] as String,
@@ -184,14 +189,14 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                       var qid = get['id'];
                                       setState(() {
                                         multipleValues[qid] = value;
-                                        print(multipleValues);
+                                        // print(multipleValues);
                                       });
                                     },
                                     onValueChanged2: (value) {
                                       var qid = get['id'];
                                       setState(() {
                                         traceableSignature[qid] = value;
-                                        print(traceableSignature);
+                                        // print(traceableSignature);
                                       });
                                     },
                                     initialRadioValue: answer_given != ''
@@ -209,26 +214,38 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                       var qid = get['id'];
                                       setState(() {
                                         numericValues[qid] = value;
-                                        print(numericValues);
+                                        // print(numericValues);
                                       });
                                     },
                                     onValueChanged2: (value) {
                                       var qid = get['id'];
                                       setState(() {
                                         traceableSignature[qid] = value;
-                                        print(traceableSignature);
+                                        // print(traceableSignature);
                                       });
                                     },
                                     question: get["query_name"] as String);
                               } else if (get["quiz_type"] == "single") {
                                 //single
                                 return SingleQuestion(
+                                    initialDecripValue:
+                                        get["defect_description"],
+                                    hasDescription:
+                                        get["additional_field"] as String,
+                                    index: index + 1,
                                     id: get['id'],
                                     onValueChanged: (value) {
                                       var qid = get['id'];
                                       setState(() {
                                         singleValues[qid] = value;
                                         print(singleValues);
+                                      });
+                                    },
+                                    onInputValueChanged: (value) {
+                                      var qid = get['id'];
+                                      setState(() {
+                                        DescipTextValues[qid] = value;
+                                        print(DescipTextValues);
                                       });
                                     },
                                     onValueChanged2: (value) {
@@ -251,21 +268,22 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                     var qid = get['id'];
                                     setState(() {
                                       singleDescipTextValues[qid] = value;
-                                      print(singleDescipTextValues);
+
+                                      // print(singleDescipTextValues);
                                     });
                                   },
                                   onValueChanged2: (value) {
                                     var qid = get['id'];
                                     setState(() {
                                       traceableSignature[qid] = value;
-                                      print(traceableSignature);
+                                      // print(traceableSignature);
                                     });
                                   },
                                   onRadioChanged: (value) {
                                     var qid = questions[index]['id'];
                                     setState(() {
                                       singleDescripCategory[qid] = value;
-                                      print(singleDescripCategory);
+                                      // print(singleDescripCategory);
                                     });
                                   },
                                   initialDecripValue:
@@ -339,6 +357,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                       "can_sign": quest['can_sign'],
                                       "answer_given": quest['answer_given'],
                                       "answer": '',
+                                      "defect_description": '',
                                       "defects": '',
                                       "signature":
                                           traceableSignature[questionId],
@@ -362,6 +381,12 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                       // Retrieve values from SingleQuestion
                                       String? value = singleValues[questionId];
                                       answer["answer"] = value;
+                                      String? valueInput =
+                                          DescipTextValues[questionId];
+
+                                      answer["defect_description"] = valueInput;
+                                      // print(
+                                      //     "-->${DescipTextValues[questionId]}");
                                     } else if (quest["quiz_type"] ==
                                         "numeric") {
                                       // Retrieve values from NumericQuestion
@@ -379,6 +404,9 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                     if (answer["answer"] != null) {
                                       answers.add(answer);
                                     }
+                                    // if (answer["defect_description"] != null) {
+                                    //   answers.add(answer);
+                                    // }
                                   }
 
                                   if (answers.isNotEmpty) {
@@ -493,7 +521,8 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
 
     var responsedata =
         await httppostwithtoken(url, user['data']["token"], payload, context);
-    log(jsonEncode(responsedata));
+    // log(jsonEncode(payload));
+    // log(jsonEncode(responsedata));
     return responsedata;
   }
 
