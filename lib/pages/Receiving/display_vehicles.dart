@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
-import 'package:isuze_pqcs/common/loader2.dart';
+import 'package:isuze_pqcs/common/loader2.dart' as loader2;
+import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/pages/Receiving/form_conversion_receiving.dart';
 import 'package:isuze_pqcs/pages/Receiving/vehicle_receiving_conversion.dart';
+import 'package:isuze_pqcs/pages/qc_inspection/scheduleUnits.dart';
 import 'package:nb_utils/nb_utils.dart';
 import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
 
@@ -112,7 +114,7 @@ class _DisplayVehiclesState extends State<DisplayVehicles> {
             child: isLoading
                 ? Center(child: CircularProgressIndicator())
                 : loadingText.isNotEmpty
-                    ? ErrorMessageWidget(
+                    ? loader2.ErrorMessageWidget(
                         errorMessage: loadingText,
                         onRetry: () {
                           fetchVehicles().then(
@@ -137,9 +139,9 @@ class _DisplayVehiclesState extends State<DisplayVehicles> {
                               return b['created_at'].compareTo(a['created_at']);
                             });
                             var vehicle = vehicles[index];
-                            var halModel = vehicle["product"]["hal_model"];
-                            var chasisNo = vehicles[index]["product"]['sku'];
-                            var regNo = vehicles[index]["product"]["name"];
+                            var vin_no = vehicle["vin_no"];
+                            var engine_no = vehicles[index]["engine_no"];
+                            var client = vehicles[index]["client"]["name"];
                             Color categoryColor = colors[index % colors.length];
                             // Check if the title contains the search text
                             // if (searchText.isNotEmpty &&
@@ -148,137 +150,241 @@ class _DisplayVehiclesState extends State<DisplayVehicles> {
                             //         .contains(searchText.toLowerCase()))||) {
                             //   return Container();
                             // }
-                            if (searchText.isNotEmpty) {
-                              bool chasisContainsSearchText = chasisNo
-                                  .toLowerCase()
-                                  .contains(searchText.toLowerCase());
-                              bool regContainsSearchText = regNo
-                                  .toLowerCase()
-                                  .contains(searchText.toLowerCase());
-
-                              if (!chasisContainsSearchText &&
-                                  !regContainsSearchText) {
-                                return Container();
-                              }
+                            if (searchText.isNotEmpty &&
+                                !(vin_no
+                                        .toLowerCase()
+                                        .contains(searchText.toLowerCase()) ||
+                                    engine_no
+                                        .toLowerCase()
+                                        .contains(searchText.toLowerCase()) ||
+                                    client
+                                        .toLowerCase()
+                                        .contains(searchText.toLowerCase()))) {
+                              return Container(); // Return an empty container if not matching
                             }
-
-                            return Padding(
-                              padding: const EdgeInsets.all(10),
-                              child: InkWell(
-                                onTap: () async {
-                                  final result = await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) =>
-                                            VehicleReceivingConversion(
+                            return Column(
+                              children: [
+                                SizedBox(height: 5),
+                                Stack(children: [
+                                  Container(
+                                    padding: EdgeInsets.all(12),
+                                    decoration: boxDecoration(
+                                      radius: 10,
+                                      showShadow: true,
+                                      bgColor: Colors.white,
+                                    ),
+                                    child: ListTile(
+                                      contentPadding: EdgeInsets.all(0),
+                                      leading: CircleAvatar(
+                                        backgroundColor:
+                                            Color.fromARGB(255, 168, 88, 32),
+                                        foregroundColor: Colors.white,
+                                        child: Text("${index + 1}"),
+                                      ),
+                                      title: Text(
+                                        vehicles[index]['model']?['model_name'],
+                                        style: TextStyle(
+                                            color: Colors.amber[900],
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                      subtitle: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                              'VIN: ${vehicles[index]['vin_no']}'),
+                                          // Text('VIN: ${vehicles[index].vin}'),
+                                          Row(
+                                            children: [
+                                              Text(
+                                                  'lOT: ${vehicles[index]['lot_no']}'),
+                                              width(),
+                                              // if (vehicles[index]['job_no'] !=
+                                              //     null)
+                                              Text(
+                                                  'JOB: ${vehicles[index]['job_no'] ?? 'N/A'}'),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                      trailing: Container(
+                                          decoration: BoxDecoration(
+                                              border: Border.all(
+                                                  color: categoryColor),
+                                              borderRadius: BorderRadius.only(
+                                                  topRight:
+                                                      Radius.circular(10))),
+                                          child: TextButton(
+                                            onPressed: () {},
+                                            child: Text(
+                                              "SELECT",
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          )),
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                VehicleReceivingConversion(
                                               type: "receive",
                                               vehicleId: vehicles[index]["id"],
                                               vehicleName: vehicles[index]
-                                                  ["product"]["name"],
-                                            )
-                                        // ? VehicleChecklistScreen()
-
-                                        ),
-                                  );
-                                  if (result != null) {
-                                    fetchVehicles();
-                                  }
-                                },
-                                child: Card(
-                                  color: Colors.white,
-                                  elevation: 3,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.fromLTRB(
-                                        20, 10, 0, 10),
-                                    child: Row(
-                                      children: [
-                                        CircleAvatar(
-                                          backgroundColor: categoryColor,
-                                          foregroundColor: Colors.white,
-                                          radius: 20,
-                                          child: Text(
-                                            "${index + 1}",
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
+                                                  ['model']?['model_name'],
                                             ),
                                           ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                  '${vehicles[index]["product"]["name"]}'),
-                                              Text(
-                                                "${vehicles[index]["product"]['sku']}",
-                                                style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                              ),
-                                              Text('${halModel["name"] ?? ''}'),
-                                            ],
-                                          ),
-                                        ),
-                                        Container(
-                                          margin: const EdgeInsets.only(
-                                              top: 10, bottom: 5, right: 5),
-                                          alignment: Alignment.center,
-                                          child: GestureDetector(
-                                            onTap: () async {
-                                              final result =
-                                                  await Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                    builder: (context) =>
-                                                        VehicleReceivingConversion(
-                                                          type: 'receive',
-                                                          vehicleId:
-                                                              vehicles[index]
-                                                                  ["id"],
-                                                          vehicleName: vehicles[
-                                                                      index]
-                                                                  ["product"]
-                                                              ["name"],
-                                                        )),
-                                              );
-                                              if (result != null) {
-                                                fetchVehicles();
-                                              }
-                                            },
-                                            child: Container(
-                                              padding: EdgeInsets.all(12),
-                                              decoration: BoxDecoration(
-                                                  border: Border.all(
-                                                      color: categoryColor),
-                                                  borderRadius:
-                                                      BorderRadius.only(
-                                                          topRight:
-                                                              Radius.circular(
-                                                                  10))),
-                                              child: Text(
-                                                "SELECT",
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            ),
-                                            // child: Icon(Icons.forward),
-                                            // child: Icon(Icons.forward),
-                                          ),
-                                        ),
-                                      ],
+                                        );
+                                      },
                                     ),
                                   ),
-                                ),
-                              ),
+
+                                  // 🔷 Badge (top-right)
+                                  Positioned(
+                                    right: 10,
+                                    top: 0,
+                                    child: Container(
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: vehicles[index]['client'] != null
+                                            ? Colors.amber[900]
+                                            : null,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        vehicles[index]['client']?['name'] ??
+                                            '',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ]),
+                                SizedBox(height: 10),
+                              ],
                             );
+                            // return Padding(
+                            //   padding: const EdgeInsets.all(10),
+                            //   child: InkWell(
+                            //     onTap: () async {
+                            //       final result = await Navigator.push(
+                            //         context,
+                            //         MaterialPageRoute(
+                            //             builder: (context) =>
+                            //                 VehicleReceivingConversion(
+                            //                   type: "receive",
+                            //                   vehicleId: vehicles[index]["id"],
+                            //                   vehicleName: vehicles[index]
+                            //                       ["product"]["name"],
+                            //                 )
+                            //             // ? VehicleChecklistScreen()
+
+                            //             ),
+                            //       );
+                            //       if (result != null) {
+                            //         fetchVehicles();
+                            //       }
+                            //     },
+                            //     child: Card(
+                            //       color: Colors.white,
+                            //       elevation: 3,
+                            //       shape: RoundedRectangleBorder(
+                            //         borderRadius: BorderRadius.circular(12),
+                            //       ),
+                            //       child: Padding(
+                            //         padding: const EdgeInsets.fromLTRB(
+                            //             20, 10, 0, 10),
+                            //         child: Row(
+                            //           children: [
+                            //             CircleAvatar(
+                            //               backgroundColor: categoryColor,
+                            //               foregroundColor: Colors.white,
+                            //               radius: 20,
+                            //               child: Text(
+                            //                 "${index + 1}",
+                            //                 style: const TextStyle(
+                            //                   fontWeight: FontWeight.bold,
+                            //                 ),
+                            //               ),
+                            //             ),
+                            //             const SizedBox(width: 12),
+                            //             Expanded(
+                            //               child: Column(
+                            //                 mainAxisAlignment:
+                            //                     MainAxisAlignment.center,
+                            //                 crossAxisAlignment:
+                            //                     CrossAxisAlignment.start,
+                            //                 children: [
+                            //                   Text(
+                            //                       '${vehicles[index]["product"]["name"]}'),
+                            //                   Text(
+                            //                     "${vehicles[index]["product"]['sku']}",
+                            //                     style: TextStyle(
+                            //                         fontWeight:
+                            //                             FontWeight.bold),
+                            //                   ),
+                            //                   Text('${halModel["name"] ?? ''}'),
+                            //                 ],
+                            //               ),
+                            //             ),
+                            //             Container(
+                            //               margin: const EdgeInsets.only(
+                            //                   top: 10, bottom: 5, right: 5),
+                            //               alignment: Alignment.center,
+                            //               child: GestureDetector(
+                            //                 onTap: () async {
+                            //                   final result =
+                            //                       await Navigator.push(
+                            //                     context,
+                            //                     MaterialPageRoute(
+                            //                         builder: (context) =>
+                            //                             VehicleReceivingConversion(
+                            //                               type: 'receive',
+                            //                               vehicleId:
+                            //                                   vehicles[index]
+                            //                                       ["id"],
+                            //                               vehicleName: vehicles[
+                            //                                           index]
+                            //                                       ["product"]
+                            //                                   ["name"],
+                            //                             )),
+                            //                   );
+                            //                   if (result != null) {
+                            //                     fetchVehicles();
+                            //                   }
+                            //                 },
+                            //                 child: Container(
+                            //                   padding: EdgeInsets.all(12),
+                            //                   decoration: BoxDecoration(
+                            //                       border: Border.all(
+                            //                           color: categoryColor),
+                            //                       borderRadius:
+                            //                           BorderRadius.only(
+                            //                               topRight:
+                            //                                   Radius.circular(
+                            //                                       10))),
+                            //                   child: Text(
+                            //                     "SELECT",
+                            //                     style: TextStyle(
+                            //                       fontWeight: FontWeight.bold,
+                            //                     ),
+                            //                   ),
+                            //                 ),
+                            //                 // child: Icon(Icons.forward),
+                            //                 // child: Icon(Icons.forward),
+                            //               ),
+                            //             ),
+                            //           ],
+                            //         ),
+                            //       ),
+                            //     ),
+                            //   ),
+                            // );
                           },
                         ),
                       )),
@@ -314,7 +420,7 @@ class _DisplayVehiclesState extends State<DisplayVehicles> {
       loadingText = '';
       isLoading = vehicles.isEmpty ? true : false;
     });
-    String url = "${Api.api_url}fetchVehicleReciving";
+    String url = "${Api.api_url}loaAPiShedulledUnits";
     print(url);
     ProgressDialog pr = ProgressDialog(context,
         type: ProgressDialogType.normal, isDismissible: true, showLogs: true);
@@ -331,48 +437,14 @@ class _DisplayVehiclesState extends State<DisplayVehicles> {
     );
 
     // pr.show();
-    var responsedata = await httpget(url, user["token"], context);
+    var responsedata = await httpget(url, user['data']["token"], context);
     // print(responsedata);
     if (responsedata != null) {
       pr.hide();
-      var responsedata = {
-        "status": "success",
-        "vehicles": [
-          {
-            "id": 1,
-            "created_at": "2025-04-22T10:20:30Z",
-            "product": {
-              "id": 101,
-              "name": "Toyota Hilux - T987XYZ",
-              "sku": "CHS123456",
-              "hal_model": {"id": 11, "name": "Hilux 2023"}
-            }
-          },
-          {
-            "id": 2,
-            "created_at": "2025-04-20T12:15:00Z",
-            "product": {
-              "id": 102,
-              "name": "Isuzu D-Max - T321ABC",
-              "sku": "CHS789012",
-              "hal_model": {"id": 12, "name": "D-Max V-Cross"}
-            }
-          },
-          {
-            "id": 3,
-            "created_at": "2025-04-21T08:45:10Z",
-            "product": {
-              "id": 103,
-              "name": "Ford Ranger - T654JKL",
-              "sku": "CHS345678",
-              "hal_model": {"id": 13, "name": "Ranger FX4"}
-            }
-          }
-        ]
-      };
+
       setState(() {
         isLoading = false;
-        vehicles = (responsedata["vehicles"] as List<dynamic>) ?? [];
+        vehicles = (responsedata["data"] as List<dynamic>) ?? [];
       });
     } else {
       pr.hide().whenComplete(() {
@@ -382,8 +454,6 @@ class _DisplayVehiclesState extends State<DisplayVehicles> {
         });
         toasty(context, "${responsedata["message"]}",
             bgColor: Colors.red, textColor: textWhite);
-        // ScaffoldMessenger.of(context).showSnackBar(
-        //     snackBar(responsedata["message"].toString(), Colors.red[500]));
       });
     }
     Future.delayed(const Duration(seconds: dismissseconds), () {

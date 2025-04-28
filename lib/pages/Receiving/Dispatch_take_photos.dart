@@ -201,7 +201,7 @@ class _Dispatch_take_photosState extends State<Dispatch_take_photos>
           Expanded(
             child: SizedBox(
               child: isLoading
-                  ? Center(child: CircularProgressIndicator())
+                  ? Center(child: SizedBox.shrink())
                   : loadingText.isNotEmpty
                       ? ErrorMessageWidget(
                           errorMessage: loadingText,

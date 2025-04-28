@@ -1,20 +1,18 @@
 import 'dart:async';
 import 'dart:convert';
-
-import 'package:awesome_dialog/awesome_dialog.dart';
+import 'dart:developer';
+import 'dart:io';
+import 'dart:math';
 import 'package:dropdown_textfield/dropdown_textfield.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:isuze_pqcs/common/api.dart';
-import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/loader2.dart';
 import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
 
 class Conversion_receive_form extends StatefulWidget {
- 
-
   @override
   State<Conversion_receive_form> createState() =>
       _Conversion_receive_formState();
@@ -23,45 +21,61 @@ class Conversion_receive_form extends StatefulWidget {
 class _Conversion_receive_formState extends State<Conversion_receive_form>
     with SingleTickerProviderStateMixin {
   var user = {};
-
   FocusNode searchFocusNode = FocusNode();
   FocusNode textFieldFocusNode = FocusNode();
-
- 
   late SingleValueDropDownController _carModel;
-  late SingleValueDropDownController _country;
+  late SingleValueDropDownController _customerModel;
   late TextEditingController _descriptionController;
   late TextEditingController NumberPlate;
   late TextEditingController VehicleChassis;
   late TextEditingController _enginrController;
-  late TextEditingController _ownerController;
+  late TextEditingController _colorController;
+  late TextEditingController _lotNo;
   var errorText = '';
-  var val;
-  var jobcard;
-  var stageid;
+  var selectedCustomerId;
+  var modelId;
+  var payd;
+  // late List<dynamic> models = [];
   late List<dynamic> models = [];
+  late List<dynamic> clients = [];
+  List<Map<String, dynamic>> filteredModels = [];
   late List<dynamic> countries = [];
   bool isLoading = true;
+  bool _isLoadingModels = false;
   String? error;
-  DateTime _toBePickedOn = DateTime.now();
-  DateTime _receivedOn = DateTime.now();
+  String errorModel = '';
+  FocusNode customerTextFieldFocusNode = FocusNode();
+  FocusNode customerSearchFocusNode = FocusNode();
+  FocusNode carModelTextFieldFocusNode = FocusNode();
+  FocusNode carModelSearchFocusNode = FocusNode();
+// Define your controllers
+  final SingleValueDropDownController _routeController =
+      SingleValueDropDownController();
+  final SingleValueDropDownController _lineController =
+      SingleValueDropDownController();
+// Define your FocusNodes
+  final FocusNode routeTextFieldFocusNode = FocusNode();
+  final FocusNode routeSearchFocusNode = FocusNode();
+  final FocusNode lineTextFieldFocusNode = FocusNode();
+  final FocusNode lineSearchFocusNode = FocusNode();
+// Sample color
+  final Color mycolor = Colors.blue; // or whatever color you are using
   @override
   void initState() {
-  
     _carModel = SingleValueDropDownController();
+    _customerModel = SingleValueDropDownController();
     _descriptionController = TextEditingController();
     VehicleChassis = TextEditingController();
     _descriptionController = TextEditingController();
-    _ownerController = TextEditingController();
     _enginrController = TextEditingController();
-
+    _colorController = TextEditingController();
+    _lotNo = TextEditingController();
     getuserdata().then((value) {
       setState(() {
         user = jsonDecode(value);
       });
       _fetchData();
     });
-
     super.initState();
   }
 
@@ -70,21 +84,16 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
       errorText = ''; // Initialize error text before fetching
       isLoading = true; // Show loading indicator
     });
-
     try {
-      final results = await Future.wait([fetchCarModel(), fetchcountry()]);
-
+      final results = await Future.wait([fetchClients()]);
       // Check if any result is null or missing expected keys
-      if (results[0] == null ||
-          results[1] == null ||
-          results[0]["data"] == null ||
-          results[1]["data"] == null) {
+      if (results[0] == null || results[0]["data"] == null) {
         throw Exception("Failed to fetch data: Missing required information.");
       }
-
       setState(() {
-        // models = results[0]["data"] as List;
-        countries = results[1]["data"] as List;
+        clients = results[0]["data"] as List;
+        // filteredModels = List.from(models);
+        // countries = results[1]["data"] as List;
         isLoading = false; // Stop loading indicator
       });
     } catch (e) {
@@ -96,29 +105,14 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
     }
   }
 
-  Future<void> _selectDate(BuildContext context, String field) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: field == 'To be Picked On' ? _toBePickedOn : _receivedOn,
-      firstDate: DateTime(2022),
-      lastDate: DateTime(2025),
-    );
-    if (picked != null) {
-      setState(() {
-        if (field == 'To be Picked On') {
-          _toBePickedOn = picked;
-        } else {
-          _receivedOn = picked;
-        }
-      });
-    }
-  }
-
   @override
   void dispose() {
-   
-    _country.dispose();
-    _country.dispose();
+    _customerModel.dispose();
+    _carModel.dispose();
+    customerTextFieldFocusNode.dispose();
+    customerSearchFocusNode.dispose();
+    carModelTextFieldFocusNode.dispose();
+    carModelSearchFocusNode.dispose();
     super.dispose();
   }
 
@@ -159,39 +153,21 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                CustomDateField(
-                                  label: 'Received On',
-                                  selectedDate: _receivedOn,
-                                  onTap: () =>
-                                      _selectDate(context, 'Received On'),
-                                ),
-                                const SizedBox(height: 8),
-                                CustomTextFormField(
-                                  label: 'Customer ',
-                                  hint: 'Customer name',
-                                  controller: _ownerController,
-                                ),
-                                const SizedBox(height: 8),
-                                CustomTextFormField(
-                                  label: 'Chasis',
-                                  hint: 'Enter Chasis No',
-                                  controller: VehicleChassis,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return '*Required';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: 8),
+                                if (errorModel.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Text(
+                                      errorText,
+                                      style: TextStyle(color: Colors.red),
+                                    ),
+                                  ),
                                 DropDownTextField(
-                                  controller: _carModel,
+                                  controller: _customerModel,
                                   clearOption: false,
                                   dropDownIconProperty:
                                       IconProperty(color: mycolor, size: 30),
-                                  textFieldFocusNode: textFieldFocusNode,
                                   textFieldDecoration: InputDecoration(
-                                    labelText: 'Vehicle Model',
+                                    labelText: 'Customer',
                                     floatingLabelBehavior:
                                         FloatingLabelBehavior.always,
                                     // hintText: 'Choose Vehicle Model',
@@ -201,7 +177,9 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
                                     filled: true,
                                     fillColor: Colors.grey.shade50,
                                   ),
-                                  searchFocusNode: searchFocusNode,
+                                  textFieldFocusNode:
+                                      customerTextFieldFocusNode,
+                                  searchFocusNode: customerSearchFocusNode,
                                   dropDownItemCount: 5,
                                   enableSearch: true,
                                   validator: (value) {
@@ -212,15 +190,136 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
                                     }
                                   },
                                   // dropDownList: [],
-                                  dropDownList: models.map((model) {
+                                  // dropDownList: clients.map((client) {
+                                  //   return DropDownValueModel(
+                                  //     name: "${client['name']}",
+                                  //     value: client['id'],
+                                  //   );
+                                  // }).toList(),
+                                  dropDownList: clients.map((client) {
                                     return DropDownValueModel(
-                                      name:
-                                          "${model['name']} - ${model['brand']['name']} ${model['model']['name']}",
-                                      value: model['id'],
+                                      name: client['name']?.toString() ??
+                                          'Unknown',
+                                      value: client['id'],
                                     );
                                   }).toList(),
-                                  onChanged: (val) {
-                                    stageid = val.value;
+                                  onChanged: (val) async {
+                                    if (val == null) {
+                                      print('Error: Selected value is null.');
+                                      return;
+                                    }
+
+                                    selectedCustomerId = val.value;
+                                    setState(() {
+                                      _isLoadingModels = true; // Start loading
+                                    });
+
+                                    try {
+                                      final response = await fetchCarModel(
+                                          selectedCustomerId);
+
+                                      print(
+                                          'FetchCarModel Response: $response');
+
+                                      if (response != null &&
+                                          response is Map<String, dynamic>) {
+                                        if (response.containsKey('data') &&
+                                            response['data'] is List) {
+                                          models =
+                                              List<Map<String, dynamic>>.from(
+                                                  response['data']);
+                                        } else {
+                                          models = [];
+                                          errorModel =
+                                              'Error: "data" not found or is not a List.';
+
+                                          print(
+                                              '"data" not found or is not a List.');
+                                        }
+                                      } else {
+                                        models = [];
+                                        errorModel =
+                                            ' Response is not a valid Map.';
+                                        print('Response is not a valid Map.');
+                                      }
+                                    } on TimeoutException catch (_) {
+                                      // Handle timeout error
+                                      errorModel =
+                                          'Fetching car models timed out.';
+                                      print('Fetching car models timed out.');
+                                      models = [];
+                                    } on SocketException catch (_) {
+                                      // Handle no internet connection error
+                                      errorModel = 'No internet connection.';
+                                      print('Error: No internet connection.');
+                                      models = [];
+                                    } catch (e) {
+                                      // Handle other errors
+                                      errorModel = '$e';
+                                      print(
+                                          'Exception caught while fetching car models: $e');
+                                      models =
+                                          []; // Clear models if error happens
+                                    } finally {
+                                      setState(() {
+                                        _isLoadingModels =
+                                            false; // Stop loading
+                                        _carModel
+                                            .clearDropDown(); // Clear previously selected car model
+                                      });
+                                    }
+                                  },
+                                ),
+                                const SizedBox(height: 8),
+                                _isLoadingModels
+                                    ? Center(child: CircularProgressIndicator())
+                                    : DropDownTextField(
+                                        controller: _carModel,
+                                        clearOption: false,
+                                        dropDownIconProperty: IconProperty(
+                                            color: mycolor, size: 30),
+                                        textFieldFocusNode: textFieldFocusNode,
+                                        textFieldDecoration: InputDecoration(
+                                          labelText: 'Vehicle Model',
+                                          floatingLabelBehavior:
+                                              FloatingLabelBehavior.always,
+                                          border: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
+                                          ),
+                                          filled: true,
+                                          fillColor: Colors.grey.shade50,
+                                        ),
+                                        searchFocusNode: searchFocusNode,
+                                        dropDownItemCount: 5,
+                                        enableSearch: true,
+                                        validator: (value) {
+                                          if (value == null || value.isEmpty) {
+                                            return "*Required";
+                                          } else {
+                                            return null;
+                                          }
+                                        },
+                                        dropDownList: models.map((model) {
+                                          return DropDownValueModel(
+                                            name: "${model['model_name']}",
+                                            value: model['id'],
+                                          );
+                                        }).toList(),
+                                        onChanged: (val) {
+                                          modelId = val.value;
+                                        },
+                                      ),
+                                const SizedBox(height: 8),
+                                CustomTextFormField(
+                                  label: 'Chasis',
+                                  hint: 'Enter Chasis No',
+                                  controller: VehicleChassis,
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return '*Required';
+                                    }
+                                    return null;
                                   },
                                 ),
                                 const SizedBox(height: 8),
@@ -237,9 +336,10 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
                                 ),
                                 const SizedBox(height: 8),
                                 CustomTextFormField(
+                                  // keyboardType: TextInputType.number,
                                   label: 'Lot No',
                                   hint: 'Enter Lot number',
-                                  controller: _enginrController,
+                                  controller: _lotNo,
                                   validator: (value) {
                                     if (value == null || value.isEmpty) {
                                       return '*Required';
@@ -251,7 +351,7 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
                                 CustomTextFormField(
                                   label: 'Color',
                                   hint: 'write color',
-                                  controller: _enginrController,
+                                  controller: _colorController,
                                   validator: (value) {
                                     if (value == null || value.isEmpty) {
                                       return '*Required';
@@ -260,25 +360,90 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
                                   },
                                 ),
                                 const SizedBox(height: 8),
-                                TextFormField(
-                                  controller: _descriptionController,
-                                  keyboardType: TextInputType.multiline,
-                                  minLines: 2,
-                                  maxLines:
-                                      null, // Allows the text area to expand as needed
-
-                                  decoration: InputDecoration(
-                                    labelText: 'Description',
+                                // Route Dropdown
+                                DropDownTextField(
+                                  controller: _routeController,
+                                  clearOption: false,
+                                  dropDownIconProperty:
+                                      IconProperty(color: mycolor, size: 30),
+                                  textFieldDecoration: InputDecoration(
+                                    labelText: 'Route',
                                     floatingLabelBehavior:
                                         FloatingLabelBehavior.always,
-                                    // hintText: 'Enter description',
                                     border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(5.0),
-                                      borderSide:
-                                          BorderSide(color: Colors.grey),
+                                      borderRadius: BorderRadius.circular(8.0),
                                     ),
+                                    filled: true,
+                                    fillColor: Colors.grey.shade50,
                                   ),
+                                  textFieldFocusNode: routeTextFieldFocusNode,
+                                  searchFocusNode: routeSearchFocusNode,
+                                  dropDownItemCount: 5,
+                                  enableSearch: true,
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return "*Required";
+                                    } else {
+                                      return null;
+                                    }
+                                  },
+                                  dropDownList: [
+                                    DropDownValueModel(
+                                        name: "Route 1", value: "1"),
+                                    DropDownValueModel(
+                                        name: "Route 2", value: "2"),
+                                    DropDownValueModel(
+                                        name: "Route 3", value: "3"),
+                                    DropDownValueModel(
+                                        name: "Route 4", value: "4"),
+                                    DropDownValueModel(
+                                        name: "Route 5", value: "5"),
+                                  ],
+                                  onChanged: (val) {
+                                    // Handle route change
+                                  },
                                 ),
+                                SizedBox(height: 8), // space between dropdowns
+                                // Line Dropdown
+                                DropDownTextField(
+                                  controller: _lineController,
+                                  clearOption: false,
+                                  dropDownIconProperty:
+                                      IconProperty(color: mycolor, size: 30),
+                                  textFieldDecoration: InputDecoration(
+                                    labelText: 'Line',
+                                    floatingLabelBehavior:
+                                        FloatingLabelBehavior.always,
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8.0),
+                                    ),
+                                    filled: true,
+                                    fillColor: Colors.grey.shade50,
+                                  ),
+                                  textFieldFocusNode: lineTextFieldFocusNode,
+                                  searchFocusNode: lineSearchFocusNode,
+                                  dropDownItemCount: 5,
+                                  enableSearch: true,
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return "*Required";
+                                    } else {
+                                      return null;
+                                    }
+                                  },
+                                  dropDownList: [
+                                    DropDownValueModel(
+                                        name: "Line 1", value: "line1"),
+                                    DropDownValueModel(
+                                        name: "Line 2", value: "line2"),
+                                    DropDownValueModel(
+                                        name: "Line 3", value: "line3"),
+                                  ],
+                                  onChanged: (val) {
+                                    // Handle line change
+                                  },
+                                ),
+
                                 const SizedBox(height: 24),
                                 CustomButton(
                                   label: 'SAVE',
@@ -286,16 +451,7 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
                                     if (_formKey.currentState!.validate()) {
                                       // Save the form data.
                                       if (_formKey.currentState!.validate()) {
-                                        PostData(
-                                            // _vehicle.dropDownValue!.value,
-                                            DateFormat('dd-MM-yyyy')
-                                                .format(_receivedOn),
-                                            _ownerController.text,
-                                            VehicleChassis.text,
-                                            NumberPlate.text,
-                                            _carModel.dropDownValue!.value,
-                                            _enginrController.text,
-                                            _descriptionController.text);
+                                        PostData();
                                       }
                                       print('Form submitted');
                                     }
@@ -311,26 +467,19 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
     );
   }
 
-  void PostData(
-    Received_on,
-    owner,
-    vehicle_chassis,
-    plate_number,
-    country,
-    engNo,
-    desc,
-  ) async {
+  void PostData() async {
     final dataToStore = {
-      'product_id': null,
-      'origin': country,
-      'sku': vehicle_chassis,
-      'receiving_date': Received_on,
-      'notes': desc,
-      'engineno': engNo,
-      'owner': owner
+      'lot_no': _lotNo.text.trim(),
+      'vin_no': VehicleChassis.text.trim(),
+      'engine_no': _enginrController.text.trim(),
+      'model_id': modelId,
+      'status': '0',
+      'route': _routeController.dropDownValue?.value,
+      'vehicle_line': _lineController.dropDownValue?.value,
+      'color': _colorController.text.trim(),
+      'client_id': selectedCustomerId,
     };
-    // print(widget.userToken);
-    print('Data to store: $dataToStore');
+
     final ProgressDialog progressDialog = ProgressDialog(context);
     progressDialog.style(
       message: 'Submitting ..',
@@ -348,42 +497,72 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
     progressDialog.show();
 
     try {
-      final response = await http.post(
-        Uri.parse(Api.api_url + "ApiCreateReceiveVehicle"),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': 'Bearer ${user['token']}',
-        },
-        body: jsonEncode(dataToStore),
-      );
-      // print(response.body);
-      var responseBody = jsonDecode(response.body);
+      // Defensive checks
+      if (user == null ||
+          user['data'] == null ||
+          user['data']['token'] == null) {
+        throw Exception('User token is missing!');
+      }
+
+      final response = await http
+          .post(
+            Uri.parse(Api.api_url + "postScheduledUnit"),
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'Authorization': 'Bearer ${user['data']['token']}',
+            },
+            body: jsonEncode(dataToStore),
+          )
+          .timeout(const Duration(seconds: 30)); // timeout handling
+
       if (response.statusCode == 200) {
-        // Success
+        var responseBody = jsonDecode(response.body);
+        // log(jsonEncode(responseBody));
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Record saved successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-
-        Navigator.pop(context); // Navigate back or to another screen
+        if (responseBody['success'] == true) {
+          // Success
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Record saved successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.pop(context);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                  'Failed: ${responseBody['msg'] ?? "Unknown server error"}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       } else {
-        // API Error
+        // HTTP Error
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-                'Failed: ${responseBody['msg'] ?? "Something went wrong"}'),
+            content: Text('HTTP Error: ${response.statusCode}'),
             backgroundColor: Colors.red,
           ),
         );
       }
+    } on TimeoutException catch (_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Request timed out. Please try again.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    } on SocketException catch (_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No Internet connection.'),
+          backgroundColor: Colors.red,
+        ),
+      );
     } catch (e) {
-      print("==================");
-      // ScaffoldMessenger.of(context)
-      //     .showSnackBar(snackBar("Failed ${e}", Colors.red));
+      print("Unexpected Error: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed: ${e.toString()}'),
@@ -395,20 +574,20 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
     }
   }
 
-  Future fetchCarModel() async {
-    // String assemblyurl = Api.api_url + "getApiVehicleModel";
-    String assemblyurl = "https://countriesnow.space/api/v0.1/countries";
-
-    var responsedata = await httpget(assemblyurl, user["token"], context);
-    // print(responsedata);
+  Future fetchCarModel(customerId) async {
+    setState(() {
+      errorModel = ''; // Initialize error text before fetching
+    });
+    String url = Api.api_url + "loadClientModels/$customerId";
+    print(url);
+    var responsedata = await httpget(url, user['data']['token'], context);
     return responsedata;
   }
 
-  Future fetchcountry() async {
-    String assemblyurl = "https://countriesnow.space/api/v0.1/countries";
-
-    var responsedata = await httpget(assemblyurl, user["token"], context);
-    // print(responsedata['data'][1]['country']);
+  Future fetchClients() async {
+    String url = Api.api_url + "loadclients";
+    var responsedata = await httpget(url, user['data']['token'], context);
+    print(responsedata);
     return responsedata;
   }
 }
@@ -417,19 +596,20 @@ class CustomTextFormField extends StatelessWidget {
   final String label;
   final String hint;
   final TextEditingController controller;
+  final TextInputType? keyboardType;
   final String? Function(String?)? validator;
-
   const CustomTextFormField({
     Key? key,
     required this.label,
     required this.hint,
     required this.controller,
     this.validator,
+    this.keyboardType,
   }) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
     return TextFormField(
+      keyboardType: keyboardType == null ? TextInputType.text : keyboardType,
       controller: controller,
       validator: validator,
       decoration: InputDecoration(
@@ -452,7 +632,6 @@ class CustomDropdownField extends StatelessWidget {
   final TextEditingController controller;
   final List<Map<String, String>> items;
   final Function(String?) onChanged;
-
   const CustomDropdownField({
     Key? key,
     required this.label,
@@ -461,7 +640,6 @@ class CustomDropdownField extends StatelessWidget {
     required this.items,
     required this.onChanged,
   }) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
     return DropdownButtonFormField<String>(
@@ -489,14 +667,12 @@ class CustomDateField extends StatelessWidget {
   final String label;
   final DateTime selectedDate;
   final VoidCallback onTap;
-
   const CustomDateField({
     Key? key,
     required this.label,
     required this.selectedDate,
     required this.onTap,
   }) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -552,13 +728,11 @@ class CustomDateField extends StatelessWidget {
 class CustomButton extends StatelessWidget {
   final String label;
   final VoidCallback onPressed;
-
   const CustomButton({
     Key? key,
     required this.label,
     required this.onPressed,
   }) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
     return Container(

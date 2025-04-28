@@ -1,7 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:nb_utils/nb_utils.dart';
@@ -15,9 +18,13 @@ class SingleQuestion extends StatefulWidget {
   final String? initialRadioValue;
   final String? initialDecripValue;
   final String? hasDescription;
+  final ValueChanged<List<String>> onUsersSelected;
   final can_sign;
   final int index;
   final checkanswered;
+  final String? initialImage;
+  final ValueChanged<File?> onImageChanged; // Allow null for deletion
+  final List<Map<String, String>> users; // List of users with name and email
   const SingleQuestion(
       {super.key,
       required this.id,
@@ -25,11 +32,15 @@ class SingleQuestion extends StatefulWidget {
       required this.onInputValueChanged,
       required this.onValueChanged2,
       required this.question,
+      required this.onImageChanged,
+      required this.onUsersSelected,
       this.initialRadioValue,
+      required this.users,
       this.can_sign,
       this.checkanswered,
       required this.index,
       this.initialDecripValue,
+      required this.initialImage,
       this.hasDescription});
 
   @override
@@ -61,9 +72,36 @@ class _SingleQuestionState extends State<SingleQuestion>
     widget.onInputValueChanged(inputController.text);
   }
 
+  /// Capture image from camera
+  Future<void> _captureImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.camera);
+    if (image != null) {
+      setState(() {
+        _image = File(image.path);
+        // Notify parent
+      });
+    }
+  }
+
+  /// Delete the captured image
+  void _deleteImage() {
+    print("Deleting image...");
+    setState(() {
+      _image = null; // Set image to null when deleting
+    });
+
+    // Pass null to onImageChanged to indicate deletion
+    widget.onImageChanged(null);
+
+    print("Image deleted, _image is now: $_image");
+  }
+
+  List<String> selectedUsers = [];
+
+  File? _image; // Holds the captured image
   @override
   Widget build(BuildContext context) {
-    // print(widget.initialDecripValue);
     super.build(context);
     return Card(
       elevation: 2,
@@ -207,28 +245,65 @@ class _SingleQuestionState extends State<SingleQuestion>
                                   ),
                           )
                         : (widget.hasDescription == 'Yes')
-                            ? Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: TextFormField(
-                                  maxLines: null,
-                                  // enabled:
-                                  //     widget.initialDecripValue.runtimeType ==
-                                  //                 Null &&
-                                  //             widget.initialRadioValue == null
-                                  //         ? true
-                                  //         : false,
-                                  controller: inputController,
-                                  decoration: InputDecoration(
-                                    labelText: 'Description',
-                                    isDense: true,
-                                    hintText: '',
-                                    floatingLabelBehavior:
-                                        FloatingLabelBehavior.always,
-                                    border: OutlineInputBorder(),
-                                    // filled: true,
-                                    // fillColor: mycolor.withOpacity(0.06),
+                            ? Row(
+                                children: [
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: TextFormField(
+                                        maxLines: null,
+                                        // enabled:
+                                        //     widget.initialDecripValue.runtimeType ==
+                                        //                 Null &&
+                                        //             widget.initialRadioValue == null
+                                        //         ? true
+                                        //         : false,
+                                        controller: inputController,
+                                        decoration: InputDecoration(
+                                          labelText: 'Description',
+                                          isDense: true,
+                                          hintText: '',
+                                          floatingLabelBehavior:
+                                              FloatingLabelBehavior.always,
+                                          border: OutlineInputBorder(),
+                                          // filled: true,
+                                          // fillColor: mycolor.withOpacity(0.06),
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                  Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: widget.initialImage == null
+                                        ? GestureDetector(
+                                            onTap: _captureImage,
+                                            child: Container(
+                                              padding: EdgeInsets.all(8),
+                                              // width: 80,
+                                              // height: 80,
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: Colors.black,
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.black26,
+                                                    blurRadius: 4,
+                                                    spreadRadius: 1,
+                                                  ),
+                                                ],
+                                              ),
+                                              child: Center(
+                                                child: Icon(
+                                                  Icons.camera_alt,
+                                                  color: Colors.white,
+                                                  size: 30,
+                                                ),
+                                              ),
+                                            ),
+                                          )
+                                        : Container(),
+                                  ),
+                                ],
                               )
                             : Container(),
 
@@ -308,6 +383,93 @@ class _SingleQuestionState extends State<SingleQuestion>
                     ],
                     gap(),
                     // const Divider()
+
+                    // Capture Image & Display
+                    if (okay == "NOK" ||
+                        widget.initialImage != null ||
+                        okay == "OK")
+                      Row(
+                        children: [
+                          if (widget.initialImage == null)
+                            // ElevatedButton.icon(
+                            //   onPressed: _captureImage,
+                            //   icon: const Icon(Icons.camera_alt),
+                            //   label: const Text("Capture Image"),
+                            // ),
+                            const Spacer(),
+                          if (_image != null)
+                            Stack(
+                              alignment: Alignment.topRight,
+                              children: [
+                                Image.file(
+                                  _image!,
+                                  width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.cancel,
+                                      color: Colors.red),
+                                  onPressed:
+                                      _deleteImage, // Delete image action
+                                ),
+                              ],
+                            ),
+                          if (widget.initialImage != null)
+                            Stack(
+                              alignment: Alignment.topRight,
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: CachedNetworkImage(
+                                    imageUrl:
+                                        "${"Api.qc_image"}${widget.initialImage}",
+                                    width: 80, // Small image size
+                                    height: 80,
+                                    fit: BoxFit.cover,
+                                    placeholder: (context, url) => Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                    errorWidget: (context, url, error) =>
+                                        Image.asset(
+                                      'assets/images/placeholder.jpg',
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                )
+                              ],
+                            ),
+                        ],
+                      ),
+
+                    const SizedBox(height: 10),
+                    // Notify Users Checkboxes
+                    if (okay == "NOK")
+                      const Text(
+                        "Notify Users",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    if (okay == "NOK")
+                      Column(
+                        children: widget.users.map((user) {
+                          return CheckboxListTile(
+                            title: Text(user['name']!), // Display user name
+                            value: selectedUsers.contains(user['email']),
+                            onChanged: (bool? value) {
+                              setState(() {
+                                if (value == true) {
+                                  selectedUsers
+                                      .add(user['email']!); // Store email
+                                } else {
+                                  selectedUsers
+                                      .remove(user['email']!); // Remove email
+                                }
+                                widget.onUsersSelected(selectedUsers);
+                              });
+                            },
+                          );
+                        }).toList(),
+                      )
                   ],
                 ),
               ),

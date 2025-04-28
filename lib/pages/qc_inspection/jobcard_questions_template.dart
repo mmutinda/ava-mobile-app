@@ -50,6 +50,8 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
   Map<int, String> singleDescripCategory = {};
   Map<int, String> multipleValue = {};
   Map<int, List<dynamic>> multipleValues = {};
+  Map<int, List<String>> selectedUsers = {};
+  Map<int, File> images = {};
   String haserror = '';
   List questions = [];
   var Category = {};
@@ -228,6 +230,45 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                               } else if (get["quiz_type"] == "single") {
                                 //single
                                 return SingleQuestion(
+                                    initialImage: question["answer"]
+                                        ?["image_path"],
+                                    onImageChanged: (File? image) {
+                                      setState(() {
+                                        if (image == null) {
+                                          images.remove(question['id']);
+                                        } else {
+                                          images[question['id']] = image;
+                                        }
+                                      });
+                                    },
+                                    onUsersSelected: (List<String> value) {
+                                      var qid = get['id'];
+                                      setState(() {
+                                        selectedUsers[qid] = value;
+                                      });
+                                    },
+                                    users: [
+                                      {
+                                        'name': 'Duncan',
+                                        'email': 'craig@hanspaul.co.tz'
+                                      },
+                                      {
+                                        'name': 'Robinson ',
+                                        'email': 'carlos@hanspaul.co.tz'
+                                      },
+                                      {
+                                        'name': 'Victor',
+                                        'email': 'scarneiro@hanspaul.co.tz'
+                                      },
+                                      {
+                                        'name': 'Mercy',
+                                        'email': 'sri@hanspaul.co.tz'
+                                      },
+                                      {
+                                        'name': 'ICT',
+                                        'email': 'ict@hanspaul.co.tz'
+                                      }
+                                    ],
                                     initialDecripValue:
                                         get["defect_description"],
                                     hasDescription:
@@ -534,10 +575,10 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
 
     final url =
         "${Api.api_url}quiz/${widget.query_id}/${widget.vehicle_id}/${widget.shop_id}";
-    print("Fetching questions from: $url");
 
     final responseData = await httpget(url, user['data']["token"], context);
-
+    // final responseData = await httpget(url, Api.usr, context);
+    print(responseData);
     EasyLoading.dismiss(); // Dismiss once, outside branching
 
     if (responseData == null) {

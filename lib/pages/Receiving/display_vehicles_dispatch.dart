@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
-import 'package:isuze_pqcs/common/loader.dart';
 import 'package:isuze_pqcs/common/loader2.dart';
 import 'package:isuze_pqcs/pages/Receiving/Dispatch_take_photos.dart';
 

@@ -7,6 +7,7 @@ import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/loader2.dart';
+import 'package:isuze_pqcs/pages/Receiving/vehicle_questions_template.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/jobcard_questions_template.dart';
 import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
 import 'package:top_snackbar_flutter/custom_snack_bar.dart';
@@ -88,24 +89,18 @@ class _VehicleReceivingConversionState extends State<VehicleReceivingConversion>
       // appBar: AppBar(
 
       appBar: AppBar(
-          title: Text(
-            widget.vehicleName,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
+        title: Text(
+          widget.vehicleName,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
           ),
-         
-          
-        
+        ),
       ),
       body: tab1(), // Define your tab 1 content
-         // Define your entry form tab content
-      
+      // Define your entry form tab content
     );
   }
-
-
 
   Column tab1() {
     return Column(
@@ -140,12 +135,13 @@ class _VehicleReceivingConversionState extends State<VehicleReceivingConversion>
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => JobCardQuestionsTemplate(
-                                  query_id: category['id'],
-                                  shop_id: 'ShopId',
-                                  vehicle_id: widget.vehicleId,
-                                  categoryName: category["category_name"],
-                                ),
+                                builder: (context) => VehicleQuestionsTemplate(
+                                        strippingDone: widget.isStripingDone,
+                                        vehicleId: widget.vehicleId,
+                                        categoryItemId: category["id"],
+                                        categoryName:
+                                            category["query_item_name"],
+                                      )
                               ),
                             ).then(
                                 (value) => fetchCategories(widget.vehicleId));
@@ -278,10 +274,15 @@ class _VehicleReceivingConversionState extends State<VehicleReceivingConversion>
     // String url = widget.isStriping == true
     //     ? "${Api.api_url}${Api.endpoint_route_categories}/Stripping/$id"
     //     : "${Api.api_url}${Api.endpoint_route_categories}/Receiving New Vehicle/$id";
-    String url = "${Api.api_url}ApiLoadStrippingCat/$id";
+    // String url = "${Api.api_url}ApiLoadStrippingCat/$id";
+    String url =
+        "https://hal.hanspaulerp.net/api/fetchRoutingCategory/Receiving New Vehicle/1274";
 
     print(url);
-    var responsedata = await httpget(url, user["token"], context);
+
+    // var responsedata = await httpget(url, user["token"], context);
+
+    var responsedata = await httpget(url, Api.usr, context);
 
     if (responsedata != null) {
       if (responsedata["category"] != null) {
