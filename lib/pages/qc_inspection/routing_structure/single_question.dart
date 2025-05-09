@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:nb_utils/nb_utils.dart';
@@ -418,7 +419,7 @@ class _SingleQuestionState extends State<SingleQuestion>
                                   borderRadius: BorderRadius.circular(12),
                                   child: CachedNetworkImage(
                                     imageUrl:
-                                        "${"Api.qc_image"}${widget.initialImage}",
+                                        "${Api.qc_image}${widget.initialImage}",
                                     width: 80, // Small image size
                                     height: 80,
                                     fit: BoxFit.cover,
@@ -426,9 +427,11 @@ class _SingleQuestionState extends State<SingleQuestion>
                                       child: CircularProgressIndicator(),
                                     ),
                                     errorWidget: (context, url, error) =>
-                                        Image.asset(
-                                      'assets/images/placeholder.jpg',
-                                      fit: BoxFit.cover,
+                                        Container(
+                                      width: 80,
+                                      height: 80,
+                                      color: Colors.grey[300],
+                                      child: const Icon(Icons.error),
                                     ),
                                   ),
                                 )

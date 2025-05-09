@@ -176,7 +176,9 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                 );
                               } else if (get["quiz_type"] == "multiple") {
                                 return MultipleQuestion(
-                                     initialImage: question["answer"]
+                                    intial_option:
+                                        get["defect_names"],
+                                    initialImage: question["answer"]
                                         ?["image_path"],
                                     onImageChanged: (File? image) {
                                       print("image path $image");
@@ -267,8 +269,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                               } else if (get["quiz_type"] == "single") {
                                 //single
                                 return SingleQuestion(
-                                    initialImage: question["answer"]
-                                        ?["image_path"],
+                                    initialImage: get["image_url"],
                                     onImageChanged: (File? image) {
                                       print("image path $image");
                                       setState(() {

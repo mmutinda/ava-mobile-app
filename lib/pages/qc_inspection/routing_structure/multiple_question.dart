@@ -14,6 +14,7 @@ class MultipleQuestion extends StatefulWidget {
   final int id;
   final int index;
   final options;
+  final intial_option;
   final can_sign;
   final checkanswered;
   final String? initialRadioValue;
@@ -43,6 +44,7 @@ class MultipleQuestion extends StatefulWidget {
     required this.users,
     required this.onImageChanged,
     required this.initialImage,
+    required this.intial_option,
   }) : super(key: key);
 
   @override
@@ -90,7 +92,7 @@ class _MultipleQuestionState extends State<MultipleQuestion>
   bool get wantKeepAlive => true;
   @override
   Widget build(BuildContext context) {
-    // print(selectedValues);
+    print(widget.intial_option);
     List<String> indexedNames = [];
     for (int index = 0; index < widget.options.length; index++) {
       indexedNames.add("${widget.options[index]['option_value']}");
@@ -199,38 +201,39 @@ class _MultipleQuestionState extends State<MultipleQuestion>
                                         : Colors.black,
                                   ),
                                 ),
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: widget.initialImage == null
-                                      ? GestureDetector(
-                                          onTap: _captureImage,
-                                          child: Container(
-                                            padding: EdgeInsets.all(8),
-                                            // width: 80,
-                                            // height: 80,
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              // color: Colors.black,
-                                              // boxShadow: [
-                                              //   BoxShadow(
-                                              //     color: Colors.black26,
-                                              //     blurRadius: 2,
-                                              //     spreadRadius: 1,
-                                              //   ),
-                                              // ],
-                                            ),
-                                            child: Center(
-                                              child: Icon(
-                                                Icons.camera_alt,
-                                                // color: Colors.white,
-                                                color: Colors.teal,
-                                                size: 30,
+                                if (widget.initialRadioValue == null)
+                                  Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: widget.initialImage == null
+                                        ? GestureDetector(
+                                            onTap: _captureImage,
+                                            child: Container(
+                                              padding: EdgeInsets.all(8),
+                                              // width: 80,
+                                              // height: 80,
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                // color: Colors.black,
+                                                // boxShadow: [
+                                                //   BoxShadow(
+                                                //     color: Colors.black26,
+                                                //     blurRadius: 2,
+                                                //     spreadRadius: 1,
+                                                //   ),
+                                                // ],
+                                              ),
+                                              child: Center(
+                                                child: Icon(
+                                                  Icons.camera_alt,
+                                                  // color: Colors.white,
+                                                  color: Colors.teal,
+                                                  size: 30,
+                                                ),
                                               ),
                                             ),
-                                          ),
-                                        )
-                                      : Container(),
-                                ),
+                                          )
+                                        : Container(),
+                                  ),
                               ],
                             ),
                           ],
@@ -267,6 +270,32 @@ class _MultipleQuestionState extends State<MultipleQuestion>
                             },
                           )
                         : Container(),
+                    if (widget.intial_option.isNotEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 12, horizontal: 15),
+                        decoration: BoxDecoration(
+                          color: mycolor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: List.generate(
+                            widget.intial_option.length,
+                            (index) => Padding(
+                              padding: const EdgeInsets.only(right: 8.0),
+                              child: Text(
+                                "${index + 1}. ${widget.intial_option[index]}",
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
 
                     gap(),
                     if (widget.can_sign == 'Yes' &&
