@@ -6,8 +6,8 @@ import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/loader2.dart' as loader2;
 import 'package:isuze_pqcs/common/widgets.dart';
+import 'package:isuze_pqcs/pages/Receiving/ProgressPhotosHome.dart';
 import 'package:isuze_pqcs/pages/Receiving/form_conversion_receiving.dart';
-import 'package:isuze_pqcs/pages/Receiving/vehicle_receiving_conversion.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/scheduleUnits.dart';
 import 'package:nb_utils/nb_utils.dart';
 import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
@@ -215,7 +215,23 @@ class _DisplayVehiclesState extends State<DisplayVehicles> {
                                                   topRight:
                                                       Radius.circular(10))),
                                           child: TextButton(
-                                            onPressed: () {},
+                                            onPressed: () {
+                                              Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) =>
+                                                        VehicleReceivingHome(
+                                                      id: vehicles[index]['id'],
+                                                      title: vehicles[index]
+                                                              ["model"]
+                                                          ["model_name"],
+                                                      sku: vehicles[index]
+                                                          ["vin_no"],
+                                                    ),
+                                                  )).then((value) {
+                                                fetchVehicles();
+                                              });
+                                            },
                                             child: Text(
                                               "SELECT",
                                               style: TextStyle(
@@ -225,17 +241,18 @@ class _DisplayVehiclesState extends State<DisplayVehicles> {
                                           )),
                                       onTap: () {
                                         Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                VehicleReceivingConversion(
-                                              type: "receive",
-                                              vehicleId: vehicles[index]["id"],
-                                              vehicleName: vehicles[index]
-                                                  ['model']?['model_name'],
-                                            ),
-                                          ),
-                                        );
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  VehicleReceivingHome(
+                                                id: vehicles[index]['id'],
+                                                title: vehicles[index]["model"]
+                                                    ["model_name"],
+                                                sku: vehicles[index]["vin_no"],
+                                              ),
+                                            )).then((value) {
+                                          fetchVehicles();
+                                        });
                                       },
                                     ),
                                   ),

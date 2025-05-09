@@ -197,6 +197,7 @@ class _ScanningState extends State<Scanning> {
           QcCategories(
             ShopId: widget.shopId,
             res: res,
+            shop_name: widget.shopName,
           ).launch(
             context,
             pageRouteAnimation: PageRouteAnimation.Slide,
@@ -276,6 +277,7 @@ class _ScanningState extends State<Scanning> {
                         : QcCategories(
                             ShopId: widget.shopId,
                             res: res,
+                            shop_name: widget.shopName,
                           ).launch(context,
                             pageRouteAnimation: PageRouteAnimation.Slide);
           });
@@ -287,11 +289,7 @@ class _ScanningState extends State<Scanning> {
       },
       onFailure: (event) {
         error = 'Could not read barcode.';
-        // ScaffoldMessenger.of(context).showSnackBar(
-        //   const SnackBar(
-        //     content: Text('Could not read barcode.'),
-        //   ),
-        // );
+
         awesomeTopSnackbar(context, "Try Again",
             iconWithDecoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),

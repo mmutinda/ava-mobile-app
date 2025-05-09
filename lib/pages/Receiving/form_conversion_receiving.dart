@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer';
 import 'dart:io';
-import 'dart:math';
 import 'package:dropdown_textfield/dropdown_textfield.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -25,10 +23,10 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
   FocusNode textFieldFocusNode = FocusNode();
   late SingleValueDropDownController _carModel;
   late SingleValueDropDownController _customerModel;
-  late TextEditingController _descriptionController;
   late TextEditingController NumberPlate;
   late TextEditingController VehicleChassis;
   late TextEditingController _enginrController;
+  late TextEditingController _partNoController;
   late TextEditingController _colorController;
   late TextEditingController _lotNo;
   var errorText = '';
@@ -37,7 +35,9 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
   var payd;
   // late List<dynamic> models = [];
   late List<dynamic> models = [];
+  // var checklistData;
   late List<dynamic> clients = [];
+  late List<dynamic> checklist = [];
   List<Map<String, dynamic>> filteredModels = [];
   late List<dynamic> countries = [];
   bool isLoading = true;
@@ -64,10 +64,9 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
   void initState() {
     _carModel = SingleValueDropDownController();
     _customerModel = SingleValueDropDownController();
-    _descriptionController = TextEditingController();
     VehicleChassis = TextEditingController();
-    _descriptionController = TextEditingController();
     _enginrController = TextEditingController();
+    _partNoController = TextEditingController();
     _colorController = TextEditingController();
     _lotNo = TextEditingController();
     getuserdata().then((value) {
@@ -85,13 +84,17 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
       isLoading = true; // Show loading indicator
     });
     try {
-      final results = await Future.wait([fetchClients()]);
+      final results = await Future.wait([fetchClients(), fetchChecklist()]);
       // Check if any result is null or missing expected keys
-      if (results[0] == null || results[0]["data"] == null) {
+      if (results[0] == null ||
+          results[1] == null ||
+          results[0]["data"] == null ||
+          results[1]["data"] == null) {
         throw Exception("Failed to fetch data: Missing required information.");
       }
       setState(() {
         clients = results[0]["data"] as List;
+        checklist = results[1]["data"] as List;
         // filteredModels = List.from(models);
         // countries = results[1]["data"] as List;
         isLoading = false; // Stop loading indicator
@@ -116,9 +119,23 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
     super.dispose();
   }
 
+  List<List<dynamic>> checklistData = [];
+  void storeChecklist() {
+    try {
+      checklistData = checklist.where((query) {
+        return query['checked'] == 'OK' || query['checked'] == 'NOK';
+      }).map((query) {
+        return [query['id'], query['checked']];
+      }).toList();
+    } catch (e) {
+      print('Error storing checklist: $e');
+    }
+  }
+
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   @override
   Widget build(BuildContext context) {
+    // print(checklistData);
     return Scaffold(
       appBar: AppBar(
         centerTitle: false,
@@ -189,13 +206,6 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
                                       return null;
                                     }
                                   },
-                                  // dropDownList: [],
-                                  // dropDownList: clients.map((client) {
-                                  //   return DropDownValueModel(
-                                  //     name: "${client['name']}",
-                                  //     value: client['id'],
-                                  //   );
-                                  // }).toList(),
                                   dropDownList: clients.map((client) {
                                     return DropDownValueModel(
                                       name: client['name']?.toString() ??
@@ -208,19 +218,15 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
                                       print('Error: Selected value is null.');
                                       return;
                                     }
-
                                     selectedCustomerId = val.value;
                                     setState(() {
                                       _isLoadingModels = true; // Start loading
                                     });
-
                                     try {
                                       final response = await fetchCarModel(
                                           selectedCustomerId);
-
                                       print(
                                           'FetchCarModel Response: $response');
-
                                       if (response != null &&
                                           response is Map<String, dynamic>) {
                                         if (response.containsKey('data') &&
@@ -232,7 +238,6 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
                                           models = [];
                                           errorModel =
                                               'Error: "data" not found or is not a List.';
-
                                           print(
                                               '"data" not found or is not a List.');
                                         }
@@ -315,6 +320,18 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
                                   label: 'Chasis',
                                   hint: 'Enter Chasis No',
                                   controller: VehicleChassis,
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return '*Required';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                const SizedBox(height: 8),
+                                CustomTextFormField(
+                                  label: 'Part No',
+                                  hint: 'Enter part number',
+                                  controller: _partNoController,
                                   validator: (value) {
                                     if (value == null || value.isEmpty) {
                                       return '*Required';
@@ -443,7 +460,57 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
                                     // Handle line change
                                   },
                                 ),
-
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Checklist',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Column(
+                                  children: checklist.map((query) {
+                                    return Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          query['query_name']?.toString() ??
+                                              'Unknown',
+                                          style: TextStyle(fontSize: 16),
+                                        ),
+                                        Row(
+                                          children: [
+                                            Text('OK'),
+                                            Radio(
+                                              value: 'OK',
+                                              groupValue: query['checked'],
+                                              onChanged: (value) {
+                                                setState(() {
+                                                  query['checked'] = value;
+                                                  storeChecklist();
+                                                });
+                                              },
+                                            ),
+                                            Text('NOK'),
+                                            Radio(
+                                              value: 'NOK',
+                                              groupValue: query['checked'],
+                                              onChanged: (value) {
+                                                setState(() {
+                                                  query['checked'] = value;
+                                                  storeChecklist();
+                                                });
+                                              },
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    );
+                                  }).toList(),
+                                ),
                                 const SizedBox(height: 24),
                                 CustomButton(
                                   label: 'SAVE',
@@ -451,6 +518,22 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
                                     if (_formKey.currentState!.validate()) {
                                       // Save the form data.
                                       if (_formKey.currentState!.validate()) {
+                                        if (checklist.length !=
+                                            (checklistData.length)) {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            const SnackBar(
+                                              margin: const EdgeInsets.all(50),
+                                              padding: const EdgeInsets.all(10),
+                                              behavior:
+                                                  SnackBarBehavior.floating,
+                                              content: Text(
+                                                  'Please fill all checklist items!'),
+                                              backgroundColor: Colors.red,
+                                            ),
+                                          );
+                                          return;
+                                        }
                                         PostData();
                                       }
                                       print('Form submitted');
@@ -471,6 +554,7 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
     final dataToStore = {
       'lot_no': _lotNo.text.trim(),
       'vin_no': VehicleChassis.text.trim(),
+      'part_no': _partNoController.text.trim(),
       'engine_no': _enginrController.text.trim(),
       'model_id': modelId,
       'status': '0',
@@ -478,9 +562,10 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
       'vehicle_line': _lineController.dropDownValue?.value,
       'color': _colorController.text.trim(),
       'client_id': selectedCustomerId,
+      'answers': checklistData,
     };
-
-    final ProgressDialog progressDialog = ProgressDialog(context);
+    // print(dataToStore);
+    final progressDialog = ProgressDialog(context);
     progressDialog.style(
       message: 'Submitting ..',
       child: CustomLoader(),
@@ -493,17 +578,8 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
       elevation: 10.0,
       insetAnimCurve: Curves.easeInOut,
     );
-
     progressDialog.show();
-
     try {
-      // Defensive checks
-      if (user == null ||
-          user['data'] == null ||
-          user['data']['token'] == null) {
-        throw Exception('User token is missing!');
-      }
-
       final response = await http
           .post(
             Uri.parse(Api.api_url + "postScheduledUnit"),
@@ -514,64 +590,66 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
             },
             body: jsonEncode(dataToStore),
           )
-          .timeout(const Duration(seconds: 30)); // timeout handling
-
-      if (response.statusCode == 200) {
-        var responseBody = jsonDecode(response.body);
-        // log(jsonEncode(responseBody));
-
-        if (responseBody['success'] == true) {
-          // Success
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Record saved successfully!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          Navigator.pop(context);
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                  'Failed: ${responseBody['msg'] ?? "Unknown server error"}'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
+          .timeout(const Duration(seconds: 30));
+      var responseBody = jsonDecode(response.body);
+      print(responseBody);
+      if (response.statusCode == 200 || responseBody['success'] == true) {
+        handleSuccess();
       } else {
-        // HTTP Error
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('HTTP Error: ${response.statusCode}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        // Check for 'errors' key
+        String errorMessage = responseBody['msg'] ??
+            responseBody['message'] ??
+            "An error occurred";
+        if (responseBody['errors'] != null) {
+          final errors = responseBody['errors'] as Map<String, dynamic>;
+          final errorDetails =
+              errors.entries.map((e) => '${e.key}: ${e.value[0]}').join('\n');
+          errorMessage += '\n$errorDetails';
+        }
+        showError(errorMessage);
       }
-    } on TimeoutException catch (_) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Request timed out. Please try again.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-    } on SocketException catch (_) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No Internet connection.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+    } on TimeoutException {
+      showError('Request timed out. Please try again.', color: Colors.orange);
+    } on SocketException {
+      showError('No Internet connection.');
     } catch (e) {
       print("Unexpected Error: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      showError('Failed: ${e.toString()}');
     } finally {
       progressDialog.hide();
     }
+  }
+
+  void handleSuccess() {
+    if (!context.mounted) return; // ✅ Add this check
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        margin: const EdgeInsets.all(50),
+        padding: const EdgeInsets.all(10),
+        behavior: SnackBarBehavior.floating,
+        content: Text('Record saved successfully!'),
+        backgroundColor: Colors.green,
+      ),
+    );
+    // Optional: Clear form fields if necessary
+    _lotNo.clear();
+    VehicleChassis.clear();
+    _partNoController.clear();
+    _enginrController.clear();
+    _colorController.clear();
+    Navigator.pop(context); // ✅ Now safely navigates back
+  }
+
+  void showError(String message, {Color color = Colors.red}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        margin: const EdgeInsets.all(50),
+        padding: const EdgeInsets.all(10),
+        behavior: SnackBarBehavior.floating,
+        content: Text(message),
+        backgroundColor: color,
+      ),
+    );
   }
 
   Future fetchCarModel(customerId) async {
@@ -586,6 +664,13 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
 
   Future fetchClients() async {
     String url = Api.api_url + "loadclients";
+    var responsedata = await httpget(url, user['data']['token'], context);
+    print(responsedata);
+    return responsedata;
+  }
+
+  Future fetchChecklist() async {
+    String url = Api.api_url + "loadVehicleReceiving";
     var responsedata = await httpget(url, user['data']['token'], context);
     print(responsedata);
     return responsedata;

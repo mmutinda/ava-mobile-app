@@ -3,11 +3,13 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
 import 'package:isuze_pqcs/RunningShopsDashboardWidget.dart';
-import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/slider.dart';
+import 'package:isuze_pqcs/pages/QFL%204/qfl4.dart';
 import 'package:isuze_pqcs/pages/Receiving/display_vehicles.dart';
-import 'package:isuze_pqcs/pages/Receiving/display_vehicles_dispatch.dart';
+import 'package:isuze_pqcs/pages/claimforms/FiveSAuditPage%20.dart';
+import 'package:isuze_pqcs/pages/claimforms/NearMissForm.dart';
+
 import 'package:isuze_pqcs/pages/profile_screen.dart';
 import 'package:isuze_pqcs/pages/ShopsScrean.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/scheduleUnits.dart';
@@ -79,8 +81,6 @@ class _HomeScreanState extends State<HomeScrean> {
                     radius: 40,
                     backgroundImage: AssetImage("images/profile1.jpg"),
                   ),
-                  // SizedBox(height: 10),
-                  // SizedBox(height: 10),
                   Text("${user['data']?['name'] ?? ''}",
                       style: TextStyle(
                           fontSize: 18,
@@ -97,22 +97,60 @@ class _HomeScreanState extends State<HomeScrean> {
                 children: <Widget>[
                   singleDrawerItem(FeatherIcons.home, "Dashboard", 0, theme),
                   Divider(),
+                  // Section label
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0, vertical: 8.0),
+                    child: Text(
+                      "OPERATIONS",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: theme.primaryColor,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ),
+
                   singleDrawerItem(
                       FeatherIcons.truck, "Vehicle Receiving", 5, theme),
-                  singleDrawerItem(
-                      FeatherIcons.image, "Receiving Images", 6, theme),
-                  Divider(),
+
                   singleDrawerItem(
                       FeatherIcons.calendar, "Scheduled Units", 1, theme),
-                  singleDrawerItem(FeatherIcons.shoppingBag, "SHOPS", 2, theme),
-                  // singleDrawerItem(
-                  //     FeatherIcons.checkCircle, "Actions", 3, theme),
-                  // Divider(),
-                  // singleDrawerItem(
-                  //     FeatherIcons.userCheck, "Attendance", 4, theme),
+                  singleDrawerItem(FeatherIcons.shoppingBag, "QFL 3", 2, theme),
+                  singleDrawerItem(FeatherIcons.shoppingBag, "QFL 4", 3, theme),
                   Divider(),
-                  // singleDrawerItem(FeatherIcons.alertCircle,
-                  //     "Actions to Quality Defects", 10, theme),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0, vertical: 8.0),
+                    child: Text(
+                      "SAFETY",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: theme.primaryColor,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ),
+                  singleDrawerItem(
+                      FeatherIcons.shield, "Near Miss Report", 13, theme),
+                  singleDrawerItem(FeatherIcons.shield, "5S Audit", 12, theme),
+
+                  Divider(),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0, vertical: 8.0),
+                    child: Text(
+                      "OTHERS",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: theme.primaryColor,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ),
                   singleDrawerItem(FeatherIcons.user, "Profile", 11, theme),
                   singleDrawerItem(FeatherIcons.helpCircle, "Help", 13, theme),
                 ],
@@ -150,46 +188,24 @@ class _HomeScreanState extends State<HomeScrean> {
           setState(() {
             _selectedPage = position;
           });
-          // _scaffoldKey.currentState!.openEndDrawer();
-
           // Navigate based on selected position
           switch (position) {
             case 0:
               _scaffoldKey.currentState!.openEndDrawer();
-              // Navigator.pushReplacement(
-              //   context,
-              //   MaterialPageRoute(builder: (context) => DashboardScreen()),
-              // );
-
               break;
             case 1:
               SCheduleUnits().launch(context,
                   pageRouteAnimation: PageRouteAnimation.Slide);
               break;
             case 2:
-
-              // Navigator.push(
-              //   context,
-              //   MaterialPageRoute(builder: (context) => ShopsScreen()),
-              // );
               ShopsScrean().launch(context,
                   pageRouteAnimation: PageRouteAnimation.Slide);
+
               break;
             case 3:
-              toasty(context, "comming soon",
-                  bgColor: mycolor, textColor: white);
-              // Navigator.push(
-              //   context,
-              //   MaterialPageRoute(builder: (context) => ActionsScreen()),
-              // );
-              break;
-            case 4:
-              toasty(context, "comming soon",
-                  bgColor: mycolor, textColor: white);
-              // Navigator.push(
-              //   context,
-              //   MaterialPageRoute(builder: (context) => AttendanceScreen()),
-              // );
+              QFL4().launch(context,
+                  pageRouteAnimation: PageRouteAnimation.Slide);
+
               break;
             case 5:
               Navigator.push(
@@ -197,34 +213,23 @@ class _HomeScreanState extends State<HomeScrean> {
                 MaterialPageRoute(builder: (context) => DisplayVehicles()),
               );
               break;
-            case 6:
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => DisplayVehiclesDispatch()),
-              );
-              break;
-            case 10:
-              toasty(context, "comming soon",
-                  bgColor: mycolor, textColor: white);
-              // Navigator.push(
-              //   context,
-              //   MaterialPageRoute(builder: (context) => QualityDefectsScreen()),
-              // );
-              break;
             case 11:
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => ProfileTab()),
               );
               break;
+            case 12:
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => FiveSAuditPage()),
+              );
+              break;
             case 13:
-              toasty(context, "comming soon",
-                  bgColor: mycolor, textColor: white);
-              // Navigator.push(
-              //   context,
-              //   MaterialPageRoute(builder: (context) => HelpScreen()),
-              // );
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => NearMissFormPage()),
+              );
               break;
           }
         });

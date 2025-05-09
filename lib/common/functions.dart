@@ -13,6 +13,7 @@ Future getuserdata() async {
   var userdata = preferences.getString('userdata')!;
   return userdata;
 }
+
 Future httppost(
     String url, Map<String, dynamic> data, BuildContext context) async {
   try {
@@ -37,8 +38,7 @@ Future httppost(
   } catch (e) {}
 }
 
-Future httppostwithtoken(
-    String url, token,  data, BuildContext context) async {
+Future httppostwithtoken(String url, token, data, BuildContext context) async {
   try {
     var vardata = data;
 
@@ -135,46 +135,92 @@ Future uploadImagesWithToken(
     return 'Error uploading file: $error';
   }
 }
+
 Future uploadImagesWithToken2(
-    String vehicle_id, String url, List<File> images, String token) async {
+    String vehicleId, String url, List<File> images, String token) async {
   var request = http.MultipartRequest('POST', Uri.parse(url));
-  // Add your headers, including the authorization token
+
+  // Add headers
   request.headers.addAll({
     'Accept': 'application/json',
-    'Content': 'application/json',
     'Authorization': 'Bearer $token',
   });
-  request.fields['vehicle_receiving_id'] = vehicle_id;
 
-  await Future.forEach(
-    images,
-    (file) async => {
-      request.files.add(
-        http.MultipartFile(
-          'images[]',
-          (http.ByteStream(file.openRead())).cast(),
-          await file.length(),
-          filename: file.path.split('/').last,
-        ),
-      )
-    },
-  );
+  request.fields['vehicle_id'] = vehicleId;
+
+  // Correct way to add files
+  for (File file in images) {
+    var stream = http.ByteStream(file.openRead());
+    var length = await file.length();
+
+    var multipartFile = http.MultipartFile(
+      'images[]',
+      stream,
+      length,
+      filename: file.path.split('/').last,
+    );
+
+    request.files.add(multipartFile);
+  }
+
   try {
     var response = await request.send();
     var responseBody = await response.stream.bytesToString();
-    print(responseBody);
+    print("---> $responseBody");
+
     if (response.statusCode == 200) {
       return {"status": response.statusCode, "message": 'Upload success'};
     } else {
       return {
         "status": response.statusCode,
-        "message": 'Upload failed : ${responseBody}'
+        "message": 'Upload failed : $responseBody'
       };
     }
   } catch (error) {
-    return 'Error uploading file: $error';
+    return {"status": 500, "message": 'Error uploading file: $error'};
   }
 }
+// Future uploadImagesWithToken2(
+//     String vehicle_id, String url, List<File> images, String token) async {
+//   var request = http.MultipartRequest('POST', Uri.parse(url));
+//   // Add your headers, including the authorization token
+//   request.headers.addAll({
+//     'Accept': 'application/json',
+//     'Content': 'application/json',
+//     'Authorization': 'Bearer $token',
+//   });
+//   request.fields['vehicle_id'] = vehicle_id;
+
+//   await Future.forEach(
+//     images,
+//     (file) async => {
+//       request.files.add(
+//         http.MultipartFile(
+//           'images[]',
+//           (http.ByteStream(file.openRead())).cast(),
+//           await file.length(),
+//           filename: file.path.split('/').last,
+//         ),
+//       )
+//     },
+//   );
+//   try {
+//     var response = await request.send();
+//     var responseBody = await response.stream.bytesToString();
+//     print("--->${responseBody}");
+//     if (response.statusCode == 200) {
+//       return {"status": response.statusCode, "message": 'Upload success'};
+//     } else {
+//       return {
+//         "status": response.statusCode,
+//         "message": 'Upload failed : ${responseBody}'
+//       };
+//     }
+//   } catch (error) {
+//     return 'Error uploading file: $error';
+//   }
+// }
+
 Future httpget(String url, token, BuildContext context) async {
   try {
     final response = await http.get(

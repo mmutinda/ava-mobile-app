@@ -37,63 +37,6 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
     // fetchData(); // Fetch data when the page is initialized
   }
 
-  // Future<void> fetchData() async {
-  //   setState(() {
-  //     isLoading = vehicles.isEmpty ? true : false;
-  //     message = '';
-  //   });
-  //   if (vehicles.isEmpty) {
-  //     EasyLoading.show(
-  //         status: "Loading sheduled units...",
-  //         maskType: EasyLoadingMaskType.black);
-  //   } else {
-  //     EasyLoading.dismiss(); // Dismiss if vehicles are loaded
-  //   }
-
-  //   var url = "${Api.api_url}sheduledunits";
-
-  //   try {
-  //     var response = await httpget(url, user['data']['token'], context);
-  //     // log(jsonEncode(response));
-  //     if (response == null) {
-  //       print("No Internet");
-  //       // Handle no internet scenario
-  //       message = 'Something Wrong, or check your Internet Connections';
-  //       EasyLoading.dismiss();
-  //       return;
-  //     }
-
-  //     if (response['success'] && response['data'] != null) {
-  //       List<dynamic> responseData = response['data'];
-
-  //       List<Vehicle> fetchedVehicles = responseData.map((vehicleData) {
-  //         return Vehicle.fromJson(vehicleData);
-  //       }).toList();
-
-  //       setState(() {
-  //         vehicles = fetchedVehicles;
-  //         isLoading = false;
-  //         message = '';
-  //       });
-  //       EasyLoading.dismiss();
-  //     } else {
-  //       // Handle other scenarios
-  //       setState(() {
-  //         isLoading = false;
-  //         message = '${response['msg']}';
-  //       });
-  //       EasyLoading.dismiss();
-  //     }
-  //   } catch (e) {
-  //     setState(() {
-  //       isLoading = false;
-  //       message = 'Network Problem';
-  //     });
-  //     EasyLoading.dismiss();
-  //     // message = '${"Network Problem"}';
-  //     print('Error fetching data: $e');
-  //   }
-  // }
   Future<void> fetchData() async {
     final shouldShowLoading = vehicles.isEmpty;
 

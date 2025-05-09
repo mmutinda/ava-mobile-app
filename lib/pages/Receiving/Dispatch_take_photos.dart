@@ -36,12 +36,9 @@ class _Dispatch_take_photosState extends State<Dispatch_take_photos>
   var user = {};
   String loadingText = '';
   bool isLoading = false;
-  late Completer<void> _completer;
   List materials = [];
   @override
   void initState() {
-    _completer = Completer<void>();
-
     getuserdata().then((value) {
       setState(() {
         user = jsonDecode(value);
@@ -58,14 +55,6 @@ class _Dispatch_take_photosState extends State<Dispatch_take_photos>
     });
 
     super.initState();
-  }
-
-  @override
-  void dispose() {
-    if (!_completer.isCompleted) {
-      _completer.complete(); // Completes the future
-    }
-    super.dispose();
   }
 
   @override
@@ -130,7 +119,7 @@ class _Dispatch_take_photosState extends State<Dispatch_take_photos>
                       print(payload);
                       print(url);
                       var response = await httppostwithtoken(
-                          url, user["token"], payload, context);
+                          url, user['data']["token"], payload, context);
                       log(jsonEncode(response));
                       if (response['success']) {
                         fetchmaterials().then(
@@ -188,74 +177,65 @@ class _Dispatch_take_photosState extends State<Dispatch_take_photos>
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          "${widget.title == 'CHASSIS' ? widget.sku : widget.title}",
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        Expanded(
+          child: SizedBox(
+            child: isLoading
+                ? Center(child: CircularProgressIndicator())
+                : loadingText.isNotEmpty
+                    ? ErrorMessageWidget(
+                        errorMessage: loadingText,
+                        onRetry: () {
+                          fetchmaterials().then(
+                            (value) {
+                              if (materials.isEmpty) {
+                                setState(() {
+                                  loadingText = 'No Images Found';
+                                });
+                              }
+                            },
+                          );
+                        },
+                      )
+                    : SingleChildScrollView(
+                        child: GridView.count(
+                            shrinkWrap: true,
+                            crossAxisCount: 3,
+                            crossAxisSpacing: 2,
+                            mainAxisSpacing: 2,
+                            physics: const NeverScrollableScrollPhysics(),
+                            children: List.generate(materials.length, (index) {
+                              var req = materials[index];
+                              print(req['image']);
+                              var image = req['image'];
+                              var imageId = req['id'];
+                              var imageUrl = "${Api.progress_image}${image}";
+                              var No = index + 1;
+                              return _buildImageCard(
+                                imageUrl,
+                                imageId,
+                                No,
+                              );
+                              // return Text("data");
+                            })),
+                      ),
+          ),
         ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Expanded(
-            child: SizedBox(
-              child: isLoading
-                  ? Center(child: SizedBox.shrink())
-                  : loadingText.isNotEmpty
-                      ? ErrorMessageWidget(
-                          errorMessage: loadingText,
-                          onRetry: () {
-                            fetchmaterials().then(
-                              (value) {
-                                if (materials.isEmpty) {
-                                  setState(() {
-                                    loadingText = 'No Images Found';
-                                  });
-                                }
-                              },
-                            );
-                          },
-                        )
-                      : SingleChildScrollView(
-                          child: GridView.count(
-                              shrinkWrap: true,
-                              crossAxisCount: 4,
-                              crossAxisSpacing: 2,
-                              mainAxisSpacing: 2,
-                              physics: const NeverScrollableScrollPhysics(),
-                              children:
-                                  List.generate(materials.length, (index) {
-                                var req = materials[index];
-                                print(req['image']);
-                                var image = req['image'];
-                                var imageId = req['id'];
-                                var imageUrl =
-                                    "${"Api.progress_image"}${image}";
-                                var No = index + 1;
-                                return _buildImageCard(
-                                  imageUrl,
-                                  imageId,
-                                  No,
-                                );
-                                // return Text("data");
-                              })),
-                        ),
-            ),
-          ),
-          // if (selectedImages.length == 0)
-          ElevatedButton.icon(
-            icon: Icon(Icons.camera),
-            style: ElevatedButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(5))),
-            label: Text('Capture Image'),
-            onPressed: () async {
-              // await getImages();
-              await captureImage();
-            },
-          ),
-        ]),
-      ),
+        // if (selectedImages.length == 0)
+        ElevatedButton.icon(
+          icon: Icon(Icons.camera),
+          style: ElevatedButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(5))),
+          label: Text('Capture Image'),
+          onPressed: () async {
+            // await getImages();
+            await captureImage();
+          },
+        ),
+      ]),
     );
   }
 
@@ -317,7 +297,7 @@ class _Dispatch_take_photosState extends State<Dispatch_take_photos>
     String url = Api.api_url + "uploadReceivingImages";
     print(url);
     var response = await uploadImagesWithToken2(
-        vehicleId.toString(), url, images, user["token"]);
+        vehicleId.toString(), url, images, user['data']["token"]);
     print("+++++");
     // print(response);
     log(jsonEncode(response));
@@ -348,13 +328,13 @@ class _Dispatch_take_photosState extends State<Dispatch_take_photos>
     );
 
     // pr.show();
-    var response = await httpget(url, user["token"], context);
-    print(response["job_cards"]);
+    var response = await httpget(url, user['data']["token"], context);
+    // print(response["data"]);
     if (response != null) {
       pr.hide();
       setState(() {
         isLoading = false;
-        materials = response["job_cards"];
+        materials = response["data"];
         // images = response["job_cards"]['progress_images'];
       });
     } else {

@@ -17,19 +17,24 @@ import 'package:isuze_pqcs/pages/qc_inspection/routing_structure/single_question
 import 'package:isuze_pqcs/pages/qc_inspection/routing_structure/traceable_question.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
+import 'package:http/http.dart' as http;
 
 class JobCardQuestionsTemplate extends StatefulWidget {
   final query_id;
   final vehicle_id;
   final shop_id;
   final categoryName;
+  final shop_name;
+  final chasis_no;
 
   const JobCardQuestionsTemplate(
       {super.key,
       this.query_id,
       this.vehicle_id,
       this.shop_id,
-      this.categoryName});
+      this.categoryName,
+      required this.shop_name,
+      required this.chasis_no});
 
   @override
   State<JobCardQuestionsTemplate> createState() =>
@@ -171,6 +176,38 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                 );
                               } else if (get["quiz_type"] == "multiple") {
                                 return MultipleQuestion(
+                                     initialImage: question["answer"]
+                                        ?["image_path"],
+                                    onImageChanged: (File? image) {
+                                      print("image path $image");
+                                      setState(() {
+                                        if (image == null) {
+                                          images.remove(get['id']);
+                                        } else {
+                                          images[get['id']] = image;
+                                        }
+                                      });
+                                    },
+                                    onUsersSelected: (List<String> value) {
+                                      var qid = get['id'];
+                                      setState(() {
+                                        selectedUsers[qid] = value;
+                                      });
+                                    },
+                                    // users: [
+                                    //   {
+                                    //     'name': 'Mercy',
+                                    //     'email': 'mercy@ava.co.ke'
+                                    //   },
+                                    //   {'name': 'ICT', 'email': 'ict@technoguru.co.tz'}
+                                    // ],
+                                    users: (get['emails'] as List<dynamic>)
+                                        .map((user) {
+                                      return {
+                                        'name': user['name'].toString(),
+                                        'email': user['email'].toString(),
+                                      };
+                                    }).toList(),
                                     index: index + 1,
                                     id: get['id'],
                                     options: get["options"],
@@ -233,11 +270,12 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                     initialImage: question["answer"]
                                         ?["image_path"],
                                     onImageChanged: (File? image) {
+                                      print("image path $image");
                                       setState(() {
                                         if (image == null) {
-                                          images.remove(question['id']);
+                                          images.remove(get['id']);
                                         } else {
-                                          images[question['id']] = image;
+                                          images[get['id']] = image;
                                         }
                                       });
                                     },
@@ -247,28 +285,20 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                         selectedUsers[qid] = value;
                                       });
                                     },
-                                    users: [
-                                      {
-                                        'name': 'Duncan',
-                                        'email': 'craig@hanspaul.co.tz'
-                                      },
-                                      {
-                                        'name': 'Robinson ',
-                                        'email': 'carlos@hanspaul.co.tz'
-                                      },
-                                      {
-                                        'name': 'Victor',
-                                        'email': 'scarneiro@hanspaul.co.tz'
-                                      },
-                                      {
-                                        'name': 'Mercy',
-                                        'email': 'sri@hanspaul.co.tz'
-                                      },
-                                      {
-                                        'name': 'ICT',
-                                        'email': 'ict@hanspaul.co.tz'
-                                      }
-                                    ],
+                                    // users: [
+                                    //   {
+                                    //     'name': 'Mercy',
+                                    //     'email': 'mercy@ava.co.ke'
+                                    //   },
+                                    //   {'name': 'ICT', 'email': 'ict@technoguru.co.tz'}
+                                    // ],
+                                    users: (get['emails'] as List<dynamic>)
+                                        .map((user) {
+                                      return {
+                                        'name': user['name'].toString(),
+                                        'email': user['email'].toString(),
+                                      };
+                                    }).toList(),
                                     initialDecripValue:
                                         get["defect_description"],
                                     hasDescription:
@@ -385,6 +415,8 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                     var answer = {
                                       "vehicle_id": widget.vehicle_id,
                                       "shop_id": widget.shop_id,
+                                      "shop_name": widget.shop_name,
+                                      "chassis_no": widget.chasis_no,
                                       "quiz_id": Category['id'],
                                       "item_id": quest['id'],
                                       "item_name": quest['query_name'],
@@ -402,6 +434,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                       "defects": '',
                                       "signature":
                                           traceableSignature[questionId],
+                                      "users": selectedUsers[questionId],
                                     };
 
                                     if (quest["quiz_type"] == "traceable") {
@@ -452,85 +485,86 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
 
                                   if (answers.isNotEmpty) {
                                     //For normal dialog
-                                    setState(() {
-                                      isButtonEnabled = false;
-                                    });
-                                    ProgressDialog pr = ProgressDialog(context,
-                                        type: ProgressDialogType.normal,
-                                        isDismissible: true,
-                                        showLogs: true);
-                                    pr.style(
-                                      message: 'Saving answers...',
-                                      borderRadius: 8,
-                                      backgroundColor: Colors.white,
-                                      progressWidget: const SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: Center(
-                                              child:
-                                                  CircularProgressIndicator())),
-                                      elevation: 10.0,
-                                      insetAnimCurve: Curves.easeInOut,
-                                    );
+                                    saveData(answers);
+                                    // setState(() {
+                                    //   isButtonEnabled = false;
+                                    // });
+                                    // ProgressDialog pr = ProgressDialog(context,
+                                    //     type: ProgressDialogType.normal,
+                                    //     isDismissible: true,
+                                    //     showLogs: true);
+                                    // pr.style(
+                                    //   message: 'Saving answers...',
+                                    //   borderRadius: 8,
+                                    //   backgroundColor: Colors.white,
+                                    //   progressWidget: const SizedBox(
+                                    //       width: 20,
+                                    //       height: 20,
+                                    //       child: Center(
+                                    //           child:
+                                    //               CircularProgressIndicator())),
+                                    //   elevation: 10.0,
+                                    //   insetAnimCurve: Curves.easeInOut,
+                                    // );
 
-                                    pr.show();
-                                    saveanswers(answers).then((res) {
-                                      pr.hide().then((value) {
-                                        setState(() {
-                                          isButtonEnabled = true;
-                                        });
-                                        if (res["success"]) {
-                                          Navigator.pop(context);
-                                          awesomeTopSnackbar(
-                                            context,
-                                            '${res["msg"]}',
-                                            iconWithDecoration: BoxDecoration(
-                                              borderRadius:
-                                                  BorderRadius.circular(20),
-                                              border: Border.all(),
-                                              color: Colors.white,
-                                            ),
-                                            icon: Icon(
-                                              Icons.done,
-                                              color: Colors.green[900],
-                                            ),
-                                          );
-                                        } else {
-                                          awesomeTopSnackbar(
-                                            backgroundColor: Colors.red,
-                                            context,
-                                            '${res["msg"]}',
-                                            iconWithDecoration: BoxDecoration(
-                                              borderRadius:
-                                                  BorderRadius.circular(20),
-                                              border: Border.all(),
-                                              color: Colors.white,
-                                            ),
-                                          );
-                                        }
-                                      });
-                                    });
-                                    Future.delayed(
-                                        const Duration(seconds: dismissseconds),
-                                        () {
-                                      if (pr.isShowing()) {
-                                        pr.hide();
-                                        setState(() {
-                                          isButtonEnabled = true;
-                                        });
-                                        awesomeTopSnackbar(
-                                          backgroundColor: Colors.red,
-                                          context,
-                                          "Something Wrong or Check internet Connection",
-                                          iconWithDecoration: BoxDecoration(
-                                            borderRadius:
-                                                BorderRadius.circular(20),
-                                            border: Border.all(),
-                                            color: Colors.white,
-                                          ),
-                                        );
-                                      }
-                                    });
+                                    // pr.show();
+                                    // saveanswers(answers).then((res) {
+                                    //   pr.hide().then((value) {
+                                    //     setState(() {
+                                    //       isButtonEnabled = true;
+                                    //     });
+                                    //     if (res["success"]) {
+                                    //       Navigator.pop(context);
+                                    //       awesomeTopSnackbar(
+                                    //         context,
+                                    //         '${res["msg"]}',
+                                    //         iconWithDecoration: BoxDecoration(
+                                    //           borderRadius:
+                                    //               BorderRadius.circular(20),
+                                    //           border: Border.all(),
+                                    //           color: Colors.white,
+                                    //         ),
+                                    //         icon: Icon(
+                                    //           Icons.done,
+                                    //           color: Colors.green[900],
+                                    //         ),
+                                    //       );
+                                    //     } else {
+                                    //       awesomeTopSnackbar(
+                                    //         backgroundColor: Colors.red,
+                                    //         context,
+                                    //         '${res["msg"]}',
+                                    //         iconWithDecoration: BoxDecoration(
+                                    //           borderRadius:
+                                    //               BorderRadius.circular(20),
+                                    //           border: Border.all(),
+                                    //           color: Colors.white,
+                                    //         ),
+                                    //       );
+                                    //     }
+                                    //   });
+                                    // });
+                                    // Future.delayed(
+                                    //     const Duration(seconds: dismissseconds),
+                                    //     () {
+                                    //   if (pr.isShowing()) {
+                                    //     pr.hide();
+                                    //     setState(() {
+                                    //       isButtonEnabled = true;
+                                    //     });
+                                    //     awesomeTopSnackbar(
+                                    //       backgroundColor: Colors.red,
+                                    //       context,
+                                    //       "Something Wrong or Check internet Connection",
+                                    //       iconWithDecoration: BoxDecoration(
+                                    //         borderRadius:
+                                    //             BorderRadius.circular(20),
+                                    //         border: Border.all(),
+                                    //         color: Colors.white,
+                                    //       ),
+                                    //     );
+                                    //   }
+                                    // });
                                   } else {
                                     awesomeTopSnackbar(context,
                                         "Please Answer at least one question",
@@ -540,7 +574,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                           border: Border.all(),
                                           color: Colors.white,
                                         ),
-                                        backgroundColor: mycolor);
+                                        backgroundColor: Colors.red);
                                   }
                                 }
                               },
@@ -554,17 +588,76 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
     );
   }
 
-  Future saveanswers(answers) async {
-    String url = Api.api_url + "answerquery2";
-    print(url);
-    // var payload = {"answers": jsonEncode(answers)};
-    var payload = answers;
+  // Future saveanswers(answers) async {
+  //   String url = Api.api_url + "answerquery2";
+  //   print(url);
+  //   // var payload = {"answers": jsonEncode(answers)};
+  //   var payload = answers;
 
-    var responsedata =
-        await httppostwithtoken(url, user['data']["token"], payload, context);
-    // log(jsonEncode(payload));
-    // log(jsonEncode(responsedata));
-    return responsedata;
+  //   var responsedata =
+  //       await httppostwithtoken(url, user['data']["token"], payload, context);
+  //   // log(jsonEncode(payload));
+  //   // log(jsonEncode(responsedata));
+  //   return responsedata;
+  // }
+
+  Future<void> saveData(answers) async {
+    if (!_formKey.currentState!.validate()) return;
+
+    if (answers.isEmpty) {
+      awesomeTopSnackbar(context, "Please answer at least one question",
+          backgroundColor: Colors.red);
+      return;
+    }
+
+    setState(() => isButtonEnabled = false);
+    ProgressDialog pr = ProgressDialog(context);
+    pr.style(message: 'Saving answers...');
+    await pr.show();
+
+    try {
+      String url = Api.api_url + "answerquery2";
+      var request = http.MultipartRequest('POST', Uri.parse(url));
+      request.headers.addAll({
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ${user['data']["token"]}',
+      });
+      request.fields['answers'] = jsonEncode(answers);
+      request.fields['vehicle_id'] = widget.vehicle_id.toString();
+
+      for (var entry in images.entries) {
+        request.files.add(await http.MultipartFile.fromPath(
+            'images[${entry.key}]', entry.value.path));
+        // print("${entry.key}, Path: ${entry.value.path}");
+      }
+
+      var response = await request.send();
+      print(response);
+      var responseData = await response.stream.bytesToString();
+      print("===>${responseData}");
+      var result = jsonDecode(responseData);
+      // print(result);
+      log(jsonEncode(result));
+      await pr.hide();
+      setState(() => isButtonEnabled = true);
+
+      if (result["success"]) {
+        Navigator.pop(context);
+        awesomeTopSnackbar(
+            context, result["msg"] ?? "Answers Recorded Successfully",
+            backgroundColor: Colors.green);
+      } else {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(result["msg"] ?? "Error")));
+      }
+    } catch (e) {
+      await pr.hide();
+      setState(() => isButtonEnabled = true);
+      awesomeTopSnackbar(
+          context, "Something went wrong. Check your internet connection.",
+          backgroundColor: Colors.red);
+    }
   }
 
   Future<void> fetchQuestions() async {
@@ -575,7 +668,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
 
     final url =
         "${Api.api_url}quiz/${widget.query_id}/${widget.vehicle_id}/${widget.shop_id}";
-
+    print(url);
     final responseData = await httpget(url, user['data']["token"], context);
     // final responseData = await httpget(url, Api.usr, context);
     print(responseData);

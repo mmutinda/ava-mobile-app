@@ -176,7 +176,7 @@ class _ShopsScreanState extends State<ShopsScrean> {
     // print(shop);
     return Scaffold(
       appBar: AppBar(
-        title: Text("Shops", style: TextStyle(fontWeight: FontWeight.w600)),
+        title: Text("QFL 3", style: TextStyle(fontWeight: FontWeight.w600)),
       ),
       body: Padding(
         padding: const EdgeInsets.all(10.0),

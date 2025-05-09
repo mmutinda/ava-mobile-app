@@ -1,7 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
@@ -14,15 +17,20 @@ class MultipleQuestion extends StatefulWidget {
   final can_sign;
   final checkanswered;
   final String? initialRadioValue;
+  final String? initialImage;
   // final List options;
   final String question;
+  final List<Map<String, String>> users; // List of users with name and email
   final ValueChanged<List<dynamic>> onValuesChanged;
   final ValueChanged<String> onRadioChanged;
   final ValueChanged<String> onValueChanged2;
+  final ValueChanged<File?> onImageChanged; // Allow null for deletion
+  final ValueChanged<List<String>> onUsersSelected;
   const MultipleQuestion({
     Key? key,
     required this.id,
     required this.index,
+    required this.onUsersSelected,
     // required this.options,
     required this.question,
     required this.onValuesChanged,
@@ -32,6 +40,9 @@ class MultipleQuestion extends StatefulWidget {
     this.checkanswered,
     required this.onValueChanged2,
     this.initialRadioValue,
+    required this.users,
+    required this.onImageChanged,
+    required this.initialImage,
   }) : super(key: key);
 
   @override
@@ -42,9 +53,38 @@ class MultipleQuestion extends StatefulWidget {
 class _MultipleQuestionState extends State<MultipleQuestion>
     with AutomaticKeepAliveClientMixin {
   String? okay;
+  File? _image; // Holds the captured image
   List<dynamic> selectedValues = [];
   late TextEditingController inputController;
   Uint8List? _signatureImage;
+  void _handleImageChanged() {
+    widget.onImageChanged(_image!);
+  }
+
+  /// Capture image from camera
+  Future<void> _captureImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.camera);
+    if (image != null) {
+      setState(() {
+        _image = File(image.path);
+        _handleImageChanged(); // Notify parent
+      });
+    }
+  }
+
+  List<String> selectedUsers = [];
+  void _deleteImage() {
+    print("Deleting image...");
+    setState(() {
+      _image = null; // Set image to null when deleting
+    });
+
+    // Pass null to onImageChanged to indicate deletion
+    widget.onImageChanged(null);
+
+    print("Image deleted, _image is now: $_image");
+  }
 
   @override
   bool get wantKeepAlive => true;
@@ -59,7 +99,7 @@ class _MultipleQuestionState extends State<MultipleQuestion>
     super.build(context);
 
     return Card(
-      elevation: 2,
+      elevation: 1,
       color: Colors.white,
       child: Container(
         padding: const EdgeInsets.all(0),
@@ -71,7 +111,6 @@ class _MultipleQuestionState extends State<MultipleQuestion>
               width: 4,
               height: 35,
               // height: double.infinity,
-
               margin: EdgeInsets.only(top: 16),
               color: widget.index % 2 == 0 ? mycolor : Colors.amber,
             ),
@@ -160,6 +199,38 @@ class _MultipleQuestionState extends State<MultipleQuestion>
                                         : Colors.black,
                                   ),
                                 ),
+                                Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: widget.initialImage == null
+                                      ? GestureDetector(
+                                          onTap: _captureImage,
+                                          child: Container(
+                                            padding: EdgeInsets.all(8),
+                                            // width: 80,
+                                            // height: 80,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              // color: Colors.black,
+                                              // boxShadow: [
+                                              //   BoxShadow(
+                                              //     color: Colors.black26,
+                                              //     blurRadius: 2,
+                                              //     spreadRadius: 1,
+                                              //   ),
+                                              // ],
+                                            ),
+                                            child: Center(
+                                              child: Icon(
+                                                Icons.camera_alt,
+                                                // color: Colors.white,
+                                                color: Colors.teal,
+                                                size: 30,
+                                              ),
+                                            ),
+                                          ),
+                                        )
+                                      : Container(),
+                                ),
                               ],
                             ),
                           ],
@@ -171,7 +242,7 @@ class _MultipleQuestionState extends State<MultipleQuestion>
                     ),
                     okay == "NOK"
                         ? MultiSelectDialogField(
-                            dialogHeight: 250,
+                            dialogHeight: 200,
                             items: indexedNames
                                 .map((name) =>
                                     MultiSelectItem<String>(name, name))
@@ -196,6 +267,7 @@ class _MultipleQuestionState extends State<MultipleQuestion>
                             },
                           )
                         : Container(),
+
                     gap(),
                     if (widget.can_sign == 'Yes' &&
                         widget.checkanswered == false) ...[
@@ -270,8 +342,86 @@ class _MultipleQuestionState extends State<MultipleQuestion>
                             label: Text("Sign Here")),
                       ]
                     ],
-
+                    // Capture Image & Display
+                    if (okay == "NOK" ||
+                        widget.initialImage != null ||
+                        okay == "OK")
+                      Row(
+                        children: [
+                          if (widget.initialImage == null) const Spacer(),
+                          if (_image != null)
+                            Stack(
+                              alignment: Alignment.topRight,
+                              children: [
+                                Image.file(
+                                  _image!,
+                                  width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.cancel,
+                                      color: Colors.red),
+                                  onPressed:
+                                      _deleteImage, // Delete image action
+                                ),
+                              ],
+                            ),
+                          if (widget.initialImage != null)
+                            Stack(
+                              alignment: Alignment.topRight,
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: CachedNetworkImage(
+                                    imageUrl:
+                                        "${"Api.qc_image"}${widget.initialImage}",
+                                    width: 80, // Small image size
+                                    height: 80,
+                                    fit: BoxFit.cover,
+                                    placeholder: (context, url) => Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                    errorWidget: (context, url, error) =>
+                                        Image.asset(
+                                      'assets/images/placeholder.jpg',
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                )
+                              ],
+                            ),
+                        ],
+                      ),
                     // const Divider()
+                    const SizedBox(height: 10),
+                    // Notify Users Checkboxes
+                    if (okay == "NOK")
+                      const Text(
+                        "Notify Users",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    if (okay == "NOK")
+                      Column(
+                        children: widget.users.map((user) {
+                          return CheckboxListTile(
+                            title: Text(user['name']!), // Display user name
+                            value: selectedUsers.contains(user['email']),
+                            onChanged: (bool? value) {
+                              setState(() {
+                                if (value == true) {
+                                  selectedUsers
+                                      .add(user['email']!); // Store email
+                                } else {
+                                  selectedUsers
+                                      .remove(user['email']!); // Remove email
+                                }
+                                widget.onUsersSelected(selectedUsers);
+                              });
+                            },
+                          );
+                        }).toList(),
+                      )
                   ],
                 ),
               ),

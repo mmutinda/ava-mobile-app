@@ -8,9 +8,9 @@ import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/loader.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
-import 'package:isuze_pqcs/pages/home.dart';
 import 'package:isuze_pqcs/pages/ShopsScrean.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/QcViewlistDefects.dart';
+import 'package:isuze_pqcs/pages/qc_inspection/RaiseClaim.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/jobcard_questions_template.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/scheduleUnits.dart';
 import 'package:nb_utils/nb_utils.dart';
@@ -18,8 +18,9 @@ import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
 
 class QcCategories extends StatefulWidget {
   final ShopId;
+  final shop_name;
   final res;
-  const QcCategories({super.key, required this.ShopId, required this.res});
+  const QcCategories({super.key, required this.ShopId, required this.res, required this.shop_name});
   @override
   State<QcCategories> createState() => _QcCategoriesState();
 }
@@ -52,17 +53,39 @@ class _QcCategoriesState extends State<QcCategories> {
     );
     return Scaffold(
       floatingActionButton: SpeedDial(
-        overlayOpacity: 0.1,
+        backgroundColor: Colors.blueAccent, // Makes FAB more visible
+        foregroundColor: Colors.white, // Icon color
+        overlayColor: Colors.black, // Background overlay color
+        overlayOpacity: 0.3, // Slightly darker for focus
         animatedIcon: AnimatedIcons.menu_close,
+        spacing: 12, // Space between children
+        spaceBetweenChildren: 8,
+        elevation: 8, // Adds shadow
         children: [
           SpeedDialChild(
-            labelStyle: TextStyle(fontWeight: FontWeight.bold),
-            child: Icon(Icons.menu_open_outlined),
+            backgroundColor: Colors.green, // Custom child button color
+            foregroundColor: Colors.white, // Icon color
+            labelStyle:
+                TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+            child: Icon(Icons.check_circle_outline),
             label: 'Correct Defects',
             onTap: () {
-              QCDefectsPage(vehileId: widget.res['data']['vehicledata']['id'])
-                  .launch(context,
-                      pageRouteAnimation: PageRouteAnimation.Slide);
+              QCDefectsPage(
+                vehileId: widget.res['data']['vehicledata']['id'],
+              ).launch(context, pageRouteAnimation: PageRouteAnimation.Slide);
+            },
+          ),
+          SpeedDialChild(
+            backgroundColor: Colors.red, // Custom child button color
+            foregroundColor: Colors.white,
+            labelStyle:
+                TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+            child: Icon(Icons.report_problem_outlined),
+            label: 'Raise Claim',
+            onTap: () {
+              ClaimForm(
+                vehileId: widget.res['data']['vehicledata']['id'],
+              ).launch(context, pageRouteAnimation: PageRouteAnimation.Slide);
             },
           ),
         ],
@@ -120,6 +143,9 @@ class _QcCategoriesState extends State<QcCategories> {
                                   MaterialPageRoute(
                                     builder: (context) =>
                                         JobCardQuestionsTemplate(
+                                      chasis_no: widget.res['data']
+                                          ['vehicledata']['vin_no'],
+                                      shop_name: widget.shop_name,
                                       query_id: category['id'],
                                       shop_id: widget.ShopId,
                                       vehicle_id: widget.res['data']
@@ -207,40 +233,10 @@ class _QcCategoriesState extends State<QcCategories> {
                                 shape: const RoundedRectangleBorder(),
                                 foregroundColor: textWhite),
                             onPressed: () async {
-                              var validate = true;
-                              // for (var i = 0; i < categories.length; i++) {
-                              //   var category = categories[i];
-                              //   // List<dynamic> question = category["question"];
-
-                              //   if ((category["queryanswers"].length !=
-                              //       category["queries_count"].length)) {
-                              //     setState(() {
-                              //       validate = false;
-                              //     });
-                              //     break;
-                              //   }
-                              // }
-                              // if (validate == true) {
                               if (defect_exist) {
                                 if (widget.ShopId == '15' ||
                                     widget.ShopId == '16' ||
                                     widget.ShopId == '28') {
-                                  // showConfirmDialog(
-                                  //     context, 'Unit  will hit DRR Score!!',
-                                  //     onAccept: (context) async {
-                                  //   showDialog(
-                                  //     context: context,
-                                  //     barrierDismissible: false,
-                                  //     builder: (BuildContext context) {
-                                  //       return Center(
-                                  //         child: CustomLoader(),
-                                  //       );
-                                  //     },
-                                  //   );
-                                  //   await saveData();
-                                  // },
-                                  //     positiveText: 'Push',
-                                  //     negativeText: "Don't Push");
                                   CustomConfirmDialog.show(
                                     context: context,
                                     title: 'Confirm Push',
@@ -263,16 +259,6 @@ class _QcCategoriesState extends State<QcCategories> {
                                     },
                                   );
                                 } else {
-                                  // showConfirmDialogCustom(
-                                  //     primaryColor: Colors.amber[900],
-                                  //     context,
-                                  //     title: 'Unit has uncorrected defects!!',
-                                  //     onAccept: (context) async {
-                                  //   // Navigator.pop(context);
-                                  //   await saveData();
-                                  // },
-                                  //     positiveText: 'Push',
-                                  //     negativeText: "Don't Push");
                                   CustomConfirmDialog.show(
                                     context: context,
                                     title: 'Confirm Push',
@@ -306,19 +292,6 @@ class _QcCategoriesState extends State<QcCategories> {
                                   },
                                 );
                               }
-                              // }
-                              // else {
-                              //   awesomeTopSnackbar(
-                              //     context,
-                              //     "Please answer all questions",
-                              //     iconWithDecoration: BoxDecoration(
-                              //       borderRadius: BorderRadius.circular(20),
-                              //       border: Border.all(),
-                              //       color: Colors.white,
-                              //     ),
-                              //     backgroundColor: Colors.red,
-                              //   );
-                              // }
                             },
                             child: const Text('PUSH TO THE NEXT SHOP')),
                       ),
@@ -355,13 +328,6 @@ class _QcCategoriesState extends State<QcCategories> {
 
     if (response['success'] != null) {
       if (response['success']) {
-        // ShopsScrean().launch(context, isNewTask: true,);
-        // Navigator.pushAndRemoveUntil(
-        //   context,
-        //   MaterialPageRoute(builder: (context) => ShopsScrean()),
-        //   (route) => route
-        //       .isFirst, // Keeps only the first route (Home screen) in the stack
-        // );
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => ShopsScrean()),

@@ -52,6 +52,7 @@ class _SingleQuestionState extends State<SingleQuestion>
   String? okay;
   Uint8List? _signatureImage;
   late TextEditingController inputController;
+  File? _image; // Holds the captured image
   @override
   bool get wantKeepAlive => true;
   @override
@@ -72,6 +73,10 @@ class _SingleQuestionState extends State<SingleQuestion>
     widget.onInputValueChanged(inputController.text);
   }
 
+  void _handleImageChanged() {
+    widget.onImageChanged(_image!);
+  }
+
   /// Capture image from camera
   Future<void> _captureImage() async {
     final ImagePicker picker = ImagePicker();
@@ -79,12 +84,11 @@ class _SingleQuestionState extends State<SingleQuestion>
     if (image != null) {
       setState(() {
         _image = File(image.path);
-        // Notify parent
+        _handleImageChanged(); // Notify parent
       });
     }
   }
 
-  /// Delete the captured image
   void _deleteImage() {
     print("Deleting image...");
     setState(() {
@@ -99,7 +103,6 @@ class _SingleQuestionState extends State<SingleQuestion>
 
   List<String> selectedUsers = [];
 
-  File? _image; // Holds the captured image
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -283,19 +286,11 @@ class _SingleQuestionState extends State<SingleQuestion>
                                               // height: 80,
                                               decoration: BoxDecoration(
                                                 shape: BoxShape.circle,
-                                                color: Colors.black,
-                                                boxShadow: [
-                                                  BoxShadow(
-                                                    color: Colors.black26,
-                                                    blurRadius: 4,
-                                                    spreadRadius: 1,
-                                                  ),
-                                                ],
                                               ),
                                               child: Center(
                                                 child: Icon(
                                                   Icons.camera_alt,
-                                                  color: Colors.white,
+                                                  color: Colors.teal,
                                                   size: 30,
                                                 ),
                                               ),
