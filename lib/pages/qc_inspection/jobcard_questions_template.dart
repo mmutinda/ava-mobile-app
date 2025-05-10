@@ -176,8 +176,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                 );
                               } else if (get["quiz_type"] == "multiple") {
                                 return MultipleQuestion(
-                                    intial_option:
-                                        get["defect_names"],
+                                    intial_option: get["defect_names"],
                                     initialImage: question["answer"]
                                         ?["image_path"],
                                     onImageChanged: (File? image) {

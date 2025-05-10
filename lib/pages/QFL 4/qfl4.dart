@@ -7,7 +7,6 @@ import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/models/qc_inpection.dart';
 import 'package:isuze_pqcs/pages/QFL%204/QFL4_form.dart';
-import 'package:isuze_pqcs/pages/qc_inspection/chooseComponent.dart';
 import 'package:nb_utils/nb_utils.dart';
 
 class QFL4 extends StatefulWidget {

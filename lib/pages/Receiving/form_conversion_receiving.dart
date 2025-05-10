@@ -86,6 +86,12 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
     try {
       final results = await Future.wait([fetchClients(), fetchChecklist()]);
       // Check if any result is null or missing expected keys
+      // var dat = jsonDecode(results[2]['data'][0]['file']);
+      // for (var item in dat) {
+      //   print(item);
+      // }
+      // print(dat);
+      // print(results[2]['data'][0]['file']);
       if (results[0] == null ||
           results[1] == null ||
           results[0]["data"] == null ||
@@ -671,6 +677,13 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
 
   Future fetchChecklist() async {
     String url = Api.api_url + "loadVehicleReceiving";
+    var responsedata = await httpget(url, user['data']['token'], context);
+    print(responsedata);
+    return responsedata;
+  }
+
+  Future test() async {
+    String url = Api.api_url + "loadnearmiss";
     var responsedata = await httpget(url, user['data']['token'], context);
     print(responsedata);
     return responsedata;

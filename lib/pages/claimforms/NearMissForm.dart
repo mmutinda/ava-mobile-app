@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
@@ -7,6 +8,7 @@ import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:http/http.dart' as http;
 import 'package:isuze_pqcs/common/functions.dart';
+import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
 
 class NearMissFormPage extends StatefulWidget {
   const NearMissFormPage({Key? key}) : super(key: key);
@@ -82,18 +84,21 @@ class _NearMissFormPageState extends State<NearMissFormPage> {
 
     if (!_formKey.currentState!.validate()) return;
 
-    final uri = Uri.parse('${Api.api_url}loaAPiShedulledUnits');
+    final uri = Uri.parse('${Api.api_url}nearmiss');
     var request = http.MultipartRequest('POST', uri);
-    request.headers['Authorization'] = 'Bearer ${user['data']['token']}';
-    request.headers['Accept'] = 'application/json';
+    request.headers.addAll({
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ${user['data']["token"]}',
+    });
 
     // Add fields
     request.fields['department'] = department ?? '';
     request.fields['pf_number'] = pfController.text;
-    request.fields['date'] = selectedDate!.toIso8601String();
+    request.fields['date'] = DateFormat('dd-MM-yyyy').format(selectedDate!);
     request.fields['location'] = locationController.text;
-    request.fields['risk_level'] = riskLevel ?? '';
-    request.fields['category'] = category ?? '';
+    request.fields['level_of_risk'] = riskLevel ?? '';
+    request.fields['category_of_near_miss'] = category ?? '';
     request.fields['description'] = descriptionController.text;
 
     // Add uploaded files
@@ -111,25 +116,30 @@ class _NearMissFormPageState extends State<NearMissFormPage> {
 
     // Optional headers (e.g., auth)
     // request.headers['Authorization'] = 'Bearer your_token';
-
+    ProgressDialog pr = ProgressDialog(context);
+    pr.style(message: 'Saving answers...');
+    await pr.show();
     try {
       var response = await request.send();
-
+      var responseData = await response.stream.bytesToString();
+      print("===>${responseData}");
+      log(jsonDecode(responseData));
+      await pr.hide();
       if (response.statusCode == 200 || response.statusCode == 201) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Form submitted successfully!')),
         );
 
         // Clear the form
-        _formKey.currentState!.reset();
-        pfController.clear();
-        locationController.clear();
-        descriptionController.clear();
-        selectedDate = null;
-        department = null;
-        riskLevel = null;
-        category = null;
-        uploadedFiles = [];
+        // _formKey.currentState!.reset();
+        // pfController.clear();
+        // locationController.clear();
+        // descriptionController.clear();
+        // selectedDate = null;
+        // department = null;
+        // riskLevel = null;
+        // category = null;
+        // uploadedFiles = [];
       } else {
         final respStr = await response.stream.bytesToString();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -137,9 +147,11 @@ class _NearMissFormPageState extends State<NearMissFormPage> {
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      await pr.hide();
+      // print(object)
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(content: Text('Error: $e')),
+      // );
     }
   }
 
