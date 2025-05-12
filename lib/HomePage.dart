@@ -7,8 +7,13 @@ import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/slider.dart';
 import 'package:isuze_pqcs/pages/QFL%204/qfl4.dart';
 import 'package:isuze_pqcs/pages/Receiving/display_vehicles.dart';
+import 'package:isuze_pqcs/pages/action.dart';
+import 'package:isuze_pqcs/pages/claimforms/FiveS.dart';
 import 'package:isuze_pqcs/pages/claimforms/FiveSAuditPage%20.dart';
 import 'package:isuze_pqcs/pages/claimforms/NearMissForm.dart';
+import 'package:isuze_pqcs/pages/claimforms/claimHome.dart';
+import 'package:isuze_pqcs/pages/claimforms/nearMiss.dart';
+import 'package:isuze_pqcs/pages/defetects/QCDefectsUnits.dart';
 
 import 'package:isuze_pqcs/pages/profile_screen.dart';
 import 'package:isuze_pqcs/pages/ShopsScrean.dart';
@@ -117,8 +122,26 @@ class _HomeScreanState extends State<HomeScrean> {
 
                   singleDrawerItem(
                       FeatherIcons.calendar, "Scheduled Units", 1, theme),
-                  singleDrawerItem(FeatherIcons.shoppingBag, "QFL 3", 2, theme),
-                  singleDrawerItem(FeatherIcons.shoppingBag, "QFL 4", 3, theme),
+                  singleDrawerItem(FeatherIcons.folder, "QFL 3", 2, theme),
+                  singleDrawerItem(FeatherIcons.folderPlus, "QFL 4", 3, theme),
+                  Divider(),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0, vertical: 8.0),
+                    child: Text(
+                      "Claims and Defets",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: theme.primaryColor,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ),
+                  singleDrawerItem(
+                      FeatherIcons.xCircle, "Quality Defects", 14, theme),
+                  singleDrawerItem(
+                      FeatherIcons.messageSquare, "Claims", 15, theme),
                   Divider(),
                   Padding(
                     padding: const EdgeInsets.symmetric(
@@ -133,9 +156,10 @@ class _HomeScreanState extends State<HomeScrean> {
                       ),
                     ),
                   ),
+                  singleDrawerItem(FeatherIcons.alertTriangle,
+                      "Near Miss Report", 13, theme),
                   singleDrawerItem(
-                      FeatherIcons.shield, "Near Miss Report", 13, theme),
-                  singleDrawerItem(FeatherIcons.shield, "5S Audit", 12, theme),
+                      FeatherIcons.checkSquare, "5S Audit", 12, theme),
 
                   Divider(),
                   Padding(
@@ -222,13 +246,25 @@ class _HomeScreanState extends State<HomeScrean> {
             case 12:
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => FiveSAuditPage()),
+                MaterialPageRoute(builder: (context) => DocumentListPage()),
               );
               break;
             case 13:
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => NearMissFormPage()),
+                MaterialPageRoute(builder: (context) => NearMissListPage()),
+              );
+              break;
+            case 14:
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => DefectsUnit()),
+              );
+              break;
+            case 15:
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ClaimHome()),
               );
               break;
           }

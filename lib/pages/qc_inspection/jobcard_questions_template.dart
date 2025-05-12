@@ -625,13 +625,14 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
       });
       request.fields['answers'] = jsonEncode(answers);
       request.fields['vehicle_id'] = widget.vehicle_id.toString();
+      request.fields['answer_type'] = 'QFL3';
 
       for (var entry in images.entries) {
         request.files.add(await http.MultipartFile.fromPath(
             'images[${entry.key}]', entry.value.path));
         // print("${entry.key}, Path: ${entry.value.path}");
       }
-
+ 
       var response = await request.send();
       print(response);
       var responseData = await response.stream.bytesToString();

@@ -10,7 +10,7 @@ import 'package:isuze_pqcs/common/loader.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/pages/ShopsScrean.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/QcViewlistDefects.dart';
-import 'package:isuze_pqcs/pages/qc_inspection/RaiseClaim.dart';
+import 'package:isuze_pqcs/pages/claimforms/RaiseClaim.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/jobcard_questions_template.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/scheduleUnits.dart';
 import 'package:nb_utils/nb_utils.dart';
@@ -20,7 +20,11 @@ class QcCategories extends StatefulWidget {
   final ShopId;
   final shop_name;
   final res;
-  const QcCategories({super.key, required this.ShopId, required this.res, required this.shop_name});
+  const QcCategories(
+      {super.key,
+      required this.ShopId,
+      required this.res,
+      required this.shop_name});
   @override
   State<QcCategories> createState() => _QcCategoriesState();
 }
@@ -84,8 +88,10 @@ class _QcCategoriesState extends State<QcCategories> {
             label: 'Raise Claim',
             onTap: () {
               ClaimForm(
-                vehileId: widget.res['data']['vehicledata']['id'],
-              ).launch(context, pageRouteAnimation: PageRouteAnimation.Slide);
+                      // vehileId: widget.res['data']['vehicledata']['id'],
+                      )
+                  .launch(context,
+                      pageRouteAnimation: PageRouteAnimation.Slide);
             },
           ),
         ],

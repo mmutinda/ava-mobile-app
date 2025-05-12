@@ -7,10 +7,20 @@ import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/functions.dart';
+import 'package:isuze_pqcs/common/loader.dart';
 import 'package:isuze_pqcs/common/loader2.dart';
+import 'package:isuze_pqcs/pages/qc_inspection/routing_structure/multiple_question.dart';
+import 'package:isuze_pqcs/pages/qc_inspection/routing_structure/numerical_question.dart';
+import 'package:isuze_pqcs/pages/qc_inspection/routing_structure/others.dart';
+import 'package:isuze_pqcs/pages/qc_inspection/routing_structure/single_question.dart';
+import 'package:isuze_pqcs/pages/qc_inspection/routing_structure/traceable_question.dart';
 import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
 
 class QFL4_form extends StatefulWidget {
+  final vehicleId;
+  final modelId;
+
+  const QFL4_form({super.key, required this.vehicleId, required this.modelId});
   @override
   State<QFL4_form> createState() => _QFL4_formState();
 }
@@ -20,37 +30,76 @@ class _QFL4_formState extends State<QFL4_form>
   var user = {};
   FocusNode searchFocusNode = FocusNode();
   FocusNode textFieldFocusNode = FocusNode();
-
+  late SingleValueDropDownController _carModel;
   late SingleValueDropDownController _customerModel;
-
+  late TextEditingController NumberPlate;
+  late TextEditingController VehicleChassis;
+  late TextEditingController _enginrController;
+  late TextEditingController _partNoController;
+  late TextEditingController _colorController;
+  late TextEditingController _lotNo;
   var errorText = '';
   var selectedCustomerId;
   var modelId;
   var payd;
   // late List<dynamic> models = [];
-  late List<dynamic> models = [];
+  late List<dynamic> questions = [];
   // var checklistData;
   late List<dynamic> clients = [];
   late List<dynamic> checklist = [];
   List<Map<String, dynamic>> filteredModels = [];
   late List<dynamic> countries = [];
   bool isLoading = true;
+  bool _isLoadingModels = false;
   String? error;
   String errorModel = '';
   FocusNode customerTextFieldFocusNode = FocusNode();
   FocusNode customerSearchFocusNode = FocusNode();
+  FocusNode carModelTextFieldFocusNode = FocusNode();
+  FocusNode carModelSearchFocusNode = FocusNode();
 // Define your controllers
   final SingleValueDropDownController _routeController =
       SingleValueDropDownController();
   final SingleValueDropDownController _lineController =
       SingleValueDropDownController();
-
+// Define your FocusNodes
+  final FocusNode routeTextFieldFocusNode = FocusNode();
+  final FocusNode routeSearchFocusNode = FocusNode();
+  final FocusNode lineTextFieldFocusNode = FocusNode();
+  final FocusNode lineSearchFocusNode = FocusNode();
 // Sample color
   final Color mycolor = Colors.blue; // or whatever color you are using
+
+  //for qn
+  Map<int, dynamic> questionValues = {};
+  Map<int, String> traceableValues = {};
+  Map<int, String> openTextValues = {};
+  Map<int, String> singleDescipTextValues = {};
+  Map<int, String> DescipTextValues = {};
+  Map<int, String> numericValues = {};
+  Map<int, String> singleValues = {};
+  Map<int, String> singleDescripValues = {};
+  Map<int, String> singleDescripCategory = {};
+  Map<int, String> multipleValue = {};
+  Map<int, List<dynamic>> multipleValues = {};
+  Map<int, List<String>> selectedUsers = {};
+  Map<int, File> images = {};
+  String haserror = '';
+
+  var Category = {};
+  Map question = {};
+  Map<int, String> traceableSignature = {};
+  List<File> selectedImage = [];
+  late File signature;
   @override
   void initState() {
+    _carModel = SingleValueDropDownController();
     _customerModel = SingleValueDropDownController();
-
+    VehicleChassis = TextEditingController();
+    _enginrController = TextEditingController();
+    _partNoController = TextEditingController();
+    _colorController = TextEditingController();
+    _lotNo = TextEditingController();
     getuserdata().then((value) {
       setState(() {
         user = jsonDecode(value);
@@ -66,17 +115,20 @@ class _QFL4_formState extends State<QFL4_form>
       isLoading = true; // Show loading indicator
     });
     try {
-      final results = await Future.wait([fetchClients(), fetchChecklist()]);
+      final results = await Future.wait([fetchClients()]);
       // Check if any result is null or missing expected keys
-      if (results[0] == null ||
-          results[1] == null ||
-          results[0]["data"] == null ||
-          results[1]["data"] == null) {
+      // var dat = jsonDecode(results[2]['data'][0]['file']);
+      // for (var item in dat) {
+      //   print(item);
+      // }
+      // print(dat);
+      // print(results[2]['data'][0]['file']);
+      if (results[0] == null || results[0]["data"]["shop"] == null) {
         throw Exception("Failed to fetch data: Missing required information.");
       }
       setState(() {
-        clients = results[0]["data"] as List;
-        checklist = results[1]["data"] as List;
+        clients = results[0]["data"]['shop'] as List;
+        // checklist = results[1]["data"] as List;
         // filteredModels = List.from(models);
         // countries = results[1]["data"] as List;
         isLoading = false; // Stop loading indicator
@@ -93,8 +145,11 @@ class _QFL4_formState extends State<QFL4_form>
   @override
   void dispose() {
     _customerModel.dispose();
+    _carModel.dispose();
     customerTextFieldFocusNode.dispose();
     customerSearchFocusNode.dispose();
+    carModelTextFieldFocusNode.dispose();
+    carModelSearchFocusNode.dispose();
     super.dispose();
   }
 
@@ -119,7 +174,7 @@ class _QFL4_formState extends State<QFL4_form>
       appBar: AppBar(
         centerTitle: false,
         title: Text(
-          'QFL4  Form',
+          'Receiving  Form',
           // style: TextStyle(fontSize: 14),
         ),
       ),
@@ -147,247 +202,385 @@ class _QFL4_formState extends State<QFL4_form>
                           child: Padding(
                             padding: const EdgeInsets.all(8.0),
                             child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (errorModel.isNotEmpty)
-                                  Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: Text(
-                                      errorText,
-                                      style: TextStyle(color: Colors.red),
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (errorModel.isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Text(
+                                        errorText,
+                                        style: TextStyle(color: Colors.red),
+                                      ),
                                     ),
-                                  ),
-                                DropDownTextField(
-                                  controller: _customerModel,
-                                  clearOption: false,
-                                  dropDownIconProperty:
-                                      IconProperty(color: mycolor, size: 30),
-                                  textFieldDecoration: InputDecoration(
-                                    labelText: 'Section',
-                                    floatingLabelBehavior:
-                                        FloatingLabelBehavior.always,
-                                    // hintText: 'Choose Vehicle Model',
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8.0),
+                                  DropDownTextField(
+                                    controller: _customerModel,
+                                    clearOption: false,
+                                    dropDownIconProperty:
+                                        IconProperty(color: mycolor, size: 30),
+                                    textFieldDecoration: InputDecoration(
+                                      labelText: 'Shops/Sections',
+                                      floatingLabelBehavior:
+                                          FloatingLabelBehavior.always,
+                                      // hintText: 'Choose Vehicle Model',
+                                      border: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(8.0),
+                                      ),
+                                      filled: true,
+                                      fillColor: Colors.grey.shade50,
                                     ),
-                                    filled: true,
-                                    fillColor: Colors.grey.shade50,
-                                  ),
-                                  textFieldFocusNode:
-                                      customerTextFieldFocusNode,
-                                  searchFocusNode: customerSearchFocusNode,
-                                  dropDownItemCount: 5,
-                                  enableSearch: true,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return "*Required";
-                                    } else {
-                                      return null;
-                                    }
-                                  },
-                                
-                                 
-                                  dropDownList:
-                                      clients.asMap().entries.map((entry) {
-                                    int index = entry.key;
-                                    var client = entry.value;
-                                    return DropDownValueModel(
-                                      name: "Section ${index + 1}",
-                                      value: client['id'],
-                                    );
-                                  }).toList(),
-                                  onChanged: (val) async {
-                                    if (val == null) {
-                                      print('Error: Selected value is null.');
-                                      return;
-                                    }
-                                    selectedCustomerId = val.value;
-                                    setState(() {
-// Start loading
-                                    });
-                                    try {
-                                      final response = await fetchCarModel(
-                                          selectedCustomerId);
-                                      print(
-                                          'FetchCarModel Response: $response');
-                                      if (response != null &&
-                                          response is Map<String, dynamic>) {
-                                        if (response.containsKey('data') &&
-                                            response['data'] is List) {
-                                          models =
-                                              List<Map<String, dynamic>>.from(
-                                                  response['data']);
-                                        } else {
-                                          models = [];
-                                          errorModel =
-                                              'Error: "data" not found or is not a List.';
-                                          print(
-                                              '"data" not found or is not a List.');
-                                        }
+                                    textFieldFocusNode:
+                                        customerTextFieldFocusNode,
+                                    searchFocusNode: customerSearchFocusNode,
+                                    dropDownItemCount: 5,
+                                    enableSearch: true,
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return "*Required";
                                       } else {
-                                        models = [];
-                                        errorModel =
-                                            ' Response is not a valid Map.';
-                                        print('Response is not a valid Map.');
+                                        return null;
                                       }
-                                    } on TimeoutException catch (_) {
-                                      // Handle timeout error
-                                      errorModel =
-                                          'Fetching car models timed out.';
-                                      print('Fetching car models timed out.');
-                                      models = [];
-                                    } on SocketException catch (_) {
-                                      // Handle no internet connection error
-                                      errorModel = 'No internet connection.';
-                                      print('Error: No internet connection.');
-                                      models = [];
-                                    } catch (e) {
-                                      // Handle other errors
-                                      errorModel = '$e';
-                                      print(
-                                          'Exception caught while fetching car models: $e');
-                                      models =
-                                          []; // Clear models if error happens
-                                    } finally {}
-                                  },
-                                ),
-                                Text(
-                                  'Checklist',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.blue,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Column(
-                                    children: checklist.map((query) {
-                                      return Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 6.0),
-                                        child: Row(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Expanded(
-                                              flex: 3,
-                                              child: Text(
-                                                query['query_name']
-                                                        ?.toString() ??
-                                                    'Unknown',
-                                                style: TextStyle(fontSize: 16),
-                                              ),
-                                            ),
-                                            Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Text('OK'),
-                                                Radio(
-                                                  value: 'OK',
-                                                  groupValue: query['checked'],
-                                                  onChanged: (value) {
-                                                    setState(() {
-                                                      query['checked'] = value;
-                                                      query['score'] =
-                                                          null; // clear score
-                                                      storeChecklist();
-                                                    });
-                                                  },
-                                                ),
-                                                Text('NOK'),
-                                                Radio(
-                                                  value: 'NOK',
-                                                  groupValue: query['checked'],
-                                                  onChanged: (value) {
-                                                    setState(() {
-                                                      query['checked'] = value;
-                                                      storeChecklist();
-                                                    });
-                                                  },
-                                                ),
-                                                if (query['checked'] == 'NOK')
-                                                  SizedBox(
-                                                    width: 80,
-                                                    child:
-                                                        DropdownButtonFormField<
-                                                            String>(
-                                                      isExpanded: true,
-                                                      decoration:
-                                                          InputDecoration(
-                                                        isDense: true,
-                                                        contentPadding:
-                                                            EdgeInsets
-                                                                .symmetric(
-                                                                    horizontal:
-                                                                        10,
-                                                                    vertical:
-                                                                        8),
-                                                        border:
-                                                            OutlineInputBorder(),
-                                                      ),
-                                                      value: query['score'],
-                                                      hint: Text("Score"),
-                                                      items: [
-                                                        'A',
-                                                        'B',
-                                                        'C',
-                                                        'D'
-                                                      ].map((score) {
-                                                        return DropdownMenuItem(
-                                                          value: score,
-                                                          child: Text(score),
-                                                        );
-                                                      }).toList(),
-                                                      onChanged: (value) {
-                                                        setState(() {
-                                                          query['score'] =
-                                                              value;
-                                                          storeChecklist();
-                                                        });
-                                                      },
-                                                    ),
-                                                  ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
+                                    },
+                                    dropDownList: clients.map((client) {
+                                      return DropDownValueModel(
+                                        name: client['shop_name']?.toString() ??
+                                            'Unknown',
+                                        value: client['id'],
                                       );
                                     }).toList(),
-                                  ),
-                                ),
-                                const SizedBox(height: 24),
-                                CustomButton(
-                                  label: 'SAVE',
-                                  onPressed: () {
-                                    if (_formKey.currentState!.validate()) {
-                                      // Save the form data.
-                                      if (_formKey.currentState!.validate()) {
-                                        if (checklist.length !=
-                                            (checklistData.length)) {
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            const SnackBar(
-                                              margin: const EdgeInsets.all(50),
-                                              padding: const EdgeInsets.all(10),
-                                              behavior:
-                                                  SnackBarBehavior.floating,
-                                              content: Text(
-                                                  'Please fill all checklist items!'),
-                                              backgroundColor: Colors.red,
-                                            ),
-                                          );
-                                          return;
-                                        }
-                                        PostData();
+                                    onChanged: (val) async {
+                                      if (val == null) {
+                                        print('Error: Selected value is null.');
+                                        return;
                                       }
-                                      print('Form submitted');
-                                    }
-                                  },
-                                ),
-                              ],
-                            ),
+                                      selectedCustomerId = val.value;
+                                      setState(() {
+                                        _isLoadingModels =
+                                            true; // Start loading
+                                      });
+                                      try {
+                                        final response = await fetchQuesrions(
+                                            selectedCustomerId);
+                                        print(
+                                            'FetchCarModel Response: $response');
+                                        if (response != null ||
+                                            response['data'] != null) {
+                                          questions =
+                                              List<Map<String, dynamic>>.from(
+                                                  response['data']['query']);
+                                          if (questions.isEmpty) {
+                                            errorModel =
+                                                'No questions available for this model.';
+                                          }
+                                        } else {
+                                          questions = [];
+                                          errorModel =
+                                              ' Response is not a valid Map.';
+                                          print('Response is not a valid Map.');
+                                        }
+                                      } on TimeoutException catch (_) {
+                                        // Handle timeout error
+                                        errorModel =
+                                            'Fetching car models timed out.';
+                                        print('Fetching car models timed out.');
+                                        questions = [];
+                                      } on SocketException catch (_) {
+                                        // Handle no internet connection error
+                                        errorModel = 'No internet connection.';
+                                        print('Error: No internet connection.');
+                                        questions = [];
+                                      } catch (e) {
+                                        // Handle other errors
+                                        errorModel = '$e';
+                                        print(
+                                            'Exception caught while fetching car models: $e');
+                                        questions =
+                                            []; // Clear models if error happens
+                                      } finally {
+                                        setState(() {
+                                          _isLoadingModels =
+                                              false; // Stop loading
+                                          _carModel
+                                              .clearDropDown(); // Clear previously selected car model
+                                        });
+                                      }
+                                    },
+                                  ),
+                                  Text(
+                                    'Checklist',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.blue,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  if (_isLoadingModels) ...[
+                                    const Center(
+                                        child: CircularProgressIndicator()),
+                                  ] else if (errorModel.isNotEmpty) ...[
+                                    Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Text(
+                                        errorModel,
+                                        style:
+                                            const TextStyle(color: Colors.red),
+                                      ),
+                                    ),
+                                  ] else ...[
+                                    const SizedBox(height: 8),
+                                    if (errorModel.isNotEmpty) ...[
+                                      ErrorMessageWidget(
+                                        errorMessage: errorModel,
+                                        onRetry: () {},
+                                      )
+                                    ] else ...[
+                                      Column(
+                                        children: questions.map((get) {
+                                          final qid = get['id'];
+                                          final quizType = get['quiz_type'];
+                                          final answerGiven =
+                                              get['answer_given'];
+                                          final question =
+                                              get['query_name'] as String;
+
+                                          switch (quizType) {
+                                            case 'traceable':
+                                              return TraceableQuestion(
+                                                answer_given: answerGiven,
+                                                can_sign: get['can_sign'],
+                                                checkanswered:
+                                                    get['checkanswered'],
+                                                id: qid,
+                                                onValueChanged: (value) {
+                                                  setState(() {
+                                                    traceableValues[qid] =
+                                                        value;
+                                                  });
+                                                },
+                                                onValueChanged2: (value) {
+                                                  setState(() {
+                                                    traceableSignature[qid] =
+                                                        value;
+                                                  });
+                                                },
+                                                question: question,
+                                              );
+
+                                            case 'multiple':
+                                              return MultipleQuestion(
+                                                intial_option:
+                                                    get["defect_names"],
+                                                initialImage: get["answer"]
+                                                    ?["image_path"],
+                                                onImageChanged: (File? image) {
+                                                  setState(() {
+                                                    if (image == null) {
+                                                      images.remove(qid);
+                                                    } else {
+                                                      images[qid] = image;
+                                                    }
+                                                  });
+                                                },
+                                                onUsersSelected:
+                                                    (List<String> value) {
+                                                  setState(() {
+                                                    selectedUsers[qid] = value;
+                                                  });
+                                                },
+                                                users: (get['emails']
+                                                        as List<dynamic>)
+                                                    .map((user) {
+                                                  return {
+                                                    'name':
+                                                        user['name'].toString(),
+                                                    'email': user['email']
+                                                        .toString(),
+                                                  };
+                                                }).toList(),
+                                                index:
+                                                    questions.indexOf(get) + 1,
+                                                id: qid,
+                                                options: get["options"],
+                                                onRadioChanged: (value) {
+                                                  setState(() {
+                                                    multipleValue[qid] = value;
+                                                    if (value == "OK")
+                                                      multipleValues.clear();
+                                                  });
+                                                },
+                                                onValuesChanged: (value) {
+                                                  setState(() {
+                                                    multipleValues[qid] = value;
+                                                  });
+                                                },
+                                                onValueChanged2: (value) {
+                                                  setState(() {
+                                                    traceableSignature[qid] =
+                                                        value;
+                                                  });
+                                                },
+                                                initialRadioValue:
+                                                    answerGiven != ''
+                                                        ? answerGiven
+                                                        : null,
+                                                question: question,
+                                              );
+
+                                            case 'numeric':
+                                              return NumericQuestion(
+                                                initialDecripValue:
+                                                    answerGiven != ''
+                                                        ? answerGiven
+                                                        : null,
+                                                id: qid,
+                                                onValueChanged: (value) {
+                                                  setState(() {
+                                                    numericValues[qid] = value;
+                                                  });
+                                                },
+                                                onValueChanged2: (value) {
+                                                  setState(() {
+                                                    traceableSignature[qid] =
+                                                        value;
+                                                  });
+                                                },
+                                                question: question,
+                                              );
+
+                                            case 'single':
+                                              return SingleQuestion(
+                                                initialImage: get["image_url"],
+                                                onImageChanged: (File? image) {
+                                                  setState(() {
+                                                    if (image == null) {
+                                                      images.remove(qid);
+                                                    } else {
+                                                      images[qid] = image;
+                                                    }
+                                                  });
+                                                },
+                                                onUsersSelected:
+                                                    (List<String> value) {
+                                                  setState(() {
+                                                    selectedUsers[qid] = value;
+                                                  });
+                                                },
+                                                users: (get['emails']
+                                                        as List<dynamic>)
+                                                    .map((user) {
+                                                  return {
+                                                    'name':
+                                                        user['name'].toString(),
+                                                    'email': user['email']
+                                                        .toString(),
+                                                  };
+                                                }).toList(),
+                                                initialDecripValue:
+                                                    get["defect_description"],
+                                                hasDescription:
+                                                    get["additional_field"]
+                                                        as String,
+                                                index:
+                                                    questions.indexOf(get) + 1,
+                                                id: qid,
+                                                onValueChanged: (value) {
+                                                  setState(() {
+                                                    singleValues[qid] = value;
+                                                  });
+                                                },
+                                                onInputValueChanged: (value) {
+                                                  setState(() {
+                                                    DescipTextValues[qid] =
+                                                        value;
+                                                  });
+                                                },
+                                                onValueChanged2: (value) {
+                                                  setState(() {
+                                                    traceableSignature[qid] =
+                                                        value;
+                                                  });
+                                                },
+                                                initialRadioValue:
+                                                    answerGiven != ''
+                                                        ? answerGiven
+                                                        : null,
+                                                question: question,
+                                              );
+
+                                            case 'others':
+                                              return Others(
+                                                id: qid,
+                                                options: get["options"],
+                                                onValueChanged: (value) {
+                                                  setState(() {
+                                                    singleDescipTextValues[
+                                                        qid] = value;
+                                                  });
+                                                },
+                                                onValueChanged2: (value) {
+                                                  setState(() {
+                                                    traceableSignature[qid] =
+                                                        value;
+                                                  });
+                                                },
+                                                onRadioChanged: (value) {
+                                                  setState(() {
+                                                    singleDescripCategory[qid] =
+                                                        value;
+                                                  });
+                                                },
+                                                initialDecripValue:
+                                                    get["description"],
+                                                initialRadioValue:
+                                                    answerGiven != ''
+                                                        ? answerGiven
+                                                        : null,
+                                                question: question,
+                                              );
+
+                                            default:
+                                              return const SizedBox
+                                                  .shrink(); // Fallback for unknown types
+                                          }
+                                        }).toList(),
+                                      ),
+                                    ],
+                                  ],
+                                  const SizedBox(height: 24),
+                                  if (question.isNotEmpty)
+                                    CustomButton(
+                                      label: 'SAVE',
+                                      onPressed: () {
+                                        if (_formKey.currentState!.validate()) {
+                                          // Save the form data.
+                                          if (_formKey.currentState!
+                                              .validate()) {
+                                            if (checklist.length !=
+                                                (checklistData.length)) {
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                const SnackBar(
+                                                  margin:
+                                                      const EdgeInsets.all(50),
+                                                  padding:
+                                                      const EdgeInsets.all(10),
+                                                  behavior:
+                                                      SnackBarBehavior.floating,
+                                                  content: Text(
+                                                      'Please fill all checklist items!'),
+                                                  backgroundColor: Colors.red,
+                                                ),
+                                              );
+                                              return;
+                                            }
+                                            PostData();
+                                          }
+                                          print('Form submitted');
+                                        }
+                                      },
+                                    ),
+                                ]),
                           ),
                         ),
                       ),
@@ -398,10 +591,15 @@ class _QFL4_formState extends State<QFL4_form>
 
   void PostData() async {
     final dataToStore = {
+      'lot_no': _lotNo.text.trim(),
+      'vin_no': VehicleChassis.text.trim(),
+      'part_no': _partNoController.text.trim(),
+      'engine_no': _enginrController.text.trim(),
       'model_id': modelId,
       'status': '0',
       'route': _routeController.dropDownValue?.value,
       'vehicle_line': _lineController.dropDownValue?.value,
+      'color': _colorController.text.trim(),
       'client_id': selectedCustomerId,
       'answers': checklistData,
     };
@@ -473,6 +671,11 @@ class _QFL4_formState extends State<QFL4_form>
       ),
     );
     // Optional: Clear form fields if necessary
+    _lotNo.clear();
+    VehicleChassis.clear();
+    _partNoController.clear();
+    _enginrController.clear();
+    _colorController.clear();
     Navigator.pop(context); // ✅ Now safely navigates back
   }
 
@@ -488,25 +691,27 @@ class _QFL4_formState extends State<QFL4_form>
     );
   }
 
-  Future fetchCarModel(customerId) async {
+  Future fetchQuesrions(shopId) async {
     setState(() {
       errorModel = ''; // Initialize error text before fetching
     });
-    String url = Api.api_url + "loadClientModels/$customerId";
+    String url =
+        Api.api_url + "quizqfl3/${widget.modelId}/${widget.modelId}/$shopId";
     print(url);
-    var responsedata = await httpget(url, user['data']['token'], context);
-    return responsedata;
-  }
-
-  Future fetchClients() async {
-    String url = Api.api_url + "loadclients";
     var responsedata = await httpget(url, user['data']['token'], context);
     print(responsedata);
     return responsedata;
   }
 
-  Future fetchChecklist() async {
-    String url = Api.api_url + "loadVehicleReceiving";
+  Future fetchClients() async {
+    String url = Api.api_url + "home";
+    var responsedata = await httpget(url, user['data']['token'], context);
+    print(responsedata);
+    return responsedata;
+  }
+
+  Future test() async {
+    String url = Api.api_url + "loadnearmiss";
     var responsedata = await httpget(url, user['data']['token'], context);
     print(responsedata);
     return responsedata;

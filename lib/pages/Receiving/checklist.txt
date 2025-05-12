@@ -1,0 +1,87 @@
+ Text(
+                                  'Checklist',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Column(
+                                  children: checklist.map((query) {
+                                    return Column(
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Expanded(
+                                              // Ensures text wraps if long
+                                              child: Text(
+                                                query['query_name']
+                                                        ?.toString() ??
+                                                    'Unknown',
+                                                style: TextStyle(fontSize: 16),
+                                              ),
+                                            ),
+                                            Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.start,
+                                              children: [
+                                                ChoiceChip(
+                                                  iconTheme: IconThemeData(
+                                                    color: Colors.white,
+                                                  ),
+                                                  label: Text('OK'),
+                                                  selected:
+                                                      query['checked'] == 'OK',
+                                                  selectedColor: Colors.green,
+                                                  onSelected: (selected) {
+                                                    setState(() {
+                                                      query['checked'] = 'OK';
+                                                      storeChecklist();
+                                                    });
+                                                  },
+                                                  labelStyle: TextStyle(
+                                                    color:
+                                                        query['checked'] == 'OK'
+                                                            ? Colors.white
+                                                            : Colors.black,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                                SizedBox(width: 10),
+                                                ChoiceChip(
+                                                  label: Text('NOK'),
+                                                  selected:
+                                                      query['checked'] == 'NOK',
+                                                  selectedColor: Colors.red,
+                                                  onSelected: (selected) {
+                                                    setState(() {
+                                                      query['checked'] = 'NOK';
+                                                      storeChecklist();
+                                                    });
+                                                  },
+                                                  labelStyle: TextStyle(
+                                                    color: query['checked'] ==
+                                                            'NOK'
+                                                        ? Colors.white
+                                                        : Colors.black,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                        Divider(
+                                          color: Colors.grey.shade300,
+                                          thickness: 1,
+                                          height: 20,
+                                          indent: 10,
+                                          endIndent: 10,
+                                        ), // Add a divider after each question
+                                      ],
+                                    );
+                                  }).toList(),
+                                ),

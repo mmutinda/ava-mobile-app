@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/functions.dart';
+import 'package:isuze_pqcs/common/loader.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/models/qc_inpection.dart';
 import 'package:isuze_pqcs/pages/defetects/QcViewlistDefects.dart';
@@ -121,8 +122,8 @@ class _DefectsUnitState extends State<DefectsUnit> {
       body: isLoading
           ? Center(
               child: Container(
-                width: double.infinity,
-                child: FacebookLikeShimmer(),
+                // width: double.infinity,
+                child: CustomLoader(),
               ),
             )
           : message.isNotEmpty

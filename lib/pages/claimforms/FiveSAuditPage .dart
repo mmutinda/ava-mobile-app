@@ -1,10 +1,14 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
-
+import 'dart:io';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
+import 'package:isuze_pqcs/common/loader.dart';
+import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
 
 class FiveSAuditPage extends StatefulWidget {
   @override
@@ -15,6 +19,12 @@ class _FiveSAuditPageState extends State<FiveSAuditPage> {
   final _formKey = GlobalKey<FormState>();
   final Map<String, int?> scores = {};
   final Map<String, TextEditingController> comments = {};
+  final _sectionController = TextEditingController();
+  final _authorController = TextEditingController();
+  final _dateController = TextEditingController();
+  final _creationDateController = TextEditingController();
+  final _documentRefController = TextEditingController();
+  final _revisionController = TextEditingController();
 
   final List<String> sections = [
     'SORT (KUCHAGUA)',
@@ -174,6 +184,67 @@ class _FiveSAuditPageState extends State<FiveSAuditPage> {
     );
   }
 
+  Widget _buildHeaderField(
+    IconData icon,
+    String label,
+    TextEditingController controller, {
+    bool isDate = false,
+  }) {
+    // Set default values based on the label
+    if (controller.text.isEmpty) {
+      if (label == 'Document Creation Date') {
+        controller.text = '15/09/2023';
+      } else if (label == 'Document Ref') {
+        controller.text = 'AVA.SHE.D.013';
+      } else if (label == 'Revision') {
+        controller.text = '1';
+      }
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: TextFormField(
+        controller: controller,
+        readOnly: isDate,
+        onTap: isDate
+            ? () async {
+                DateTime? picked = await showDatePicker(
+                  context: context,
+                  initialDate: DateTime.now(),
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime(2100),
+                );
+                if (picked != null) {
+                  controller.text =
+                      "${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}";
+                }
+              }
+            : null,
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon, color: Colors.blueAccent),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderSide: const BorderSide(color: Colors.blueAccent, width: 1.5),
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        validator: (value) =>
+            value == null || value.isEmpty ? 'Please enter $label' : null,
+      ),
+    );
+  }
+
   Widget _buildSection(String title, List<String> qs, List<String> descs) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -188,8 +259,50 @@ class _FiveSAuditPageState extends State<FiveSAuditPage> {
     );
   }
 
+  void handleSuccess() {
+    if (!context.mounted) return; // ✅ Add this check
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        margin: const EdgeInsets.all(50),
+        padding: const EdgeInsets.all(10),
+        behavior: SnackBarBehavior.floating,
+        content: Text('Record saved successfully!'),
+        backgroundColor: Colors.green,
+      ),
+    );
+    // Optional: Clear form fields if necessary
+
+    Navigator.pop(context); // ✅ Now safely navigates back
+  }
+
+  void showError(String message, {Color color = Colors.red}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        margin: const EdgeInsets.all(50),
+        padding: const EdgeInsets.all(10),
+        behavior: SnackBarBehavior.floating,
+        content: Text(message),
+        backgroundColor: color,
+      ),
+    );
+  }
+
   void _submitForm() async {
     if (_formKey.currentState!.validate()) {
+      final progressDialog = ProgressDialog(context);
+      progressDialog.style(
+        message: 'Submitting ..',
+        child: CustomLoader(),
+        borderRadius: 8,
+        backgroundColor: Colors.white,
+        progressWidget: const SizedBox(
+            width: 20,
+            height: 20,
+            child: Center(child: CircularProgressIndicator())),
+        elevation: 10.0,
+        insetAnimCurve: Curves.easeInOut,
+      );
+      progressDialog.show();
       try {
         List<Map<String, dynamic>> data = [];
 
@@ -198,28 +311,62 @@ class _FiveSAuditPageState extends State<FiveSAuditPage> {
             final question = qs[i];
             data.add({
               'category': section,
-              'question': question,
+              'physical_condition': question,
               'score': scores[question] ?? 0,
-              'comment': comments[question]?.text.trim() ?? '',
+              'comments': comments[question]?.text.trim() ?? '',
             });
           }
         });
-        // print(data);
-        log(jsonEncode(data));
-        String url = "${Api.api_url}loaAPiShedulledUnits";
-        var response = await httppost(url, user['data']["token"], context);
 
-        if (response.statusCode == 200) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Audit submitted successfully!')),
-          );
+        final dataToStore = {
+          'section': _sectionController.text.trim(),
+          'revision': _revisionController.text.trim(),
+          'author': _authorController.text.trim(),
+          'date': _dateController.text.trim(),
+          'document_creation_date': _creationDateController.text.trim(),
+          'document_ref': _documentRefController.text.trim(),
+          'items': data, // <== array of question entries
+        };
+
+        // // print(data);
+        // log(jsonEncode(data));
+        final response = await http
+            .post(
+              Uri.parse(Api.api_url + "fives"),
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': 'Bearer ${user['data']['token']}',
+              },
+              body: jsonEncode(dataToStore),
+            )
+            .timeout(const Duration(seconds: 30));
+        var responseBody = jsonDecode(response.body);
+        print(responseBody);
+        if (response.statusCode == 200 || responseBody['success'] == true) {
+          handleSuccess();
         } else {
-          throw Exception('Server returned status: ${response.statusCode}');
+          // Check for 'errors' key
+          String errorMessage = responseBody['msg'] ??
+              responseBody['message'] ??
+              "An error occurred";
+          if (responseBody['errors'] != null) {
+            final errors = responseBody['errors'] as Map<String, dynamic>;
+            final errorDetails =
+                errors.entries.map((e) => '${e.key}: ${e.value[0]}').join('\n');
+            errorMessage += '\n$errorDetails';
+          }
+          showError(errorMessage);
         }
+      } on SocketException {
+        showError('No Internet connection.');
+      } on TimeoutException {
+        showError('Request timed out. Please try again.', color: Colors.orange);
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
-        );
+        print("Unexpected Error: $e");
+        showError('Failed: ${e.toString()}');
+      } finally {
+        progressDialog.hide();
       }
     }
   }
@@ -227,35 +374,80 @@ class _FiveSAuditPageState extends State<FiveSAuditPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar:
-          AppBar(title: Text('5S Audit Checklist'), backgroundColor: mycolor),
-      body: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              ...sections
-                  .map(
-                      (s) => _buildSection(s, questions[s]!, questionsDesc[s]!))
-                  .toList(),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _submitForm,
-                child: Text('Submit Audit'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: mycolor,
-                  foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(vertical: 14),
-                  textStyle: TextStyle(fontSize: 16),
+        appBar:
+            AppBar(title: Text('5S Audit Checklist'), backgroundColor: mycolor),
+        body: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              children: [
+                // === Document Information Header ===
+                Card(
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
+                      borderRadius: BorderRadius.circular(12)),
+                  elevation: 3,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          '📄 Document Information',
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        _buildHeaderField(Icons.calendar_today,
+                            'Document Creation Date', _creationDateController,
+                            isDate: true),
+                        _buildHeaderField(Icons.description, 'Document Ref',
+                            _documentRefController),
+                        _buildHeaderField(
+                            Icons.history_edu, 'Revision', _revisionController),
+                        const SizedBox(height: 12),
+                        _buildHeaderField(
+                            Icons.article, 'Section', _sectionController),
+                        _buildHeaderField(
+                            Icons.person, 'Auditor', _authorController),
+                        _buildHeaderField(
+                            Icons.date_range, 'Date', _dateController,
+                            isDate: true),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-            ],
+
+                // === Audit Sections ===
+                const Text(
+                  '📋 Audit Checklist',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 10),
+                ...sections
+                    .map((s) =>
+                        _buildSection(s, questions[s]!, questionsDesc[s]!))
+                    .toList(),
+
+                const SizedBox(height: 20),
+
+                // === Submit Button ===
+                ElevatedButton(
+                  onPressed: _submitForm,
+                  child: const Text('Submit Audit'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: mycolor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    textStyle: const TextStyle(fontSize: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ),
-    );
+        ));
   }
 }

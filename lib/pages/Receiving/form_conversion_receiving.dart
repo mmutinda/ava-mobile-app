@@ -2,11 +2,14 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:dropdown_textfield/dropdown_textfield.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/functions.dart';
+import 'package:isuze_pqcs/common/loader.dart';
 import 'package:isuze_pqcs/common/loader2.dart';
 import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
 
@@ -78,6 +81,33 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
     super.initState();
   }
 
+  File? parkingFile;
+  File? geologyFile;
+
+  Future<void> pickParkingExcelFile() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['xlsx', 'xls'],
+    );
+    if (result != null && result.files.single.path != null) {
+      setState(() {
+        parkingFile = File(result.files.single.path!);
+      });
+    }
+  }
+
+  Future<void> pickGeologyExcelFile() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['xlsx', 'xls'],
+    );
+    if (result != null && result.files.single.path != null) {
+      setState(() {
+        geologyFile = File(result.files.single.path!);
+      });
+    }
+  }
+
   Future<void> _fetchData() async {
     setState(() {
       errorText = ''; // Initialize error text before fetching
@@ -92,6 +122,7 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
       // }
       // print(dat);
       // print(results[2]['data'][0]['file']);
+
       if (results[0] == null ||
           results[1] == null ||
           results[0]["data"] == null ||
@@ -114,6 +145,8 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
     }
   }
 
+  String selectedValue = 'NO';
+
   @override
   void dispose() {
     _customerModel.dispose();
@@ -125,16 +158,39 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
     super.dispose();
   }
 
-  List<List<dynamic>> checklistData = [];
-  void storeChecklist() {
-    try {
-      checklistData = checklist.where((query) {
-        return query['checked'] == 'OK' || query['checked'] == 'NOK';
-      }).map((query) {
-        return [query['id'], query['checked']];
-      }).toList();
-    } catch (e) {
-      print('Error storing checklist: $e');
+  File? _imageFile;
+  Future<void> _captureImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.camera);
+
+    if (pickedFile != null) {
+      setState(() {
+        _imageFile = File(pickedFile.path);
+      });
+    }
+  }
+
+  final TextEditingController _fileController = TextEditingController();
+  final TextEditingController _fileController2 = TextEditingController();
+
+  Future<void> _pickFile(int type) async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['xlsx'], // Change based on file type
+    );
+
+    if (result != null) {
+      setState(() {
+        // Display the file name in the text field
+        if (type == 0) {
+          parkingFile = File(result.files.single.path!);
+          _fileController.text = result.files.single.name;
+        } else if (type == 1) {
+          geologyFile = File(result.files.single.path!);
+          _fileController2.text = result.files.single.name;
+        }
+        // _fileController.text = result.files.single.name;
+      });
     }
   }
 
@@ -323,42 +379,6 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
                                       ),
                                 const SizedBox(height: 8),
                                 CustomTextFormField(
-                                  label: 'Chasis',
-                                  hint: 'Enter Chasis No',
-                                  controller: VehicleChassis,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return '*Required';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: 8),
-                                CustomTextFormField(
-                                  label: 'Part No',
-                                  hint: 'Enter part number',
-                                  controller: _partNoController,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return '*Required';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: 8),
-                                CustomTextFormField(
-                                  label: 'Engine No',
-                                  hint: 'Enter engine number',
-                                  controller: _enginrController,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return '*Required';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: 8),
-                                CustomTextFormField(
                                   // keyboardType: TextInputType.number,
                                   label: 'Lot No',
                                   hint: 'Enter Lot number',
@@ -370,153 +390,214 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
                                     return null;
                                   },
                                 ),
-                                const SizedBox(height: 8),
-                                CustomTextFormField(
-                                  label: 'Color',
-                                  hint: 'write color',
-                                  controller: _colorController,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return '*Required';
-                                    }
-                                    return null;
-                                  },
+                                const SizedBox(height: 16),
+                                CustomUploadFormField(
+                                  label: 'Upload Parking List (Excel)',
+                                  hint: 'No file chosen',
+                                  controller: _fileController,
+                                  onUploadPressed: () => _pickFile(0),
                                 ),
-                                const SizedBox(height: 8),
-                                // Route Dropdown
-                                DropDownTextField(
-                                  controller: _routeController,
-                                  clearOption: false,
-                                  dropDownIconProperty:
-                                      IconProperty(color: mycolor, size: 30),
-                                  textFieldDecoration: InputDecoration(
-                                    labelText: 'Route',
-                                    floatingLabelBehavior:
-                                        FloatingLabelBehavior.always,
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8.0),
-                                    ),
-                                    filled: true,
-                                    fillColor: Colors.grey.shade50,
-                                  ),
-                                  textFieldFocusNode: routeTextFieldFocusNode,
-                                  searchFocusNode: routeSearchFocusNode,
-                                  dropDownItemCount: 5,
-                                  enableSearch: true,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return "*Required";
-                                    } else {
-                                      return null;
-                                    }
-                                  },
-                                  dropDownList: [
-                                    DropDownValueModel(
-                                        name: "Route 1", value: "1"),
-                                    DropDownValueModel(
-                                        name: "Route 2", value: "2"),
-                                    DropDownValueModel(
-                                        name: "Route 3", value: "3"),
-                                    DropDownValueModel(
-                                        name: "Route 4", value: "4"),
-                                    DropDownValueModel(
-                                        name: "Route 5", value: "5"),
-                                  ],
-                                  onChanged: (val) {
-                                    // Handle route change
-                                  },
-                                ),
-                                SizedBox(height: 8), // space between dropdowns
-                                // Line Dropdown
-                                DropDownTextField(
-                                  controller: _lineController,
-                                  clearOption: false,
-                                  dropDownIconProperty:
-                                      IconProperty(color: mycolor, size: 30),
-                                  textFieldDecoration: InputDecoration(
-                                    labelText: 'Line',
-                                    floatingLabelBehavior:
-                                        FloatingLabelBehavior.always,
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8.0),
-                                    ),
-                                    filled: true,
-                                    fillColor: Colors.grey.shade50,
-                                  ),
-                                  textFieldFocusNode: lineTextFieldFocusNode,
-                                  searchFocusNode: lineSearchFocusNode,
-                                  dropDownItemCount: 5,
-                                  enableSearch: true,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return "*Required";
-                                    } else {
-                                      return null;
-                                    }
-                                  },
-                                  dropDownList: [
-                                    DropDownValueModel(
-                                        name: "Line 1", value: "line1"),
-                                    DropDownValueModel(
-                                        name: "Line 2", value: "line2"),
-                                    DropDownValueModel(
-                                        name: "Line 3", value: "line3"),
-                                  ],
-                                  onChanged: (val) {
-                                    // Handle line change
-                                  },
+                                const SizedBox(height: 15),
+                                CustomUploadFormField(
+                                  label: 'Upload Geology Data (Excel)',
+                                  hint: 'No file chosen',
+                                  controller: _fileController2,
+                                  onUploadPressed: () => _pickFile(1),
                                 ),
                                 const SizedBox(height: 16),
-                                Text(
-                                  'Checklist',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.blue,
+                                Row(
+                                  // crossAxisAlignment: WrapCrossAlignment.center,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceAround,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        "Any Packaging Issue?",
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                          color: mycolor,
+                                          letterSpacing: 1.2,
+                                        ),
+                                      ),
+                                    ),
+                                    ChoiceChip(
+                                      label: Text('YES'),
+                                      selected: selectedValue == 'YES',
+                                      selectedColor: Colors.red,
+                                      onSelected: (selected) {
+                                        setState(() {
+                                          selectedValue = 'YES';
+                                        });
+                                      },
+                                      labelStyle: TextStyle(
+                                        color: selectedValue == 'YES'
+                                            ? Colors.white
+                                            : Colors.black,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    SizedBox(width: 10),
+                                    ChoiceChip(
+                                      label: Text('NO'),
+                                      selected: selectedValue == 'NO',
+                                      selectedColor: Colors.green,
+                                      onSelected: (selected) {
+                                        setState(() {
+                                          selectedValue = 'NO';
+                                        });
+                                      },
+                                      labelStyle: TextStyle(
+                                        color: selectedValue == 'NO'
+                                            ? Colors.white
+                                            : Colors.black,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (selectedValue == 'YES') ...[
+                                  CustomTextFormField(
+                                    label: 'Part No',
+                                    hint: 'Enter part number',
+                                    controller: _partNoController,
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return '*Required';
+                                      }
+                                      return null;
+                                    },
                                   ),
-                                ),
-                                const SizedBox(height: 8),
-                                Column(
-                                  children: checklist.map((query) {
-                                    return Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          query['query_name']?.toString() ??
-                                              'Unknown',
-                                          style: TextStyle(fontSize: 16),
-                                        ),
-                                        Row(
-                                          children: [
-                                            Text('OK'),
-                                            Radio(
-                                              value: 'OK',
-                                              groupValue: query['checked'],
-                                              onChanged: (value) {
-                                                setState(() {
-                                                  query['checked'] = value;
-                                                  storeChecklist();
-                                                });
-                                              },
-                                            ),
-                                            Text('NOK'),
-                                            Radio(
-                                              value: 'NOK',
-                                              groupValue: query['checked'],
-                                              onChanged: (value) {
-                                                setState(() {
-                                                  query['checked'] = value;
-                                                  storeChecklist();
-                                                });
-                                              },
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    );
-                                  }).toList(),
-                                ),
+                                  const SizedBox(height: 10),
+                                  CustomTextFormField(
+                                    label: 'Issue Category',
+                                    hint: 'Category',
+                                    controller: _partNoController,
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return '*Required';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                  const SizedBox(height: 10),
+                                  CustomTextFormField(
+                                    label: 'Defect Classification',
+                                    hint: 'Classification',
+                                    controller: _partNoController,
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return '*Required';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: const SizedBox(height: 10),
+                                  ),
+                                  GestureDetector(
+                                    onTap: _captureImage,
+                                    child: Container(
+                                      width: double.infinity,
+                                      height: 180,
+                                      decoration: BoxDecoration(
+                                        border: Border.all(color: Colors.grey),
+                                        borderRadius: BorderRadius.circular(8),
+                                        image: _imageFile != null
+                                            ? DecorationImage(
+                                                image: FileImage(_imageFile!),
+                                                fit: BoxFit.cover)
+                                            : null,
+                                      ),
+                                      child: _imageFile == null
+                                          ? Center(
+                                              child: Column(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  Icon(Icons.camera_alt,
+                                                      size: 40,
+                                                      color: Colors.grey),
+                                                  SizedBox(height: 8),
+                                                  Text("Tap to capture",
+                                                      style: TextStyle(
+                                                          color: Colors.grey)),
+                                                ],
+                                              ),
+                                            )
+                                          : null,
+                                    ),
+                                  ),
+                                ],
+
+                                // if (parkingFile != null)
+                                //   Padding(
+                                //     padding: const EdgeInsets.only(top: 6),
+                                //     child: Text(
+                                //       parkingFile!.path.split('/').last,
+                                //       style: TextStyle(color: Colors.green),
+                                //     ),
+                                //   ),
+                                // const SizedBox(height: 24),
+                                // Text('Upload Geology Data (Excel)',
+                                //     style:
+                                //         TextStyle(fontWeight: FontWeight.bold)),
+                                // const SizedBox(height: 8),
+                                // ElevatedButton.icon(
+                                //   style: ElevatedButton.styleFrom(
+                                //     shape: RoundedRectangleBorder(
+                                //         borderRadius: BorderRadius.circular(5)),
+                                //   ),
+                                //   onPressed: pickGeologyExcelFile,
+                                //   icon: Icon(Icons.upload_file),
+                                //   label: Text('Choose Geology Excel File'),
+                                // ),
+                                // if (geologyFile != null)
+                                //   Padding(
+                                //     padding: const EdgeInsets.only(top: 6),
+                                //     child: Text(
+                                //       geologyFile!.path.split('/').last,
+                                //       style: TextStyle(color: Colors.green),
+                                //     ),
+                                //   ),
+                                // CustomTextFormField(
+                                //   label: 'Chasis',
+                                //   hint: 'Enter Chasis No',
+                                //   controller: VehicleChassis,
+                                //   validator: (value) {
+                                //     if (value == null || value.isEmpty) {
+                                //       return '*Required';
+                                //     }
+                                //     return null;
+                                //   },
+                                // ),
+                                // const SizedBox(height: 8),
+                                // CustomTextFormField(
+                                //   label: 'Part No',
+                                //   hint: 'Enter part number',
+                                //   controller: _partNoController,
+                                //   validator: (value) {
+                                //     if (value == null || value.isEmpty) {
+                                //       return '*Required';
+                                //     }
+                                //     return null;
+                                //   },
+                                // ),
+                                // const SizedBox(height: 8),
+                                // CustomTextFormField(
+                                //   label: 'Engine No',
+                                //   hint: 'Enter engine number',
+                                //   controller: _enginrController,
+                                //   validator: (value) {
+                                //     if (value == null || value.isEmpty) {
+                                //       return '*Required';
+                                //     }
+                                //     return null;
+                                //   },
+                                // ),
+                                // const SizedBox(height: 8),
+
                                 const SizedBox(height: 24),
                                 CustomButton(
                                   label: 'SAVE',
@@ -524,22 +605,6 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
                                     if (_formKey.currentState!.validate()) {
                                       // Save the form data.
                                       if (_formKey.currentState!.validate()) {
-                                        if (checklist.length !=
-                                            (checklistData.length)) {
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            const SnackBar(
-                                              margin: const EdgeInsets.all(50),
-                                              padding: const EdgeInsets.all(10),
-                                              behavior:
-                                                  SnackBarBehavior.floating,
-                                              content: Text(
-                                                  'Please fill all checklist items!'),
-                                              backgroundColor: Colors.red,
-                                            ),
-                                          );
-                                          return;
-                                        }
                                         PostData();
                                       }
                                       print('Form submitted');
@@ -568,7 +633,7 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
       'vehicle_line': _lineController.dropDownValue?.value,
       'color': _colorController.text.trim(),
       'client_id': selectedCustomerId,
-      'answers': checklistData,
+      // 'answers': checklistData,
     };
     // print(dataToStore);
     final progressDialog = ProgressDialog(context);
@@ -687,6 +752,50 @@ class _Conversion_receive_formState extends State<Conversion_receive_form>
     var responsedata = await httpget(url, user['data']['token'], context);
     print(responsedata);
     return responsedata;
+  }
+}
+
+class CustomUploadFormField extends StatelessWidget {
+  final String label;
+  final String hint;
+  final TextEditingController controller;
+  final TextInputType? keyboardType;
+  final String? Function(String?)? validator;
+  final VoidCallback onUploadPressed;
+
+  const CustomUploadFormField({
+    Key? key,
+    required this.label,
+    required this.hint,
+    required this.controller,
+    this.validator,
+    this.keyboardType,
+    required this.onUploadPressed,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      keyboardType: keyboardType ?? TextInputType.text,
+      controller: controller,
+      validator: validator,
+      readOnly:
+          true, // Make the text field read-only since the file will be selected via the button
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        hintStyle: TextStyle(color: Colors.grey.shade400),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8.0),
+        ),
+        filled: true,
+        fillColor: Colors.grey.shade50,
+        suffixIcon: IconButton(
+          icon: Icon(Icons.upload_file),
+          onPressed: onUploadPressed,
+        ),
+      ),
+    );
   }
 }
 
@@ -847,4 +956,60 @@ class CustomButton extends StatelessWidget {
       ),
     );
   }
+}
+
+class FilePickerFormField extends FormField<File?> {
+  FilePickerFormField({
+    Key? key,
+    required FormFieldSetter<File?> onSaved,
+    required FormFieldValidator<File?>? validator,
+    File? initialValue,
+    AutovalidateMode autovalidateMode = AutovalidateMode.disabled,
+    required VoidCallback onTap,
+    required File? selectedFile,
+  }) : super(
+          key: key,
+          onSaved: onSaved,
+          validator: validator,
+          initialValue: initialValue,
+          autovalidateMode: autovalidateMode,
+          builder: (FormFieldState<File?> state) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Upload Parking List (Excel)',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                SizedBox(height: 8),
+                InkWell(
+                  onTap: onTap,
+                  child: InputDecorator(
+                    decoration: InputDecoration(
+                      contentPadding: EdgeInsets.symmetric(
+                          vertical: 14.0, horizontal: 12.0),
+                      border: OutlineInputBorder(),
+                      errorText: state.errorText,
+                    ),
+                    child: Text(
+                      selectedFile == null
+                          ? 'No file chosen'
+                          : selectedFile.path.split('/').last,
+                      style: TextStyle(color: Colors.black54),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: ElevatedButton.icon(
+                    onPressed: onTap,
+                    icon: Icon(Icons.upload_file, size: 20),
+                    label: Text('Browse'),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
 }
