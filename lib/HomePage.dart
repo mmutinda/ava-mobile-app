@@ -8,16 +8,18 @@ import 'package:isuze_pqcs/common/slider.dart';
 import 'package:isuze_pqcs/pages/QFL%204/qfl4.dart';
 import 'package:isuze_pqcs/pages/Receiving/display_vehicles.dart';
 import 'package:isuze_pqcs/pages/action.dart';
+import 'package:isuze_pqcs/pages/assembly/assembly_stations.dart';
 import 'package:isuze_pqcs/pages/claimforms/FiveS.dart';
 import 'package:isuze_pqcs/pages/claimforms/FiveSAuditPage%20.dart';
 import 'package:isuze_pqcs/pages/claimforms/NearMissForm.dart';
 import 'package:isuze_pqcs/pages/claimforms/claimHome.dart';
 import 'package:isuze_pqcs/pages/claimforms/nearMiss.dart';
 import 'package:isuze_pqcs/pages/defetects/QCDefectsUnits.dart';
+import 'package:isuze_pqcs/pages/planning/planningHome.dart';
 
 import 'package:isuze_pqcs/pages/profile_screen.dart';
 import 'package:isuze_pqcs/pages/ShopsScrean.dart';
-import 'package:isuze_pqcs/pages/qc_inspection/scheduleUnits.dart';
+import 'package:isuze_pqcs/pages/planning/scheduleUnits.dart';
 import 'package:nb_utils/nb_utils.dart';
 
 class HomeScrean extends StatefulWidget {
@@ -120,10 +122,29 @@ class _HomeScreanState extends State<HomeScrean> {
                   singleDrawerItem(
                       FeatherIcons.truck, "Vehicle Receiving", 5, theme),
 
+                  singleDrawerItem(FeatherIcons.calendar, "Planning", 1, theme),
                   singleDrawerItem(
-                      FeatherIcons.calendar, "Scheduled Units", 1, theme),
+                      FeatherIcons.calendar, "Assembly", 16, theme),
+
+                  Divider(),
+                  // Section label
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0, vertical: 8.0),
+                    child: Text(
+                      "QUALITY",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: theme.primaryColor,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ),
                   singleDrawerItem(FeatherIcons.folder, "QFL 3", 2, theme),
                   singleDrawerItem(FeatherIcons.folderPlus, "QFL 4", 3, theme),
+                  singleDrawerItem(
+                      FeatherIcons.folderPlus, "QFL 5/6", 3, theme),
                   Divider(),
                   Padding(
                     padding: const EdgeInsets.symmetric(
@@ -175,8 +196,9 @@ class _HomeScreanState extends State<HomeScrean> {
                       ),
                     ),
                   ),
-                  singleDrawerItem(FeatherIcons.user, "Profile", 11, theme),
-                  singleDrawerItem(FeatherIcons.helpCircle, "Help", 13, theme),
+                  singleDrawerItem(
+                      FeatherIcons.helpCircle, "Information Desk", 13, theme),
+                  // singleDrawerItem(FeatherIcons.user, "Profile", 11, theme),
                 ],
               ),
             ),
@@ -218,7 +240,8 @@ class _HomeScreanState extends State<HomeScrean> {
               _scaffoldKey.currentState!.openEndDrawer();
               break;
             case 1:
-              SCheduleUnits().launch(context,
+              // SCheduleUnits().launch(context,
+              PlanningHome().launch(context,
                   pageRouteAnimation: PageRouteAnimation.Slide);
               break;
             case 2:
@@ -265,6 +288,12 @@ class _HomeScreanState extends State<HomeScrean> {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => ClaimHome()),
+              );
+              break;
+            case 16:
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => AssemblyStations()),
               );
               break;
           }

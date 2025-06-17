@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:nb_utils/nb_utils.dart';
 import 'package:shimmer/shimmer.dart';
@@ -91,6 +94,7 @@ class ErrorMessageWidget extends StatelessWidget {
     );
   }
 }
+
 
 class FacebookLikeShimmer2 extends StatelessWidget {
   final double width;
@@ -253,4 +257,262 @@ class _SignatureFieldState extends State<SignatureField> {
       ),
     );
   }
+}
+class CustomUploadFormField extends StatelessWidget {
+  final String label;
+  final String hint;
+  final TextEditingController controller;
+  final TextInputType? keyboardType;
+  final String? Function(String?)? validator;
+  final VoidCallback onUploadPressed;
+
+  const CustomUploadFormField({
+    Key? key,
+    required this.label,
+    required this.hint,
+    required this.controller,
+    this.validator,
+    this.keyboardType,
+    required this.onUploadPressed,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      keyboardType: keyboardType ?? TextInputType.text,
+      controller: controller,
+      validator: validator,
+      readOnly:
+          true, // Make the text field read-only since the file will be selected via the button
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        hintStyle: TextStyle(color: Colors.grey.shade400),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8.0),
+        ),
+        filled: true,
+        fillColor: Colors.grey.shade50,
+        suffixIcon: IconButton(
+          icon: Icon(Icons.upload_file),
+          onPressed: onUploadPressed,
+        ),
+      ),
+    );
+  }
+}
+
+class CustomTextFormField extends StatelessWidget {
+  final String label;
+  final String hint;
+  final TextEditingController controller;
+  final TextInputType? keyboardType;
+  final String? Function(String?)? validator;
+  const CustomTextFormField({
+    Key? key,
+    required this.label,
+    required this.hint,
+    required this.controller,
+    this.validator,
+    this.keyboardType,
+  }) : super(key: key);
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      keyboardType: keyboardType == null ? TextInputType.text : keyboardType,
+      controller: controller,
+      validator: validator,
+      decoration: InputDecoration(
+        labelText: label,
+        // hintText: hint,
+        hintStyle: TextStyle(color: Colors.grey.shade400),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8.0),
+        ),
+        filled: true,
+        fillColor: Colors.grey.shade50,
+      ),
+    );
+  }
+}
+
+class CustomDropdownField extends StatelessWidget {
+  final String label;
+  final String hint;
+  final TextEditingController controller;
+  final List<Map<String, String>> items;
+  final Function(String?) onChanged;
+  const CustomDropdownField({
+    Key? key,
+    required this.label,
+    required this.hint,
+    required this.controller,
+    required this.items,
+    required this.onChanged,
+  }) : super(key: key);
+  @override
+  Widget build(BuildContext context) {
+    return DropdownButtonFormField<String>(
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8.0),
+        ),
+        filled: true,
+        fillColor: Colors.grey.shade50,
+      ),
+      onChanged: onChanged,
+      items: items
+          .map((item) => DropdownMenuItem(
+                value: item['value'],
+                child: Text(item['name']!),
+              ))
+          .toList(),
+    );
+  }
+}
+
+class CustomDateField extends StatelessWidget {
+  final String label;
+  final DateTime selectedDate;
+  final VoidCallback onTap;
+  const CustomDateField({
+    Key? key,
+    required this.label,
+    required this.selectedDate,
+    required this.onTap,
+  }) : super(key: key);
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GestureDetector(
+          onTap: onTap,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.blue
+                  .shade50, // Light blue background like Bootstrap alert-primary
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue, width: 1), // Blue border
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.blue.shade900, // Darker blue for text
+                    ),
+                  ),
+                ),
+                Text(
+                  DateFormat('dd-MM-yyyy').format(selectedDate),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.blue.shade800, // Matching text color
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class CustomButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onPressed;
+  const CustomButton({
+    Key? key,
+    required this.label,
+    required this.onPressed,
+  }) : super(key: key);
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8.0),
+          ),
+        ),
+        onPressed: onPressed,
+        child: Text(label),
+      ),
+    );
+  }
+}
+
+class FilePickerFormField extends FormField<File?> {
+  FilePickerFormField({
+    Key? key,
+    required FormFieldSetter<File?> onSaved,
+    required FormFieldValidator<File?>? validator,
+    File? initialValue,
+    AutovalidateMode autovalidateMode = AutovalidateMode.disabled,
+    required VoidCallback onTap,
+    required File? selectedFile,
+  }) : super(
+          key: key,
+          onSaved: onSaved,
+          validator: validator,
+          initialValue: initialValue,
+          autovalidateMode: autovalidateMode,
+          builder: (FormFieldState<File?> state) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Upload Parking List (Excel)',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                SizedBox(height: 8),
+                InkWell(
+                  onTap: onTap,
+                  child: InputDecorator(
+                    decoration: InputDecoration(
+                      contentPadding: EdgeInsets.symmetric(
+                          vertical: 14.0, horizontal: 12.0),
+                      border: OutlineInputBorder(),
+                      errorText: state.errorText,
+                    ),
+                    child: Text(
+                      selectedFile == null
+                          ? 'No file chosen'
+                          : selectedFile.path.split('/').last,
+                      style: TextStyle(color: Colors.black54),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: ElevatedButton.icon(
+                    onPressed: onTap,
+                    icon: Icon(Icons.upload_file, size: 20),
+                    label: Text('Browse'),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
 }

@@ -8,7 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/loader.dart';
-import 'package:isuze_pqcs/common/loader2.dart';
+import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/routing_structure/multiple_question.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/routing_structure/numerical_question.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/routing_structure/others.dart';

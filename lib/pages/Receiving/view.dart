@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/functions.dart';
-import 'package:isuze_pqcs/common/loader2.dart';
+import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/pages/Receiving/Jobsummary.dart';
 // e.g. CustomLoader, ErrorMessageWidget
 

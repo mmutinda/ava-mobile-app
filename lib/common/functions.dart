@@ -1,9 +1,14 @@
+import 'dart:async';
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:isuze_pqcs/common/UIHelper.dart';
+import 'package:isuze_pqcs/common/loader.dart';
+import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api.dart';
@@ -251,4 +256,197 @@ SnackBar snackBar(message, Color? color) {
       style: const TextStyle(fontSize: 18),
     ),
   );
+}
+
+//post function with token
+// Replace with your UIHelper import
+
+Future<void> submitMultipartForm({
+  required BuildContext context,
+  required String url,
+  required final fields, // Explicit type for clarity
+  required final files, // key: field name, value: File
+  required token,
+}) async {
+  final uri = Uri.parse(url);
+  final request = http.MultipartRequest('POST', uri);
+
+  request.headers.addAll({
+    'Accept': 'application/json',
+    'Authorization': 'Bearer $token',
+  });
+
+  // ✅ Add dynamic fields as String only
+  fields.forEach((key, value) {
+    request.fields[key] = value.toString();
+  });
+
+  // Add dynamic files
+  for (final entry in files.entries) {
+    final fieldName = entry.key;
+    final file = entry.value;
+
+    if (file != null && file.path.isNotEmpty) {
+      request.files
+          .add(await http.MultipartFile.fromPath(fieldName, file.path));
+    }
+  }
+
+  // Debug: print fields
+  request.fields.forEach((key, value) {
+    print('Field: $key = $value');
+  });
+
+  final progressDialog = ProgressDialog(context);
+  progressDialog.style(
+    message: 'Submitting...',
+    child: CustomLoader(),
+    borderRadius: 8,
+    backgroundColor: Colors.white,
+    progressWidget: const SizedBox(
+      width: 20,
+      height: 20,
+      child: Center(child: CircularProgressIndicator()),
+    ),
+    elevation: 10.0,
+    insetAnimCurve: Curves.easeInOut,
+  );
+
+  progressDialog.show();
+
+  try {
+    var response = await request.send();
+    var responseData = await response.stream.bytesToString();
+    var responseBody = jsonDecode(responseData);
+
+    log(responseBody.toString());
+
+    if (response.statusCode == 200 || responseBody['success'] == true) {
+      UIHelper.showSuccessMessage(
+        context: context,
+        message: "Submitted successfully",
+      );
+    } else {
+      String errorMessage =
+          responseBody['msg'] ?? responseBody['message'] ?? "An error occurred";
+
+      if (responseBody['errors'] != null) {
+        final errors = responseBody['errors'];
+        final errorDetails =
+            errors.entries.map((e) => '${e.key}: ${e.value[0]}').join('\n');
+        errorMessage += '\n$errorDetails';
+      }
+
+      UIHelper.showErrorMessage(context: context, message: errorMessage);
+    }
+  } on SocketException {
+    UIHelper.showErrorMessage(
+      context: context,
+      message: "No Internet connection.",
+    );
+  } on TimeoutException {
+    UIHelper.showErrorMessage(
+      context: context,
+      message: "Request timed out. Please try again",
+    );
+  } catch (e) {
+    print("Unexpected Error: $e");
+    UIHelper.showErrorMessage(
+      context: context,
+      message: 'Failed: ${e.toString()}',
+    );
+  } finally {
+    progressDialog.hide();
+  }
+}
+
+//post function with token
+// Replace with your UIHelper import
+
+Future<void> submitForm({
+  required BuildContext context,
+  required String url,
+  required final fields, // Explicit type for clarity
+  // key: field name, value: File
+  required token,
+}) async {
+  final uri = Uri.parse(url);
+  final request = http.MultipartRequest('POST', uri);
+
+  request.headers.addAll({
+    'Accept': 'application/json',
+    'Authorization': 'Bearer $token',
+  });
+
+  // ✅ Add dynamic fields as String only
+  fields.forEach((key, value) {
+    request.fields[key] = value.toString();
+  });
+
+  // Debug: print fields
+  request.fields.forEach((key, value) {
+    print('Field: $key = $value');
+  });
+
+  final progressDialog = ProgressDialog(context);
+  progressDialog.style(
+    message: 'Submitting...',
+    child: CustomLoader(),
+    borderRadius: 8,
+    backgroundColor: Colors.white,
+    progressWidget: const SizedBox(
+      width: 20,
+      height: 20,
+      child: Center(child: CircularProgressIndicator()),
+    ),
+    elevation: 10.0,
+    insetAnimCurve: Curves.easeInOut,
+  );
+
+  progressDialog.show();
+
+  try {
+    var response = await request.send();
+    var responseData = await response.stream.bytesToString();
+    var responseBody = jsonDecode(responseData);
+
+    log(responseBody.toString());
+
+    if (response.statusCode == 200 || responseBody['success'] == true) {
+      UIHelper.showSuccessMessage(
+        context: context,
+        message: "Submitted successfully",
+      );
+    } else {
+      String errorMessage =
+          responseBody['msg'] ?? responseBody['message'] ?? "An error occurred";
+
+      if (responseBody['errors'] != null) {
+        final errors = responseBody['errors'];
+        final errorDetails =
+            errors.entries.map((e) => '${e.key}: ${e.value[0]}').join('\n');
+        errorMessage += '\n$errorDetails';
+      }
+
+      UIHelper.showErrorMessage(context: context, message: errorMessage);
+    }
+  } on SocketException {
+    UIHelper.showErrorMessage(
+      context: context,
+      message: "No Internet connection.",
+    );
+  } on TimeoutException {
+    UIHelper.showErrorMessage(
+      context: context,
+      message: "Request timed out. Please try again",
+    );
+  } catch (e) {
+    print("Unexpected Error: $e");
+    UIHelper.showErrorMessage(
+      context: context,
+      message: 'Failed: ${e.toString()}',
+    );
+  } finally {
+    progressDialog.hide();
+  }
 }

@@ -12,7 +12,7 @@ import 'package:isuze_pqcs/pages/ShopsScrean.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/QcViewlistDefects.dart';
 import 'package:isuze_pqcs/pages/claimforms/RaiseClaim.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/jobcard_questions_template.dart';
-import 'package:isuze_pqcs/pages/qc_inspection/scheduleUnits.dart';
+import 'package:isuze_pqcs/pages/planning/scheduleUnits.dart';
 import 'package:nb_utils/nb_utils.dart';
 import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
 

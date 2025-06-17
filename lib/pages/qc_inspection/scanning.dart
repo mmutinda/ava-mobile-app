@@ -11,7 +11,7 @@ import 'package:isuze_pqcs/common/loader.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/models/qc_inpection.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/qcCategoryQuestions.dart';
-import 'package:isuze_pqcs/pages/qc_inspection/scheduleUnits.dart';
+import 'package:isuze_pqcs/pages/planning/scheduleUnits.dart';
 import 'package:nb_utils/nb_utils.dart';
 import 'package:honeywell_mobility_sdk/honeywell_mobility_sdk.dart';
 import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
