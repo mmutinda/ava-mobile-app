@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:awesome_top_snackbar/awesome_top_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:isuze_pqcs/common/api.dart';
-import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/loader.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
@@ -49,7 +48,6 @@ class _ChooseComponentState extends State<ChooseComponent> {
   String message = '';
   @override
   void initState() {
-    // TODO: implement initState
     inputController = TextEditingController(text: widget.job_no);
     super.initState();
     getuserdata().then((value) {
@@ -102,7 +100,7 @@ class _ChooseComponentState extends State<ChooseComponent> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 350,
+      // ✅ Remove `height: 300`
       width: double.infinity,
       child: data.isEmpty
           ? CustomLoader()
@@ -118,6 +116,8 @@ class _ChooseComponentState extends State<ChooseComponent> {
                   },
                 )
               : Column(
+                  mainAxisSize:
+                      MainAxisSize.min, // ✅ Let Column size to children
                   children: [
                     Container(
                       alignment: Alignment.center,
@@ -132,71 +132,49 @@ class _ChooseComponentState extends State<ChooseComponent> {
                             color: Colors.white, fontWeight: FontWeight.bold),
                       ),
                     ),
-                    SizedBox(height: 20),
+                    SizedBox(height: 30),
+                    // ✅ Wrap the dynamic list in a Column, so height depends on items
                     Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: data.map((component) {
                         final componentName = component;
-                        final componentNameId = data2[data.indexOf(
-                            component)]; // Get the corresponding value from data2
-                        final route_number = data3[data.indexOf(
-                            component)]; // Get the corresponding value from data2
+                        final componentNameId = data2[data.indexOf(component)];
+                        final route_number = data3[data.indexOf(component)];
 
-                        return Column(
-                          children: [
-                            RadioListTile(
-                              groupValue: ComponentId,
-                              value: componentNameId,
-                              title: Text(
-                                '$componentName',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              onChanged: (String? value) {
-                                setState(() {
-                                  ComponentId = value!;
-                                  components = {
-                                    'id': componentNameId,
-                                    'route_number': route_number
-                                  };
-                                  selectedComponent = ComponentId;
-                                });
-                                print(components);
-                              },
+                        return Card(
+                          color: Colors.white,
+                          elevation: 1,
+                          child: RadioListTile(
+                            groupValue: ComponentId,
+                            value: componentNameId,
+                            title: Text(
+                              '$componentName',
+                              style: TextStyle(fontWeight: FontWeight.bold),
                             ),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 12),
-                              child: Divider(),
-                            ),
-                          ],
+                            onChanged: (String? value) {
+                              setState(() {
+                                ComponentId = value!;
+                                components = {
+                                  'id': componentNameId,
+                                  'route_number': route_number
+                                };
+                                selectedComponent = ComponentId;
+                              });
+                              print(components);
+                            },
+                          ),
                         );
                       }).toList(),
                     ),
-                    gap(),
-                    TextFormField(
-                      maxLines: null,
-                      enabled: [4, 5].contains(int.tryParse(widget.route_id)),
-                      controller: inputController,
-                      decoration: InputDecoration(
-                        labelText: 'Job No',
-                        isDense: true,
-                        hintText: 'Job No',
-                        floatingLabelBehavior: FloatingLabelBehavior.always,
-                        border: OutlineInputBorder(),
-                        filled: true,
-                        fillColor: mycolor.withOpacity(0.06),
-                      ),
-                    ),
-                    Spacer(),
+                    SizedBox(height: 20),
                     AppButton(
                       text: "PUSH TO NEXT SHOP",
                       onTap: () async {
                         if (selectedComponent != null) {
-                          // Navigator.pop(context);
                           showConfirmDialogCustom(
                             primaryColor: Colors.amber[900],
                             context,
                             title: "Do you want to Push this?",
-                            // dialogType: DialogType.CONFIRMATION,
                             onAccept: (val) async {
                               final ProgressDialog progressDialog =
                                   ProgressDialog(context);
@@ -237,8 +215,6 @@ class _ChooseComponentState extends State<ChooseComponent> {
                                     ),
                                   );
                                   Navigator.pop(context);
-                                  // print(response);
-                                  print(response);
                                 } else {
                                   await progressDialog.hide();
 
@@ -254,9 +230,6 @@ class _ChooseComponentState extends State<ChooseComponent> {
                                         color: Colors.red,
                                       ),
                                       backgroundColor: Colors.red[900]);
-                                  // print(response);
-
-                                  print(response);
                                 }
                                 return response;
                               } catch (e) {
@@ -271,7 +244,7 @@ class _ChooseComponentState extends State<ChooseComponent> {
                           );
                         } else {
                           awesomeTopSnackbar(
-                              context, "'Please select component.')",
+                              context, "Please select component.",
                               iconWithDecoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(),

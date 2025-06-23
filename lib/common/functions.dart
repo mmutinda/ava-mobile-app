@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:isuze_pqcs/common/UIHelper.dart';
 import 'package:isuze_pqcs/common/loader.dart';
+import 'package:path/path.dart';
 import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -448,5 +449,78 @@ Future<void> submitForm({
     );
   } finally {
     progressDialog.hide();
+  }
+}
+/// fetch data from api
+
+
+class ApiResponse<T> {
+  final bool success;
+  final T? data;
+  final String message;
+
+  ApiResponse({
+    required this.success,
+    this.data,
+    this.message = '',
+  });
+}
+
+Future<ApiResponse<T>> fetchData<T>({
+   required BuildContext context,
+  required String url,
+  required String token,
+  required T Function(dynamic json) parser,
+  Duration timeout = const Duration(seconds: 15),
+  
+}) async {
+  try {
+    if (token.isEmpty) {
+      return ApiResponse(success: false, message: 'Invalid user session.');
+    }
+
+    debugPrint('Fetching data from: $url');
+
+    final responseData = await httpget(url, token, context)
+        .timeout(timeout);
+
+    debugPrint('Response data: $responseData');
+
+    if (responseData == null) {
+      return ApiResponse(success: false, message: 'No response from server.');
+    }
+
+    if (responseData is! Map || !responseData.containsKey('success')) {
+      return ApiResponse(success: false, message: 'Invalid response format.');
+    }
+
+    if (responseData["success"] == true) {
+      if (!responseData.containsKey('data')) {
+        return ApiResponse(success: true, data: null);
+      }
+      final dataJson = responseData["data"];
+      final dataParsed = parser(dataJson);
+      return ApiResponse(success: true, data: dataParsed);
+    } else {
+      final serverMessage = responseData["message"]?.toString() ?? 'Unknown error';
+      if (serverMessage == 'Unauthenticated.') {
+        return ApiResponse(success: false, message: 'Session expired. Please login again.');
+      } else {
+        return ApiResponse(success: false, message: serverMessage);
+      }
+    }
+  } on TimeoutException {
+    debugPrint('Request to $url timed out.');
+    return ApiResponse(success: false, message: 'Request timed out. Please check your internet connection.');
+  } on SocketException {
+    debugPrint('Network error while fetching data.');
+    return ApiResponse(success: false, message: 'Network error. Please check your internet connection.');
+  } on FormatException {
+    debugPrint('Invalid response format.');
+    return ApiResponse(success: false, message: 'Invalid server response. Please contact support.');
+  } catch (e, stackTrace) {
+    debugPrint('Unexpected error: $e');
+    debugPrintStack(stackTrace: stackTrace);
+    return ApiResponse(success: false, message: 'Something went wrong. Please try again later.');
   }
 }

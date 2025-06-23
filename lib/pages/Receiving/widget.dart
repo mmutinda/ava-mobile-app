@@ -71,11 +71,11 @@ class ChecklistItemCard extends StatelessWidget {
 
 //// LotIssueDialog.dart
 
-class LotIssueDialog extends StatefulWidget {
+class LotIssueDialogReceiving extends StatefulWidget {
   final lotId;
   final lotNumber;
   final user;
-  const LotIssueDialog(
+  const LotIssueDialogReceiving(
       {Key? key,
       required this.lotId,
       required this.user,
@@ -83,10 +83,11 @@ class LotIssueDialog extends StatefulWidget {
       : super(key: key);
 
   @override
-  State<LotIssueDialog> createState() => _LotIssueDialogState();
+  State<LotIssueDialogReceiving> createState() =>
+      _LotIssueDialogReceivingState();
 }
 
-class _LotIssueDialogState extends State<LotIssueDialog> {
+class _LotIssueDialogReceivingState extends State<LotIssueDialogReceiving> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool hasIssue = false;
 
@@ -286,7 +287,7 @@ class _LotIssueDialogState extends State<LotIssueDialog> {
 
     final fields = {
       'any_lot_issue': hasIssue ? 'YES' : 'NO',
-      'vehicle_receiving_item_id': widget.lotId.toString(), // ✅ fix
+      'vehicle_receiving_id': widget.lotId.toString(), // ✅ fix
       'lot_number': widget.lotNumber.toString(), // ✅ fix
       'part_number': issueDetailController.text.trim(),
       'classification': issueClassification ?? '',
@@ -294,10 +295,13 @@ class _LotIssueDialogState extends State<LotIssueDialog> {
     };
 
     // Example dynamic files
-    final files = {
-      'images': File(pickedImage!.path),
-    };
+    final files = pickedImage != null
+        ? {
+            'images': File(pickedImage!.path),
+          }
+        : {};
 
+    print("Submit...");
     await submitMultipartForm(
       context: context,
       url: '${Api.api_url}pushToPlanning',
@@ -537,9 +541,11 @@ class _LotIssueDialogFinishRackingState
     };
 
     // Example dynamic files
-    final files = {
-      'images': File(pickedImage!.path),
-    };
+    final files = pickedImage != null
+        ? {
+            'images': File(pickedImage!.path),
+          }
+        : {};
 
     await submitMultipartForm(
       context: context,

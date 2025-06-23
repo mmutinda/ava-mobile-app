@@ -299,7 +299,8 @@ class _UnboxingListState extends State<UnboxingList> {
                                                                             'vehicle_receiving_item_id':
                                                                                 vehicles[index]['id'],
                                                                           };
-
+                                                                          print(
+                                                                              fields);
                                                                           await submitForm(
                                                                             context:
                                                                                 context,

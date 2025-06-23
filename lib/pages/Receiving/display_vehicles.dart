@@ -1,22 +1,19 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
-import 'package:isuze_pqcs/pages/Receiving/ProgressPhotosHome.dart';
 import 'package:isuze_pqcs/pages/Receiving/QcList.dart';
 import 'package:isuze_pqcs/pages/Receiving/form_receiving.dart';
-import 'package:isuze_pqcs/pages/planning/UnboxingList.dart';
 import 'package:isuze_pqcs/pages/planning/scheduleUnits.dart';
 import 'package:nb_utils/nb_utils.dart';
 import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
 
 class DisplayVehicles extends StatefulWidget {
   final isPlanning;
-  final isUnboxing;
-  const DisplayVehicles({super.key, this.isPlanning = false, this.isUnboxing});
+
+  const DisplayVehicles({super.key, this.isPlanning = false});
   @override
   State<DisplayVehicles> createState() => _DisplayVehiclesState();
 }
@@ -48,12 +45,11 @@ class _DisplayVehiclesState extends State<DisplayVehicles> {
           if (vehicles.isEmpty) {
             print(value);
             setState(() {
-              loadingText = 'No vehicles available at the moment';
+              loadingText = 'No Lots available at the moment';
             });
           }
         },
       );
-      ;
     });
     super.initState();
   }
@@ -84,9 +80,7 @@ class _DisplayVehiclesState extends State<DisplayVehicles> {
             ? _buildSearchField()
             : widget.isPlanning == 'Yes'
                 ? Text("Scheduled Lots")
-                : widget.isUnboxing == 'Yes'
-                    ? Text("Unboxing Lots")
-                    : Text('Received Lots'),
+                : Text('Received Lots'),
         actions: [
           Padding(
             padding: const EdgeInsets.all(8.0),
@@ -226,29 +220,15 @@ class _DisplayVehiclesState extends State<DisplayVehicles> {
                                                 topRight: Radius.circular(10))),
                                         child: TextButton(
                                           onPressed: () {
-                                            if (widget.isUnboxing == 'Yes') {
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      UnboxingList(
-                                                    Id: vehicles[index]['id'],
-                                                    LotNo: vehicles[index]
-                                                        ['lot_number'],
-                                                  ),
-                                                ),
-                                              ).then((value) {
-                                                fetchVehicles();
-                                              });
-                                            } else if (widget.isPlanning ==
-                                                'Yes') {
+                                            if (widget.isPlanning == 'Yes') {
                                               String? selectedBay = 'Bay 1';
                                               String? selectedRoute = 'Route 1';
 
                                               // ID maps
                                               final bayIds = {
-                                                'Bay 1': '1',
-                                                'Bay 2': '2'
+                                                'Bay 1': 'Bay 1',
+                                                'Bay 2': 'Bay 2',
+                                                'Bay 3': 'Bay 3'
                                               };
                                               final routeIds = {
                                                 'Route 1': '1',
@@ -295,7 +275,8 @@ class _DisplayVehiclesState extends State<DisplayVehicles> {
                                                               },
                                                               items: [
                                                                 'Bay 1',
-                                                                'Bay 2'
+                                                                'Bay 2',
+                                                                'Bay 3'
                                                               ].map<
                                                                   DropdownMenuItem<
                                                                       String>>((String
@@ -519,8 +500,7 @@ class _DisplayVehiclesState extends State<DisplayVehicles> {
                         ),
                       )),
       ),
-      floatingActionButton: widget.isPlanning == 'Yes' ||
-              widget.isUnboxing == 'Yes'
+      floatingActionButton: widget.isPlanning == 'Yes'
           ? null
           : FloatingActionButton(
               onPressed: () {
@@ -533,9 +513,9 @@ class _DisplayVehiclesState extends State<DisplayVehicles> {
                     fetchVehicles().then(
                       (value) {
                         if (vehicles.isEmpty) {
-                          // print(value);
+                          print(value);
                           setState(() {
-                            loadingText = 'No vehicles available at the moment';
+                            loadingText = 'No Lots available at the moment';
                           });
                         }
                       },
@@ -555,9 +535,7 @@ class _DisplayVehiclesState extends State<DisplayVehicles> {
     });
     String url = widget.isPlanning == 'Yes'
         ? "${Api.api_url}loadSheduledLot"
-        : widget.isUnboxing == 'Yes'
-            ? "${Api.api_url}loadUnboxedLot"
-            : "${Api.api_url}loadVehicleReceivingLots";
+        : "${Api.api_url}loadVehicleReceivingLots";
     print(url);
     ProgressDialog pr = ProgressDialog(context,
         type: ProgressDialogType.normal, isDismissible: true, showLogs: true);

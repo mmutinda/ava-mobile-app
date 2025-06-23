@@ -61,58 +61,82 @@ class StationsItems extends StatelessWidget {
   final String number;
   final int index;
   final VoidCallback onTap;
-
   final Color dividerColor;
 
   const StationsItems({
     Key? key,
     required this.name,
     required this.onTap,
-    // Default icon color
     this.dividerColor = Colors.amber,
-    required this.number, // Default divider color
-    required this.index, // Default divider color
+    required this.number,
+    required this.index,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 1,
+      elevation: 2,
+      margin: const EdgeInsets.symmetric(vertical: 2, horizontal: 0),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
       color: Colors.white,
-      margin: EdgeInsets.symmetric(vertical: 5, horizontal: 5),
-      child: ListTile(
+      shadowColor: dividerColor.withOpacity(0.3),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
         onTap: onTap,
-        leading: Stack(
-          alignment: Alignment.center,
-          children: [
-            CircleAvatar(
-              backgroundColor: dividerColor,
-              radius: 15,
-            ),
-            Text(
-              index.toString(),
-              style: TextStyle(color: Colors.white),
-            ),
-          ],
-        ),
-        title: Text(
-          "$name",
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 22,
+                backgroundColor: dividerColor.withOpacity(0.85),
+                child: Text(
+                  index.toString(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 18,
+                    color: Colors.black87,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+                decoration: BoxDecoration(
+                  color: dividerColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: dividerColor, width: 1),
+                ),
+                child: Text(
+                  number == "0"
+                      ? "No Units"
+                      : number == "1"
+                          ? "1 Unit"
+                          : "$number Units",
+                  style: TextStyle(
+                    color: dividerColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+            ],
           ),
-          overflow: TextOverflow.ellipsis,
-        ),
-        trailing: Stack(
-          alignment: Alignment.center,
-          children: [
-            Text(
-              "(${index})",
-              style: TextStyle(
-                  color: dividerColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18),
-            ),
-          ],
         ),
       ),
     );

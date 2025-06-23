@@ -51,7 +51,7 @@ class _QClistState extends State<QClist> {
           if (vehicles.isEmpty) {
             print(value);
             setState(() {
-              loadingText = 'No vehicles available at the moment';
+              loadingText = 'No Any Lot available at the moment';
             });
           }
         },
@@ -325,7 +325,7 @@ class _QClistState extends State<QClist> {
                           final result = await showDialog(
                             context: context,
                             barrierDismissible: false,
-                            builder: (_) => LotIssueDialog(
+                            builder: (_) => LotIssueDialogReceiving(
                               lotId: widget.Id,
                               user: user['data']['token'],
                               lotNumber: widget.LotNo,

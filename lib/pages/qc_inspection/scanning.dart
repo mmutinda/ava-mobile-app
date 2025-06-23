@@ -10,6 +10,7 @@ import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/loader.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/models/qc_inpection.dart';
+import 'package:isuze_pqcs/pages/planning/offlining/offliningbaypage.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/qcCategoryQuestions.dart';
 import 'package:isuze_pqcs/pages/planning/scheduleUnits.dart';
 import 'package:nb_utils/nb_utils.dart';
@@ -348,7 +349,26 @@ class _ScanningState extends State<Scanning> {
 
     return Scaffold(
       appBar: AppBar(
-        title: _isSearching ? _buildSearchField() : Text('${widget.shopName}'),
+        // title: _isSearching ? _buildSearchField() : Text('${widget.shopName}'),
+        title: _isSearching
+            ? _buildSearchField()
+            : Row(
+                children: [
+                  Expanded(child: Text('${widget.shopName}')),
+                  if (widget.shopId == '2046')
+                    Expanded(
+                      child: TextButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => OffliningBayPage()),
+                            );
+                          },
+                          child: Text("Testing Bt")),
+                    )
+                ],
+              ),
         actions: [
           Padding(
             padding: const EdgeInsets.all(8.0),

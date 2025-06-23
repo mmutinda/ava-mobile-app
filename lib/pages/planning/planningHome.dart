@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:isuze_pqcs/pages/Receiving/display_vehicles.dart';
 import 'package:isuze_pqcs/pages/planning/EOL/EOLScreen.dart';
 import 'package:isuze_pqcs/pages/planning/PlanningUnits.dart';
+import 'package:isuze_pqcs/pages/planning/Unboxing/chooseBay.dart';
+import 'package:isuze_pqcs/pages/planning/Unboxing/display_UnboxingLots.dart';
 import 'package:isuze_pqcs/pages/planning/scheduleUnits.dart';
+import 'package:nb_utils/nb_utils.dart';
 
 class PlanningHome extends StatefulWidget {
   const PlanningHome({super.key});
@@ -77,14 +80,29 @@ class _PlanningHomeState extends State<PlanningHome> {
                   return;
                 }
                 if (index == 1) {
-                  print(index);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => DisplayVehicles(
-                              isUnboxing: "Yes",
-                            )),
-                  );
+                  showInDialog(context,
+                          builder: (context) => ChooseBayDialog(),
+                          dialogAnimation: DialogAnimation.SCALE)
+                      .then((value) {
+                    print(value);
+                    if (value != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => display_UnboxingLots(
+                                  bayName: value,
+                                )),
+                      );
+                    }
+                  });
+                  // print(index);
+                  // Navigator.push(
+                  //   context,
+                  //   MaterialPageRoute(
+                  //       builder: (context) => DisplayVehicles(
+                  //             isUnboxing: "Yes",
+                  //           )),
+                  // );
                   // showEOLBottomSheet(context);
                   return;
                 }
