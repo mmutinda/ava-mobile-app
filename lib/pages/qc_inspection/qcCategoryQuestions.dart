@@ -9,6 +9,7 @@ import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/loader.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/pages/ShopsScrean.dart';
+import 'package:isuze_pqcs/pages/assembly/assembly_stations.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/QcViewlistDefects.dart';
 import 'package:isuze_pqcs/pages/claimforms/RaiseClaim.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/jobcard_questions_template.dart';
@@ -336,9 +337,9 @@ class _QcCategoriesState extends State<QcCategories> {
       if (response['success']) {
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (context) => ShopsScrean()),
+          MaterialPageRoute(builder: (context) => AssemblyStations()),
           (route) =>
-              route.isFirst, // This keeps only the first route (HomePage)
+              route.isFirst, // This skeeps only the first route (HomePage)
         );
         awesomeTopSnackbar(
           context,

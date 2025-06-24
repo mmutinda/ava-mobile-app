@@ -10,6 +10,7 @@ import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/loader.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/models/qc_inpection.dart';
+import 'package:isuze_pqcs/pages/planning/EOL/EOLScreen.dart';
 import 'package:isuze_pqcs/pages/planning/offlining/offliningbaypage.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/qcCategoryQuestions.dart';
 import 'package:isuze_pqcs/pages/planning/scheduleUnits.dart';
@@ -185,8 +186,25 @@ class _ScanningState extends State<Scanning> {
           );
           return;
         }
-
-        if (res["data"]['unitcheck'] == false) {
+        if (widget.shopId == '2046') {
+          OffliningBayPage(
+            ShopId: widget.shopId,
+            res: res,
+            shop_name: widget.shopName,
+          ).launch(
+            context,
+            pageRouteAnimation: PageRouteAnimation.Slide,
+          );
+        }
+        if (widget.shopId == '11') {
+          EOLScreenCategory(
+            ShopId: widget.shopId,
+            vId: res['data']['vehicledata']['id'],
+          ).launch(
+            context,
+            pageRouteAnimation: PageRouteAnimation.Slide,
+          );
+        } else if (res["data"]['unitcheck'] == false) {
           showInDialog(
             context,
             builder: (context) => showPosition(
@@ -269,18 +287,38 @@ class _ScanningState extends State<Scanning> {
                           color: Colors.red,
                         ),
                       )
-                    : res["data"]['unitcheck'] == false
-                        ? showInDialog(context,
-                            builder: (context) => showPosition(
-                                errorMessage:
-                                    res["data"]['currentposion'].toString()),
-                            dialogAnimation: DialogAnimation.SLIDE_TOP_BOTTOM)
-                        : QcCategories(
+                    : widget.shopId == '2046'
+                        ? OffliningBayPage(
                             ShopId: widget.shopId,
                             res: res,
                             shop_name: widget.shopName,
-                          ).launch(context,
-                            pageRouteAnimation: PageRouteAnimation.Slide);
+                          ).launch(
+                            context,
+                            pageRouteAnimation: PageRouteAnimation.Slide,
+                          )
+                        : widget.shopId == '11'
+                            ? EOLScreenCategory(
+                                    ShopId: widget.shopId,
+                                    vId: res['data']['vehicledata']['id'])
+                                .launch(
+                                context,
+                                pageRouteAnimation: PageRouteAnimation.Slide,
+                              )
+                            : res["data"]['unitcheck'] == false
+                                ? showInDialog(context,
+                                    builder: (context) => showPosition(
+                                        errorMessage: res["data"]
+                                                ['currentposion']
+                                            .toString()),
+                                    dialogAnimation:
+                                        DialogAnimation.SLIDE_TOP_BOTTOM)
+                                : QcCategories(
+                                    ShopId: widget.shopId,
+                                    res: res,
+                                    shop_name: widget.shopName,
+                                  ).launch(context,
+                                    pageRouteAnimation:
+                                        PageRouteAnimation.Slide);
           });
         });
         error = null;
@@ -349,26 +387,7 @@ class _ScanningState extends State<Scanning> {
 
     return Scaffold(
       appBar: AppBar(
-        // title: _isSearching ? _buildSearchField() : Text('${widget.shopName}'),
-        title: _isSearching
-            ? _buildSearchField()
-            : Row(
-                children: [
-                  Expanded(child: Text('${widget.shopName}')),
-                  if (widget.shopId == '2046')
-                    Expanded(
-                      child: TextButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => OffliningBayPage()),
-                            );
-                          },
-                          child: Text("Testing Bt")),
-                    )
-                ],
-              ),
+        title: _isSearching ? _buildSearchField() : Text('${widget.shopName}'),
         actions: [
           Padding(
             padding: const EdgeInsets.all(8.0),
@@ -463,7 +482,10 @@ class _ScanningState extends State<Scanning> {
                                         children: [
                                           Text('lOT: ${vehicles[index].lot}'),
                                           width(),
-                                          Text('JOB: ${vehicles[index].job}'),
+                                          if (vehicles[index].job != 'null' &&
+                                              // ignore: unnecessary_null_comparison
+                                              vehicles[index].job != null)
+                                            Text('JOB: ${vehicles[index].job}'),
                                         ],
                                       ),
                                     ],

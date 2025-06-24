@@ -121,7 +121,7 @@ class _PlanningHomeState extends State<PlanningHome> {
                   //         builder: (context) => EOLScreenCategory(),
                   //         dialogAnimation: DialogAnimation.SCALE)
                   //     .then((value) {});
-                  showEOLBottomSheet(context);
+
                   return;
                 }
                 // Navigator.push(
@@ -136,15 +136,6 @@ class _PlanningHomeState extends State<PlanningHome> {
           );
         },
       ),
-    );
-  }
-
-  void showEOLBottomSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => EOLScreenCategory(),
     );
   }
 }

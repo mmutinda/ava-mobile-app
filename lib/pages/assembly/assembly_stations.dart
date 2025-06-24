@@ -101,25 +101,10 @@ class _AssemblyStationsState extends State<AssemblyStations> {
 
   Future<void> fetchData() async {
     print("Fetching Data...");
-    // setState(() {
-    //   isLoading = true;
-    // });
-    // Step 1: Load from SQLite first
-    List<shops> cachedShops = await DBHelper.getCachedShops();
     EasyLoading.show(
-      status: "Loading Shops...",
+      status: "Loading Station...",
       maskType: EasyLoadingMaskType.black,
     );
-
-    if (cachedShops.isNotEmpty) {
-      setState(() {
-        shop = cachedShops;
-        message = '';
-        _isRefreshing == false;
-      });
-
-      EasyLoading.dismiss(); // Always dismiss loader
-    }
 
     var url = "${Api.api_url}home";
     print(url);
@@ -138,7 +123,7 @@ class _AssemblyStationsState extends State<AssemblyStations> {
             message = '';
             _isRefreshing == false;
           });
-          await DBHelper.insertShops(fetchedShops); // Update SQLite
+          // await DBHelper.insertShops(fetchedShops); // Update SQLite
         } else {
           setState(() {
             message = "No Shops Found";
@@ -156,12 +141,12 @@ class _AssemblyStationsState extends State<AssemblyStations> {
     } catch (e) {
       EasyLoading.dismiss(); // Always dismiss loaders
       print("Error fetching data: $e");
-      if (cachedShops.isEmpty) {
+  
         setState(() {
           message = "Network Problem";
           _isRefreshing == false;
         });
-      }
+  
     }
   }
 
@@ -211,14 +196,14 @@ class _AssemblyStationsState extends State<AssemblyStations> {
                               Color categoryColor =
                                   colors[index % colors.length];
                               return StationsItems(
-                                  index: index + 1,
-                                  dividerColor: categoryColor,
-                                  name: shop[index].name,
-                                  number: shop[index].number,
-                                  onTap: () {
-                                    // if (shop[index].number == "0") {
-                                    //   showNoUnitsDialog(context, categoryColor);
-                                    // } else {
+                                index: index + 1,
+                                dividerColor: categoryColor,
+                                name: shop[index].name,
+                                number: shop[index].number,
+                                onTap: () {
+                                  if (shop[index].number == "0") {
+                                    showNoUnitsDialog(context, categoryColor);
+                                  } else {
                                     Scanning(
                                       shopId: shop[index].id,
                                       shopName: shop[index].name,
@@ -228,8 +213,8 @@ class _AssemblyStationsState extends State<AssemblyStations> {
                                           PageRouteAnimation.Slide,
                                     );
                                   }
-                                  // },
-                                  );
+                                },
+                              );
                             },
                           ),
                   ),

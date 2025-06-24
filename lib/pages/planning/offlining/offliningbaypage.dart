@@ -1,4 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
+import 'package:isuze_pqcs/common/api.dart';
+import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/pages/planning/offlining/ChooseEOLOperationsPage.dart';
 import 'package:isuze_pqcs/pages/planning/offlining/GCPlist.dart';
 
@@ -6,19 +11,26 @@ import 'package:isuze_pqcs/pages/planning/offlining/GCPlist.dart';
 class Issue {
   final String title;
   final String status;
+  final String shop;
 
-  Issue({required this.title, required this.status});
+  Issue({required this.title, required this.status, required this.shop});
 
   factory Issue.fromJson(Map<String, dynamic> json) {
     return Issue(
-      title: json['title'],
-      status: json['status'],
+      title: json['getqueries']['query_name'].toString(),
+      status: json['defect_name'] ?? "OPEN",
+      shop: json['qshops']['shop_name'].toString(),
     );
   }
 }
 
 class OffliningBayPage extends StatefulWidget {
-  const OffliningBayPage({Key? key}) : super(key: key);
+  final ShopId;
+  final res;
+  final shop_name;
+
+  const OffliningBayPage(
+      {super.key, required this.ShopId, this.res, this.shop_name});
 
   @override
   State<OffliningBayPage> createState() => _OffliningBayPageState();
@@ -30,42 +42,101 @@ class _OffliningBayPageState extends State<OffliningBayPage> {
   String errorMessage = '';
 
   // ✅ Example: Simulate API call
-  Future<void> fetchIssues() async {
+  // Future<void> fetchIssues() async {
+  //   setState(() {
+  //     isLoading = true;
+  //     errorMessage = '';
+  //   });
+
+  //   try {
+  //     await Future.delayed(const Duration(seconds: 2)); // simulate network
+  //     // ✅ Replace this with your real API call:
+  //     final response = [
+  //       {"title": "Faulty cab mount bracket", "status": "OPEN"},
+  //       {"title": "Faulty 1st cross member", "status": "OPEN"},
+  //       {"title": "Scratch on bumper", "status": "OPEN"},
+  //       {"title": "ECU flashing not done", "status": "OPEN"},
+  //     ];
+
+  //     final fetched = response.map((e) => Issue.fromJson(e)).toList();
+
+  //     setState(() {
+  //       issues = fetched;
+  //     });
+  //   } catch (e) {
+  //     setState(() {
+  //       errorMessage = 'Failed to load issues.';
+  //     });
+  //   } finally {
+  //     setState(() {
+  //       isLoading = false;
+  //     });
+  //   }
+  // }
+
+  Future<void> fetchData() async {
+    print("Fetching Data...");
     setState(() {
       isLoading = true;
       errorMessage = '';
     });
 
+    var url =
+        "${Api.api_url}qdefects/${widget.res['data']['vehicledata']['id']}";
+    print(url);
     try {
-      await Future.delayed(const Duration(seconds: 2)); // simulate network
-      // ✅ Replace this with your real API call:
-      final response = [
-        {"title": "Faulty cab mount bracket", "status": "OPEN"},
-        {"title": "Faulty 1st cross member", "status": "OPEN"},
-        {"title": "Scratch on bumper", "status": "OPEN"},
-        {"title": "ECU flashing not done", "status": "OPEN"},
-      ];
+      var response = await httpget(url, user['data']['token'], context);
+      print(response);
+      if (response != null && response['success'] && response['data'] != null) {
+        List<dynamic> responseData = response['data'];
 
-      final fetched = response.map((e) => Issue.fromJson(e)).toList();
-
-      setState(() {
-        issues = fetched;
-      });
+        final fetched = responseData.map((e) => Issue.fromJson(e)).toList();
+        print(fetched);
+        if (fetched.isNotEmpty) {
+          setState(() {
+            issues = fetched;
+            isLoading = false;
+          });
+          // await DBHelper.insertShops(fetchedShops); // Update SQLite
+        } else {
+          setState(() {
+            errorMessage = "No Issue Found";
+            isLoading = false;
+            // _isRefreshing == false;
+          });
+        }
+        // EasyLoading.dismiss(); // Always dismiss loader
+      } else {
+        setState(() {
+          errorMessage = response['msg'] ?? "Failed to fetch data";
+          // _isRefreshing == false;
+          isLoading = false;
+        });
+        // EasyLoading.dismiss(); // Always dismiss loader
+      }
     } catch (e) {
+      // EasyLoading.dismiss(); // Always dismiss loaders
+      print("Error fetching data: $e");
+
       setState(() {
-        errorMessage = 'Failed to load issues.';
-      });
-    } finally {
-      setState(() {
+        errorMessage = "Network Problem";
+        // _isRefreshing == false;
         isLoading = false;
       });
     }
   }
 
+  var user = {};
   @override
   void initState() {
     super.initState();
-    fetchIssues();
+    getuserdata().then((value) {
+      setState(() {
+        user = jsonDecode(value);
+      });
+      fetchData();
+    });
+    // fetchIssues();
   }
 
   // ✅ Your custom colors
@@ -111,7 +182,7 @@ class _OffliningBayPageState extends State<OffliningBayPage> {
                               ),
                               const SizedBox(height: 10),
                               ElevatedButton(
-                                onPressed: fetchIssues,
+                                onPressed: fetchData,
                                 child: const Text("Retry"),
                               ),
                             ],
@@ -139,6 +210,13 @@ class _OffliningBayPageState extends State<OffliningBayPage> {
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    subtitle: Text(
+                                      issue.shop,
+                                      style: TextStyle(
+                                        color: Colors.amber[900],
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                     trailing: Container(
@@ -181,7 +259,13 @@ class _OffliningBayPageState extends State<OffliningBayPage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (_) => const ChooseEOLOperationsPage()),
+                            builder: (_) => ChooseEOLOperationsPage(
+                                  ModelId: widget.res['data']['vehicledata']
+                                      ['model_id'],
+                                  ShopId: widget.ShopId,
+                                  VehicleId: widget.res['data']['vehicledata']
+                                      ['id'],
+                                )),
                       );
                     },
                     child: const Text(

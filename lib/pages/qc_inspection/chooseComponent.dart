@@ -103,7 +103,10 @@ class _ChooseComponentState extends State<ChooseComponent> {
       // ✅ Remove `height: 300`
       width: double.infinity,
       child: data.isEmpty
-          ? CustomLoader()
+          ? SizedBox(
+              height: 50,
+              child: CustomLoader(),
+            )
           : message.isNotEmpty
               ? ErrorMessageWidget(
                   errorMessage: message,
