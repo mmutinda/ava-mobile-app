@@ -6,6 +6,7 @@ import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/models/shops.dart';
+import 'package:isuze_pqcs/pages/planning/EOL/EOLScreen.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/scanning.dart';
 import 'package:isuze_pqcs/services/sqlite_db_helper.dart';
 import 'package:isuze_pqcs/widgets/shops.dart';
@@ -141,12 +142,11 @@ class _AssemblyStationsState extends State<AssemblyStations> {
     } catch (e) {
       EasyLoading.dismiss(); // Always dismiss loaders
       print("Error fetching data: $e");
-  
-        setState(() {
-          message = "Network Problem";
-          _isRefreshing == false;
-        });
-  
+
+      setState(() {
+        message = "Network Problem";
+        _isRefreshing == false;
+      });
     }
   }
 
@@ -204,14 +204,24 @@ class _AssemblyStationsState extends State<AssemblyStations> {
                                   if (shop[index].number == "0") {
                                     showNoUnitsDialog(context, categoryColor);
                                   } else {
-                                    Scanning(
-                                      shopId: shop[index].id,
-                                      shopName: shop[index].name,
-                                    ).launch(
-                                      context,
-                                      pageRouteAnimation:
-                                          PageRouteAnimation.Slide,
-                                    );
+                                    if (shop[index].id == "11") {
+                                      EOLScreenCategory(
+                                        ShopId: shop[index].id,
+                                      ).launch(
+                                        context,
+                                        pageRouteAnimation:
+                                            PageRouteAnimation.Slide,
+                                      );
+                                    } else {
+                                      Scanning(
+                                        shopId: shop[index].id,
+                                        shopName: shop[index].name,
+                                      ).launch(
+                                        context,
+                                        pageRouteAnimation:
+                                            PageRouteAnimation.Slide,
+                                      );
+                                    }
                                   }
                                 },
                               );

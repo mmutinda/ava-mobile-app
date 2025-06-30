@@ -98,12 +98,23 @@ class _QcCategoriesState extends State<QcCategories> {
         ],
       ),
       appBar: AppBar(
-        title: Text(
-          "${widget.res['data']['vehicledata']['vin_no']}",
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 16),
-          overflow: TextOverflow.ellipsis,
-          maxLines: 2,
+        title: Column(
+          children: [
+            Text(
+              widget.shop_name,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
+            ),
+            Text(
+              widget.res['data']['vehicledata']['vin_no'],
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
+            ),
+          ],
         ),
         actions: [
           InkWell(

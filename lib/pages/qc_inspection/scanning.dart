@@ -11,6 +11,7 @@ import 'package:isuze_pqcs/common/loader.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/models/qc_inpection.dart';
 import 'package:isuze_pqcs/pages/planning/EOL/EOLScreen.dart';
+import 'package:isuze_pqcs/pages/planning/EOL/jobcard_questions_template_EOL.dart';
 import 'package:isuze_pqcs/pages/planning/offlining/offliningbaypage.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/qcCategoryQuestions.dart';
 import 'package:isuze_pqcs/pages/planning/scheduleUnits.dart';
@@ -21,8 +22,13 @@ import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
 class Scanning extends StatefulWidget {
   final shopName;
   final shopId;
+  final subStationId;
 
-  const Scanning({super.key, required this.shopName, required this.shopId});
+  const Scanning(
+      {super.key,
+      required this.shopName,
+      required this.shopId,
+      this.subStationId});
   @override
   _ScanningState createState() => _ScanningState();
 }
@@ -91,7 +97,9 @@ class _ScanningState extends State<Scanning> {
       isLoading = true;
       message = '';
     });
-    var url = "${Api.api_url}unitsinshop/${widget.shopId}";
+    var url = widget.shopId == "11"
+        ? "${Api.api_url}loadUnitsInSubstation/${widget.subStationId}"
+        : "${Api.api_url}unitsinshop/${widget.shopId}";
     print(url);
 
     try {
@@ -105,7 +113,7 @@ class _ScanningState extends State<Scanning> {
 
       if (response['success'] && response['data'] != null) {
         List<dynamic> responseData = response['data'];
-        // print(responseData);
+
         List<Vehicle2> fetchedVehicles = responseData.map((vehicleData) {
           return Vehicle2.fromJson(vehicleData);
         }).toList();
@@ -197,9 +205,13 @@ class _ScanningState extends State<Scanning> {
           );
         }
         if (widget.shopId == '11') {
-          EOLScreenCategory(
-            ShopId: widget.shopId,
-            vId: res['data']['vehicledata']['id'],
+          JobCardQuestionsTemplateEOL(
+            chasis_no: res['data']['vehicledata']['vin_no'],
+            shop_name: 'EOL station',
+            station_id: widget.subStationId,
+            shop_id: widget.shopId,
+            vehicle_id: res['data']['vehicledata']['id'],
+            categoryName: widget.shopName,
           ).launch(
             context,
             pageRouteAnimation: PageRouteAnimation.Slide,
@@ -297,10 +309,14 @@ class _ScanningState extends State<Scanning> {
                             pageRouteAnimation: PageRouteAnimation.Slide,
                           )
                         : widget.shopId == '11'
-                            ? EOLScreenCategory(
-                                    ShopId: widget.shopId,
-                                    vId: res['data']['vehicledata']['id'])
-                                .launch(
+                            ? JobCardQuestionsTemplateEOL(
+                                chasis_no: res['data']['vehicledata']['vin_no'],
+                                shop_name: 'EOL station',
+                                station_id: widget.subStationId,
+                                shop_id: widget.shopId,
+                                vehicle_id: res['data']['vehicledata']['id'],
+                                categoryName: widget.shopName,
+                              ).launch(
                                 context,
                                 pageRouteAnimation: PageRouteAnimation.Slide,
                               )

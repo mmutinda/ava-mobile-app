@@ -9,8 +9,10 @@ import 'package:isuze_pqcs/common/confirmationDialog.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/loader.dart';
-import 'package:isuze_pqcs/pages/assembly/assembly_stations.dart';
-import 'package:isuze_pqcs/pages/planning/EOL/EOLlist.dart';
+// import 'package:isuze_pqcs/pages/assembly/assembly_stations.dart';
+import 'package:isuze_pqcs/pages/planning/EOL/jobcard_questions_template_EOL.dart';
+import 'package:isuze_pqcs/pages/qc_inspection/scanning.dart';
+import 'package:nb_utils/nb_utils.dart';
 
 class EOL {
   final id;
@@ -67,12 +69,10 @@ class EOL {
 
 class EOLScreenCategory extends StatefulWidget {
   final ShopId;
-  final vId;
 
   const EOLScreenCategory({
     super.key,
     required this.ShopId,
-    required this.vId,
   });
 
   @override
@@ -102,12 +102,12 @@ class _EOLScreenCategoryState extends State<EOLScreenCategory> {
   Future<void> fetchData() async {
     print("Fetching Data...");
     EasyLoading.show(
-      status: "Loading EOL sections...",
+      status: "Loading EOL Substation...",
       maskType: EasyLoadingMaskType.black,
     );
 
-    var url =
-        "${Api.api_url}loadUnitsInSubstation/${widget.ShopId}/${widget.vId}";
+    // var url = "${Api.api_url}loadUnitsInSubstation/${widget.ShopId}";
+    var url = "${Api.api_url}loadSubstationsWithUnits/${widget.ShopId}";
     print(url);
     try {
       var response = await httpget(url, user['data']['token'], context);
@@ -150,78 +150,78 @@ class _EOLScreenCategoryState extends State<EOLScreenCategory> {
     }
   }
 
-  void Submit() {
-    // ✅ Add your START EOL logic here
+  // void Submit() {
+  //   // ✅ Add your START EOL logic here
 
-    CustomConfirmDialog.show(
-      context: context,
-      title: 'Confirm Action',
-      message: 'Do you want to push to EOL',
-      onConfirm: () async {
-        await saveData();
-      },
-    );
-    // Proceed with selectedOps
-  }
+  //   CustomConfirmDialog.show(
+  //     context: context,
+  //     title: 'Confirm Action',
+  //     message: 'Do you want to push to EOL',
+  //     onConfirm: () async {
+  //       await saveData();
+  //     },
+  //   );
+  //   // Proceed with selectedOps
+  // }
 
-  Future<void> saveData() async {
-    setState(() {
-      isLoading2 = true;
-    });
-    print(isLoading2);
-    String url = Api.api_url + "moveunitToEOL";
+  // Future<void> saveData() async {
+  //   setState(() {
+  //     isLoading2 = true;
+  //   });
+  //   print(isLoading2);
+  //   String url = Api.api_url + "moveunitToEOL";
 
-    // ✅ Build the selected operations array
+  //   // ✅ Build the selected operations array
 
-    var payload = {
-      "shop_id": widget.ShopId,
-      "next_shop_id": 11,
-    };
+  //   var payload = {
+  //     "shop_id": widget.ShopId,
+  //     "next_shop_id": 11,
+  //   };
 
-    print("Payload: $payload"); // Debug log
+  //   print("Payload: $payload"); // Debug log
 
-    var response = await httppostwithtoken(
-      url,
-      "${user['data']['token']}",
-      payload,
-      context,
-    );
+  //   var response = await httppostwithtoken(
+  //     url,
+  //     "${user['data']['token']}",
+  //     payload,
+  //     context,
+  //   );
 
-    setState(() {
-      isLoading2 = false;
-    });
-    log(jsonEncode(response));
-    if (response['success'] != null) {
-      if (response['success']) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => AssemblyStations()),
-          (route) => route.isFirst,
-        );
-        awesomeTopSnackbar(
-          context,
-          "${response["msg"]}",
-          iconWithDecoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(),
-            color: Colors.white,
-          ),
-          backgroundColor: Colors.green,
-        );
-      } else {
-        awesomeTopSnackbar(
-          context,
-          "${response["msg"]}",
-          iconWithDecoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(),
-            color: Colors.white,
-          ),
-          backgroundColor: Colors.red,
-        );
-      }
-    }
-  }
+  //   setState(() {
+  //     isLoading2 = false;
+  //   });
+  //   log(jsonEncode(response));
+  //   if (response['success'] != null) {
+  //     if (response['success']) {
+  //       Navigator.pushAndRemoveUntil(
+  //         context,
+  //         MaterialPageRoute(builder: (context) => AssemblyStations()),
+  //         (route) => route.isFirst,
+  //       );
+  //       awesomeTopSnackbar(
+  //         context,
+  //         "${response["msg"]}",
+  //         iconWithDecoration: BoxDecoration(
+  //           borderRadius: BorderRadius.circular(20),
+  //           border: Border.all(),
+  //           color: Colors.white,
+  //         ),
+  //         backgroundColor: Colors.green,
+  //       );
+  //     } else {
+  //       awesomeTopSnackbar(
+  //         context,
+  //         "${response["msg"]}",
+  //         iconWithDecoration: BoxDecoration(
+  //           borderRadius: BorderRadius.circular(20),
+  //           border: Border.all(),
+  //           color: Colors.white,
+  //         ),
+  //         backgroundColor: Colors.red,
+  //       );
+  //     }
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -261,6 +261,7 @@ class _EOLScreenCategoryState extends State<EOLScreenCategory> {
                       itemCount: data.length,
                       itemBuilder: (context, index) {
                         final station = data[index];
+                        // Color categoryColor = colors[index % colors.length];
                         return Card(
                           margin: const EdgeInsets.symmetric(vertical: 8),
                           elevation: 1,
@@ -269,26 +270,52 @@ class _EOLScreenCategoryState extends State<EOLScreenCategory> {
                               borderRadius: BorderRadius.circular(12)),
                           child: ListTile(
                             onTap: () {
-                              if (station.name == 'Brake Test') {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        BrakeTestList(EOLType: 'BT'),
-                                  ),
-                                );
+                              if (station.number == "0") {
+                                showNoUnitsDialog(context);
                                 return;
                               }
-                              if (station.name == 'Wheel Alignment') {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        BrakeTestList(EOLType: 'WA'),
-                                  ),
-                                );
-                                return;
-                              }
+                              Scanning(
+                                shopId: "11",
+                                shopName: station.name,
+                                subStationId: station.id,
+                              ).launch(
+                                context,
+                                pageRouteAnimation: PageRouteAnimation.Slide,
+                              );
+                              // Navigator.push(
+                              //   context,
+                              //   MaterialPageRoute(
+                              //     builder: (context) =>
+                              //         JobCardQuestionsTemplateEOL(
+                              //       chasis_no: widget.chasis,
+                              //       shop_name: '',
+                              //       station_id: station.id,
+                              //       shop_id: widget.ShopId,
+                              //       vehicle_id: widget.vId,
+                              //       categoryName: station.name,
+                              //     ),
+                              //   ),
+                              // );
+                              // if (station.name == 'Brake Test') {
+                              //   Navigator.push(
+                              //     context,
+                              //     MaterialPageRoute(
+                              //       builder: (context) =>
+                              //           BrakeTestList(EOLType: 'BT'),
+                              //     ),
+                              //   );
+                              //   return;
+                              // }
+                              // if (station.name == 'Wheel Alignment') {
+                              //   Navigator.push(
+                              //     context,
+                              //     MaterialPageRoute(
+                              //       builder: (context) =>
+                              //           BrakeTestList(EOLType: 'WA'),
+                              //     ),
+                              //   );
+                              //   return;
+                              // }
                             },
                             contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 12),
@@ -302,6 +329,29 @@ class _EOLScreenCategoryState extends State<EOLScreenCategory> {
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                               ),
+                            ),
+                            subtitle: Builder(
+                              builder: (context) {
+                                int unitCount =
+                                    int.tryParse(station.number.toString()) ??
+                                        0;
+                                String unitText;
+                                if (unitCount == 0) {
+                                  unitText = "No Unit Found";
+                                } else if (unitCount == 1) {
+                                  unitText = "1 Unit Found";
+                                } else {
+                                  unitText = "$unitCount Units Found";
+                                }
+                                return Text(
+                                  unitText,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                );
+                              },
                             ),
                             trailing: station.number != null
                                 ? Container(
@@ -325,32 +375,95 @@ class _EOLScreenCategoryState extends State<EOLScreenCategory> {
                     ),
             ),
           ),
-          isLoading2
-              ? CustomLoader()
-              : Container(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: mycolor,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    onPressed: Submit,
-                    child: const Text(
-                      "PUSH",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.1,
-                      ),
-                    ),
-                  ),
-                ),
+          // isLoading2
+          //     ? CustomLoader()
+          //     : Container(
+          //         width: double.infinity,
+          //         child: ElevatedButton(
+          //           style: ElevatedButton.styleFrom(
+          //             backgroundColor: mycolor,
+          //             padding: const EdgeInsets.symmetric(vertical: 16),
+          //             elevation: 0,
+          //             shape: RoundedRectangleBorder(
+          //               borderRadius: BorderRadius.circular(8),
+          //             ),
+          //           ),
+          //           onPressed: Submit,
+          //           child: const Text(
+          //             "PUSH",
+          //             style: TextStyle(
+          //               color: Colors.white,
+          //               fontWeight: FontWeight.bold,
+          //               letterSpacing: 1.1,
+          //             ),
+          //           ),
+          //         ),
+          //       ),
         ],
       ),
     );
   }
+}
+
+void showNoUnitsDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    barrierDismissible: true,
+    builder: (BuildContext context) {
+      return Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        elevation: 4,
+        backgroundColor: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: mycolor,
+                size: 50,
+              ),
+              const SizedBox(height: 15),
+              Text(
+                "No Units Available",
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: mycolor,
+                ),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                "There are currently no units in this station.\n"
+                "Pull down the screen to refresh.",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16, color: Colors.black87),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: mycolor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                ),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: const Text(
+                  "OK",
+                  style: TextStyle(fontSize: 16, color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
 }

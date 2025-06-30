@@ -90,12 +90,23 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          widget.categoryName,
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 16),
-          overflow: TextOverflow.ellipsis,
-          maxLines: 2,
+        title: Column(
+          children: [
+            Text(
+              widget.categoryName,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
+            ),
+            Text(
+              widget.chasis_no,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
+            ),
+          ],
         ),
       ),
       body: Form(
@@ -216,13 +227,13 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                       var qid = get['id'];
                                       setState(() {
                                         multipleValue[qid] = value;
-                                        // print(multipleValue);
+
+                                        if (value == "OK") {
+                                          multipleValues[qid] =
+                                              multipleValues[qid] ?? [];
+                                          multipleValues[qid]!.clear();
+                                        }
                                       });
-                                      if (value == "OK") {
-                                        setState(() {
-                                          multipleValues.clear();
-                                        });
-                                      }
                                     },
                                     onValuesChanged: (value) {
                                       // print(values);
@@ -625,14 +636,15 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
       });
       request.fields['answers'] = jsonEncode(answers);
       request.fields['vehicle_id'] = widget.vehicle_id.toString();
-      request.fields['answer_type'] = 'QFL3';
+      // request.fields['answer_type'] = 'QFL3';
+      request.fields['sub_station_id'] = '';
 
       for (var entry in images.entries) {
         request.files.add(await http.MultipartFile.fromPath(
             'images[${entry.key}]', entry.value.path));
         // print("${entry.key}, Path: ${entry.value.path}");
       }
- 
+
       var response = await request.send();
       print(response);
       var responseData = await response.stream.bytesToString();
