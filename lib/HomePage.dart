@@ -20,6 +20,7 @@ import 'package:isuze_pqcs/pages/planning/planningHome.dart';
 import 'package:isuze_pqcs/pages/profile_screen.dart';
 import 'package:isuze_pqcs/pages/ShopsScrean.dart';
 import 'package:isuze_pqcs/pages/planning/scheduleUnits.dart';
+import 'package:isuze_pqcs/qflTest.dart';
 import 'package:nb_utils/nb_utils.dart';
 
 class HomeScrean extends StatefulWidget {
@@ -145,6 +146,7 @@ class _HomeScreanState extends State<HomeScrean> {
                   singleDrawerItem(FeatherIcons.folderPlus, "QFL 4", 3, theme),
                   singleDrawerItem(
                       FeatherIcons.folderPlus, "QFL 5/6", 3, theme),
+                  singleDrawerItem(FeatherIcons.folderPlus, "MPA", 3, theme),
                   Divider(),
                   Padding(
                     padding: const EdgeInsets.symmetric(
@@ -245,7 +247,7 @@ class _HomeScreanState extends State<HomeScrean> {
                   pageRouteAnimation: PageRouteAnimation.Slide);
               break;
             case 2:
-              ShopsScrean().launch(context,
+              AuditChecklistPage().launch(context,
                   pageRouteAnimation: PageRouteAnimation.Slide);
 
               break;

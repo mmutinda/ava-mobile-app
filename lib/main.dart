@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
-import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/HomePage.dart';
+import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/pages/login/login.dart';
+import 'package:isuze_pqcs/qflTest.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> main() async {
@@ -29,6 +30,12 @@ class MyApp extends StatelessWidget {
       title: 'PQCS SYSTEM',
       builder: EasyLoading.init(), // ✅ Initialize EasyLoading here
       theme: ThemeData(
+        pageTransitionsTheme: PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: CustomPageTransitionBuilder(),
+            TargetPlatform.iOS: CustomPageTransitionBuilder(),
+          },
+        ),
         // scaffoldBackgroundColor: bgColor,
         scaffoldBackgroundColor: Colors.grey.shade100,
         appBarTheme: AppBarTheme(
@@ -42,7 +49,7 @@ class MyApp extends StatelessWidget {
         //
       ),
       home: userdata == null ? Login() : HomeScrean(),
-      // home: HomeScrean(),
+      // home: AuditChecklistPage(),
     );
   }
 }
@@ -61,4 +68,17 @@ void configLoading() {
     ..maskType = EasyLoadingMaskType.none
     ..userInteractions = false
     ..dismissOnTap = false;
+}
+
+class CustomPageTransitionBuilder extends PageTransitionsBuilder {
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    return FadeTransition(opacity: animation, child: child);
+  }
 }

@@ -293,7 +293,7 @@ class _ReceivingFormState extends State<ReceivingForm> {
                                       ),
                                       const SizedBox(height: 16),
                                       CustomUploadFormField(
-                                        label: 'Upload Parking List (Excel)',
+                                        label: 'Upload Packing List (Excel)',
                                         hint: 'No file chosen',
                                         controller: _fileController,
                                         onUploadPressed: () => _pickFile(0),
