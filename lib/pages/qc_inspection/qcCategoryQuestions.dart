@@ -358,7 +358,7 @@ class _QcCategoriesState extends State<QcCategories> {
           iconWithDecoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             border: Border.all(),
-            color: Colors.white,
+          color: Colors.white,
           ),
           backgroundColor: Colors.green,
         );

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
@@ -74,6 +75,8 @@ class NearMissListPage extends StatefulWidget {
 class _NearMissListPageState extends State<NearMissListPage> {
   late Future<List<NearMiss>> futureRecords;
   var user = {};
+  List<NearMiss> _allRecords = [];
+  List<NearMiss> _filteredRecords = [];
   @override
   void initState() {
     super.initState();
@@ -82,10 +85,17 @@ class _NearMissListPageState extends State<NearMissListPage> {
         user = jsonDecode(value);
       });
       futureRecords = fetchNearMissRecords();
+      futureRecords.then((records) {
+        setState(() {
+          _allRecords = records;
+          _filteredRecords = records; // Initially no filter, show all
+        });
+      });
     });
   }
 
   Future<List<NearMiss>> fetchNearMissRecords() async {
+    print("object");
     final response = await http.get(
       headers: {
         'Authorization': 'Bearer ${user['data']['token']}',
@@ -100,6 +110,46 @@ class _NearMissListPageState extends State<NearMissListPage> {
       return records.map((json) => NearMiss.fromJson(json)).toList();
     } else {
       throw Exception('Failed to load Near Miss records');
+    }
+  }
+
+  DateTime? _selectedDate;
+  Future<void> _pickDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+    );
+
+    if (picked != null) {
+      _filterByDate(picked);
+    }
+  }
+
+  void _clearFilter() {
+    _filterByDate(null);
+  }
+
+  void _filterByDate(DateTime? selectedDate) {
+    if (selectedDate == null) {
+      setState(() {
+        _selectedDate = null;
+        _filteredRecords = _allRecords;
+      });
+    } else {
+      print(selectedDate);
+      setState(() {
+        _selectedDate = selectedDate;
+        _filteredRecords = _allRecords.where((record) {
+          // Parse record.date string back to DateTime
+          print(record.date);
+          DateTime recordDate = DateFormat('yyyy-MM-dd').parse(record.date);
+          return recordDate.year == selectedDate.year &&
+              recordDate.month == selectedDate.month &&
+              recordDate.day == selectedDate.day;
+        }).toList();
+      });
     }
   }
 
@@ -118,8 +168,18 @@ class _NearMissListPageState extends State<NearMissListPage> {
               builder: (_) => NearMissFormPage(),
             ),
           ).then((result) {
-            setState(() {
-              futureRecords = fetchNearMissRecords();
+            // Reload all records again on add
+            futureRecords = fetchNearMissRecords();
+            futureRecords.then((records) {
+              setState(() {
+                _allRecords = records;
+                // Apply current filter if any
+                if (_selectedDate != null) {
+                  _filterByDate(_selectedDate);
+                } else {
+                  _filteredRecords = records;
+                }
+              });
             });
           });
           ;
@@ -127,102 +187,247 @@ class _NearMissListPageState extends State<NearMissListPage> {
         backgroundColor: mycolor,
         child: const Icon(Icons.add),
       ),
-      appBar: AppBar(title: const Text('Near Miss Records')),
-      body: Container(
-        // decoration: const BoxDecoration(
-        //   gradient: LinearGradient(
-        //     begin: Alignment.topLeft,
-        //     end: Alignment.bottomRight,
-        //     colors: [Color(0xFFE3F2FD), Color(0xFFBBDEFB)],
-        //   ),
-        // ),
-        child: FutureBuilder<List<NearMiss>>(
-          future: futureRecords,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(
-                child: CustomLoader(),
-              );
-            } else if (snapshot.hasError) {
-              return ErrorMessageWidget(
-                errorMessage: "${snapshot.error}",
-                onRetry: () {
-                  setState(() {
-                    futureRecords = fetchNearMissRecords();
-                  });
-                },
-              );
-            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return const Center(
-                child: Text(
-                  'No records found.',
-                  style: TextStyle(fontSize: 18, color: Colors.black54),
-                ),
-              );
-            }
-
-            final records = snapshot.data!;
-            return ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              itemCount: records.length,
-              itemBuilder: (context, index) {
-                final record = records[index];
-                return Card(
-                  elevation: 1,
-                  color: Colors.white,
-                  // shadowColor: Colors.blue.shade100,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
+      appBar: AppBar(
+        title: const Text('Near Miss Records'),
+        actions: [
+          if (_selectedDate != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Center(
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white70),
                   ),
-                  margin: const EdgeInsets.symmetric(vertical: 8),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 12),
-                    leading: CircleAvatar(
-                      backgroundColor: Colors.grey.shade200,
-                      child: Text("${index + 1}"),
-                    ),
-                    title: Text(
-                      record.department,
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: mycolor),
-                    ),
-                    subtitle: Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text.rich(
-                        TextSpan(
+                  child: Row(
+                    children: [
+                      Icon(Icons.filter_alt, size: 16, color: Colors.white),
+                      const SizedBox(width: 6),
+                      Text(
+                        DateFormat('dd MMM yyyy').format(_selectedDate!),
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      const SizedBox(width: 6),
+                      GestureDetector(
+                        onTap: _clearFilter,
+                        child: const Icon(Icons.close,
+                            size: 16, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          IconButton(
+            icon: const Icon(Icons.calendar_today),
+            tooltip: 'Filter by date',
+            onPressed: _pickDate,
+          ),
+        ],
+      ),
+      body: _allRecords.isEmpty
+          ? Center(child: CustomLoader())
+          : _filteredRecords.isEmpty
+              ? const Center(
+                  child: Text(
+                    'No records found.',
+                    style: TextStyle(fontSize: 18, color: Colors.black54),
+                  ),
+                )
+              : ListView.builder(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 0, vertical: 10),
+                  itemCount: _filteredRecords.length,
+                  itemBuilder: (context, index) {
+                    final record = _filteredRecords[index];
+                    return Card(
+                      elevation: 3,
+                      color: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      margin: const EdgeInsets.symmetric(
+                          vertical: 8, horizontal: 12),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const TextSpan(
-                                text: 'Date: ',
-                                style: TextStyle(fontWeight: FontWeight.w500)),
-                            TextSpan(text: '${record.date}\n'),
-                            const TextSpan(
-                                text: 'Risk: ',
-                                style: TextStyle(fontWeight: FontWeight.w500)),
-                            TextSpan(text: record.levelOfRisk),
+                            CircleAvatar(
+                              backgroundColor: mycolor,
+                              foregroundColor: Colors.white,
+                              radius: 20,
+                              child: Text(
+                                "${index + 1}",
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    record.department,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                      color: mycolor,
+                                    ),
+                                  ),
+                                  Text(
+                                    record.levelOfRisk,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                      color: mycolor,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text.rich(
+                                    TextSpan(
+                                      children: [
+                                        const TextSpan(
+                                          text: 'Date: ',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.w500),
+                                        ),
+                                        TextSpan(text: '${record.date}\n'),
+                                      ],
+                                    ),
+                                    style: const TextStyle(
+                                        color: Colors.black87, fontSize: 13),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                ElevatedButton.icon(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            NearMissDetailPage(record: record),
+                                      ),
+                                    );
+                                  },
+                                  icon: const Icon(Icons.visibility, size: 16),
+                                  label: const Text('View',
+                                      style: TextStyle(fontSize: 12)),
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 6),
+                                    backgroundColor: mycolor,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
                       ),
-                    ),
-                    trailing:
-                        const Icon(Icons.arrow_forward_ios_rounded, size: 18),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => NearMissDetailPage(record: record),
-                        ),
-                      );
-                    },
-                  ),
-                );
-              },
-            );
-          },
-        ),
-      ),
+                    );
+                  },
+                ),
+      // body: Container(
+      //   child: FutureBuilder<List<NearMiss>>(
+      //     future: futureRecords,
+      //     builder: (context, snapshot) {
+      //       if (snapshot.connectionState == ConnectionState.waiting) {
+      //         return Center(
+      //           child: CustomLoader(),
+      //         );
+      //       } else if (snapshot.hasError) {
+      //         return ErrorMessageWidget(
+      //           errorMessage: "${snapshot.error}",
+      //           onRetry: () {
+      //             setState(() {
+      //               futureRecords = fetchNearMissRecords();
+      //             });
+      //           },
+      //         );
+      //       } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+      //         return const Center(
+      //           child: Text(
+      //             'No records found.',
+      //             style: TextStyle(fontSize: 18, color: Colors.black54),
+      //           ),
+      //         );
+      //       }
+
+      //       final records = snapshot.data!;
+      //       return ListView.builder(
+      //         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      //         itemCount: records.length,
+      //         itemBuilder: (context, index) {
+      //           final record = records[index];
+      //           return Card(
+      //             elevation: 1,
+      //             color: Colors.white,
+      //             // shadowColor: Colors.blue.shade100,
+      //             shape: RoundedRectangleBorder(
+      //               borderRadius: BorderRadius.circular(15),
+      //             ),
+      //             margin: const EdgeInsets.symmetric(vertical: 8),
+      //             child: ListTile(
+      //               contentPadding: const EdgeInsets.symmetric(
+      //                   horizontal: 20, vertical: 12),
+      //               leading: CircleAvatar(
+      //                 backgroundColor: Colors.grey.shade200,
+      //                 child: Text("${index + 1}"),
+      //               ),
+      //               title: Text(
+      //                 record.department,
+      //                 style: TextStyle(
+      //                     fontWeight: FontWeight.bold,
+      //                     fontSize: 16,
+      //                     color: mycolor),
+      //               ),
+      //               subtitle: Padding(
+      //                 padding: const EdgeInsets.only(top: 4),
+      //                 child: Text.rich(
+      //                   TextSpan(
+      //                     children: [
+      //                       const TextSpan(
+      //                           text: 'Date: ',
+      //                           style: TextStyle(fontWeight: FontWeight.w500)),
+      //                       TextSpan(text: '${record.date}\n'),
+      //                       const TextSpan(
+      //                           text: 'Risk: ',
+      //                           style: TextStyle(fontWeight: FontWeight.w500)),
+      //                       TextSpan(text: record.levelOfRisk),
+      //                     ],
+      //                   ),
+      //                 ),
+      //               ),
+      //               trailing:
+      //                   const Icon(Icons.arrow_forward_ios_rounded, size: 18),
+      //               onTap: () {
+      //                 Navigator.push(
+      //                   context,
+      //                   MaterialPageRoute(
+      //                     builder: (_) => NearMissDetailPage(record: record),
+      //                   ),
+      //                 );
+      //               },
+      //             ),
+      //           );
+      //         },
+      //       );
+      //     },
+      //   ),
+      // ),
     );
   }
 }

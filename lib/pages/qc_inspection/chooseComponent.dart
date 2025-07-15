@@ -171,7 +171,7 @@ class _ChooseComponentState extends State<ChooseComponent> {
                     ),
                     SizedBox(height: 20),
                     AppButton(
-                      text: "PUSH TO NEXT SHOP",
+                      text: "PUSH COMPONENT",
                       onTap: () async {
                         if (selectedComponent != null) {
                           showConfirmDialogCustom(

@@ -178,8 +178,10 @@ class _JobCardQuestionsTemplateEOLState
                               } else if (get["quiz_type"] == "multiple") {
                                 return MultipleQuestion(
                                     intial_option: get["defect_names"],
-                                    initialImage: question["answer"]
-                                        ?["image_path"],
+                                    initialImage: (get["image_url"] == null ||
+                                            get["image_url"].toString().isEmpty)
+                                        ? null
+                                        : get["image_url"],
                                     onImageChanged: (File? image) {
                                       setState(() {
                                         if (image == null) {
@@ -263,7 +265,10 @@ class _JobCardQuestionsTemplateEOLState
                               } else if (get["quiz_type"] == "single") {
                                 //single
                                 return SingleQuestion(
-                                    initialImage: get["image_url"],
+                                    initialImage: (get["image_url"] == null ||
+                                            get["image_url"].toString().isEmpty)
+                                        ? null
+                                        : get["image_url"],
                                     onImageChanged: (File? image) {
                                       setState(() {
                                         if (image == null) {

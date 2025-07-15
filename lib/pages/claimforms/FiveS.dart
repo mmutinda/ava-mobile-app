@@ -209,48 +209,12 @@ class _DocumentListPageState extends State<DocumentListPage> {
 
 class DocumentDetailPage extends StatelessWidget {
   final Document document;
-
   const DocumentDetailPage({super.key, required this.document});
   Future<void> previewPdf(
       BuildContext context, Uint8List pdfData, invoiceNo) async {
     final tempDir = await getTemporaryDirectory();
     final tempFile = File('${tempDir.path}/${invoiceNo}.pdf');
     await tempFile.writeAsBytes(pdfData);
-    // Navigator.of(context).push(
-    //   PageRouteBuilder(
-    //     barrierDismissible: false, // Prevents dismissing when clicking outside
-    //     opaque: false, // Set to false to make it behave like an overlay
-    //     pageBuilder: (BuildContext context, _, __) {
-    //       return GestureDetector(
-    //         behavior: HitTestBehavior
-    //             .opaque, // Ensures taps outside are still detected
-    //         onTap: () {}, // Do nothing on tap outside
-    //         child: Container(
-    //           color: Color.fromRGBO(
-    //               0, 0, 0, 0.5), // Semi-transparent black background
-    //           child: Center(
-    //             child: GestureDetector(
-    //               onTap: () {
-    //                 // Handle tapping inside the modal if needed
-    //               },
-    //               child: Container(
-    //                 width: MediaQuery.of(context).size.width *
-    //                     0.8, // Adjust width as needed
-    //                 // padding: EdgeInsets.all(20.0),
-    //                 decoration: BoxDecoration(
-    //                   color: Colors.white, // Set the background color to white
-    //                   borderRadius: BorderRadius.circular(10.0),
-    //                 ),
-    //                 child: PdfPreviewScreen(
-    //                     filePath: tempFile.path, name: invoiceNo),
-    //               ),
-    //             ),
-    //           ),
-    //         ),
-    //       );
-    //     },
-    //   ),
-    // );
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -259,7 +223,6 @@ class DocumentDetailPage extends StatelessWidget {
       ),
     );
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

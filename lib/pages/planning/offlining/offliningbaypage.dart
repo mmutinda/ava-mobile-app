@@ -1,9 +1,13 @@
 import 'dart:convert';
+import 'dart:developer';
 
+import 'package:awesome_top_snackbar/awesome_top_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/functions.dart';
+import 'package:isuze_pqcs/common/loader.dart';
+import 'package:isuze_pqcs/pages/assembly/assembly_stations.dart';
 import 'package:isuze_pqcs/pages/planning/offlining/ChooseEOLOperationsPage.dart';
 import 'package:isuze_pqcs/pages/planning/offlining/GCPlist.dart';
 
@@ -73,7 +77,7 @@ class _OffliningBayPageState extends State<OffliningBayPage> {
   //     });
   //   }
   // }
-
+  bool isLoading2 = false;
   Future<void> fetchData() async {
     print("Fetching Data...");
     setState(() {
@@ -243,72 +247,206 @@ class _OffliningBayPageState extends State<OffliningBayPage> {
 
             const SizedBox(height: 20),
 
-            // ✅ Bottom action buttons
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: toEolColor,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+            isLoading2
+                ? CustomLoader()
+                : // ✅ Bottom action buttons
+                Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: toEolColor,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => ChooseEOLOperationsPage(
+                                        ModelId: widget.res['data']
+                                            ['vehicledata']['model_id'],
+                                        ShopId: widget.ShopId,
+                                        VehicleId: widget.res['data']
+                                            ['vehicledata']['id'],
+                                      )),
+                            );
+                          },
+                          child: const Text(
+                            "TO EOL",
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => ChooseEOLOperationsPage(
-                                  ModelId: widget.res['data']['vehicledata']
-                                      ['model_id'],
-                                  ShopId: widget.ShopId,
-                                  VehicleId: widget.res['data']['vehicledata']
-                                      ['id'],
-                                )),
-                      );
-                    },
-                    child: const Text(
-                      "TO EOL",
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.bold,
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: toGcpColor,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          // onPressed: () {
+                          //   // TO GCP action
+                          //   Navigator.push(
+                          //     context,
+                          //     MaterialPageRoute(
+                          //         builder: (_) => const GCPCarListScreen()),
+                          //   );
+                          // },
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return AlertDialog(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  backgroundColor: Colors.white,
+                                  title: Row(
+                                    children: const [
+                                      Icon(Icons.warning, color: Colors.orange),
+                                      SizedBox(width: 8),
+                                      Text("Confirm Submission"),
+                                    ],
+                                  ),
+                                  content: const Text(
+                                    "Are you sure you want to submit this data to GCP?",
+                                    style: TextStyle(fontSize: 16),
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text(
+                                        "Cancel",
+                                        style: TextStyle(color: Colors.grey),
+                                      ),
+                                    ),
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.green,
+                                        foregroundColor: Colors.white,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                      onPressed: () async {
+                                        Navigator.pop(
+                                            context); // Close dialog first
+                                        await saveData(); // Your API call
+                                      
+                                      },
+                                      child: const Text("Confirm"),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                          },
+
+                          child: const Text(
+                            "TO GCP",
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                ),
-                const SizedBox(width: 20),
-                Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: toGcpColor,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    onPressed: () {
-                      // TO GCP action
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const GCPCarListScreen()),
-                      );
-                    },
-                    child: const Text(
-                      "TO GCP",
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> saveData() async {
+    setState(() {
+      isLoading2 = true;
+    });
+
+    String url = Api.api_url + "moveunitToGCP";
+
+    var payload = {
+      "shop_id": widget.ShopId,
+      "next_shop_id": 2047,
+      "vehicle_id": widget.res['data']['vehicledata']['id'],
+      "model_id": widget.res['data']['vehicledata']['model_id'],
+    };
+
+    try {
+      print("Payload: $payload");
+
+      var response = await httppostwithtoken(
+        url,
+        "${user['data']['token']}",
+        payload,
+        context,
+      );
+
+      log(jsonEncode(response));
+
+      if (response == null || response['success'] == null) {
+        throw Exception("Invalid response from server.");
+      }
+
+      if (response['success']) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => AssemblyStations()),
+          (route) => route.isFirst,
+        );
+
+        awesomeTopSnackbar(
+          context,
+          "${response["msg"]}",
+          iconWithDecoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(),
+            color: Colors.white,
+          ),
+          backgroundColor: Colors.green,
+        );
+      } else {
+        awesomeTopSnackbar(
+          context,
+          "${response["msg"] ?? "Failed to submit data."}",
+          iconWithDecoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(),
+            color: Colors.white,
+          ),
+          backgroundColor: Colors.red,
+        );
+      }
+    } catch (e) {
+      debugPrint("❌ Error occurred during saveData: $e");
+      setState(() {
+        isLoading2 = false;
+      });
+      awesomeTopSnackbar(
+        context,
+        "Something went wrong. Please try again.",
+        iconWithDecoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(),
+          color: Colors.white,
+        ),
+        backgroundColor: Colors.red,
+      );
+    } finally {
+      setState(() {
+        isLoading2 = false;
+      });
+    }
   }
 }

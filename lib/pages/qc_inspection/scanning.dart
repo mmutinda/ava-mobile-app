@@ -12,6 +12,7 @@ import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/models/qc_inpection.dart';
 import 'package:isuze_pqcs/pages/planning/EOL/EOLScreen.dart';
 import 'package:isuze_pqcs/pages/planning/EOL/jobcard_questions_template_EOL.dart';
+import 'package:isuze_pqcs/pages/planning/offlining/GCP.dart';
 import 'package:isuze_pqcs/pages/planning/offlining/offliningbaypage.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/qcCategoryQuestions.dart';
 import 'package:isuze_pqcs/pages/planning/scheduleUnits.dart';
@@ -203,6 +204,19 @@ class _ScanningState extends State<Scanning> {
             context,
             pageRouteAnimation: PageRouteAnimation.Slide,
           );
+          return;
+        }
+        if (widget.shopId == '2047') {
+          SummaryGCP(
+            ageing: res['data']['vehicledata']['vin_no'].toString(),
+            chassis: res['data']['vehicledata']['vin_no'].toString(),
+            model: res['data']['vehicledata']['model']['model_name'].toString(),
+            unit_movement_id: res['data']['unit_movement_id'].toString(),
+          ).launch(
+            context,
+            pageRouteAnimation: PageRouteAnimation.Slide,
+          );
+          return;
         }
         if (widget.shopId == '11') {
           JobCardQuestionsTemplateEOL(
@@ -308,33 +322,48 @@ class _ScanningState extends State<Scanning> {
                             context,
                             pageRouteAnimation: PageRouteAnimation.Slide,
                           )
-                        : widget.shopId == '11'
-                            ? JobCardQuestionsTemplateEOL(
-                                chasis_no: res['data']['vehicledata']['vin_no'],
-                                shop_name: 'EOL station',
-                                station_id: widget.subStationId,
-                                shop_id: widget.shopId,
-                                vehicle_id: res['data']['vehicledata']['id'],
-                                categoryName: widget.shopName,
+                        : widget.shopId == '2047'
+                            ? SummaryGCP(
+                                ageing: res['data']['vehicledata']['vin_no'],
+                                chassis: res['data']['vehicledata']
+                                    ['chassis_no'],
+                                model: res['data']['vehicledata']['model'],
+                                unit_movement_id:
+                                    res['data']['unit_movement_id'].toString(),
                               ).launch(
                                 context,
                                 pageRouteAnimation: PageRouteAnimation.Slide,
                               )
-                            : res["data"]['unitcheck'] == false
-                                ? showInDialog(context,
-                                    builder: (context) => showPosition(
-                                        errorMessage: res["data"]
-                                                ['currentposion']
-                                            .toString()),
-                                    dialogAnimation:
-                                        DialogAnimation.SLIDE_TOP_BOTTOM)
-                                : QcCategories(
-                                    ShopId: widget.shopId,
-                                    res: res,
-                                    shop_name: widget.shopName,
-                                  ).launch(context,
+                            : widget.shopId == '11'
+                                ? JobCardQuestionsTemplateEOL(
+                                    chasis_no: res['data']['vehicledata']
+                                        ['vin_no'],
+                                    shop_name: 'EOL station',
+                                    station_id: widget.subStationId,
+                                    shop_id: widget.shopId,
+                                    vehicle_id: res['data']['vehicledata']
+                                        ['id'],
+                                    categoryName: widget.shopName,
+                                  ).launch(
+                                    context,
                                     pageRouteAnimation:
-                                        PageRouteAnimation.Slide);
+                                        PageRouteAnimation.Slide,
+                                  )
+                                : res["data"]['unitcheck'] == false
+                                    ? showInDialog(context,
+                                        builder: (context) => showPosition(
+                                            errorMessage: res["data"]
+                                                    ['currentposion']
+                                                .toString()),
+                                        dialogAnimation:
+                                            DialogAnimation.SLIDE_TOP_BOTTOM)
+                                    : QcCategories(
+                                        ShopId: widget.shopId,
+                                        res: res,
+                                        shop_name: widget.shopName,
+                                      ).launch(context,
+                                        pageRouteAnimation:
+                                            PageRouteAnimation.Slide);
           });
         });
         error = null;
@@ -438,82 +467,189 @@ class _ScanningState extends State<Scanning> {
                 ) // Show message for success or failure
               : Column(
                   children: [
-                    Expanded(
-                      child: ListView.builder(
-                        itemCount: vehicles.length,
-                        itemBuilder: (context, index) {
-                          // ignore: unused_local_variable
-                          Color categoryColor = colors[index % colors.length];
-                          var vin = vehicles[index].vin;
-                          var model = vehicles[index].model;
-                          // ignore: unused_local_variable
-                          var UnitRemaining = 'All';
-                          if (vehicles[index].cabin_cockpit_moved == '1') {
-                            UnitRemaining = 'Chassis';
-                          } else if (vehicles[index].chasis_moved == '1') {
-                            UnitRemaining = 'Cabin Or Cockpit';
-                          }
-
-                          if (searchText.isNotEmpty &&
-                              !(vin
-                                      .toLowerCase()
-                                      .contains(searchText.toLowerCase()) ||
-                                  model
-                                      .toLowerCase()
-                                      .contains(searchText.toLowerCase()))) {
-                            return Container(); // Return an empty container if not matching
-                          }
-                          return Column(
-                            children: [
-                              SizedBox(height: 5),
-                              Container(
-                                padding: EdgeInsets.all(12),
-                                decoration: boxDecoration(
-                                  radius: 10,
-                                  showShadow: true,
-                                  bgColor: Colors.white,
-                                ),
-                                child: ListTile(
-                                  onTap: () {
-                                    processSKU(vehicles[index].vin);
-                                  },
-                                  contentPadding: EdgeInsets.all(0),
-                                  leading: CircleAvatar(
-                                    backgroundColor: mycolor,
-                                    foregroundColor: textWhite,
-                                    child: Text("${index + 1}"),
-                                  ),
-                                  title: Text(
-                                    vehicles[index].model,
-                                    style: TextStyle(
-                                        color: Colors.amber[900],
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                  subtitle: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text('VIN: ${vehicles[index].vin}'),
-                                      Row(
-                                        children: [
-                                          Text('lOT: ${vehicles[index].lot}'),
-                                          width(),
-                                          if (vehicles[index].job != 'null' &&
-                                              // ignore: unnecessary_null_comparison
-                                              vehicles[index].job != null)
-                                            Text('JOB: ${vehicles[index].job}'),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
+                    if (widget.shopId == '2047')
+                      Container(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(
+                                width: 1.5, color: Colors.grey.shade300),
+                          ),
+                        ),
+                        child: Row(
+                          children: const [
+                            SizedBox(width: 15),
+                            Expanded(
+                              flex: 2,
+                              child: Padding(
+                                padding: EdgeInsets.all(12.0),
+                                child: Text(
+                                  'Model & Chassis',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
                                 ),
                               ),
-                              SizedBox(height: 10),
-                            ],
-                          );
-                        },
+                            ),
+                            Expanded(
+                              flex: 1,
+                              child: Padding(
+                                padding: EdgeInsets.all(8.0),
+                                child: Text(
+                                  'Ageing',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
+                    if (widget.shopId == '2047')
+                      Expanded(
+                        child: ListView.separated(
+                          itemCount: vehicles.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 10),
+                          itemBuilder: (context, index) {
+                            final car = vehicles[index];
+                            return GestureDetector(
+                              onTap: () {
+                                processSKU(car.vin);
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: const [
+                                    BoxShadow(
+                                      color: Color(0x22000000),
+                                      blurRadius: 4,
+                                      offset: Offset(0, 2),
+                                    ),
+                                  ],
+                                  border:
+                                      Border.all(color: Colors.grey.shade300),
+                                ),
+                                padding: const EdgeInsets.all(12),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      flex: 2,
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            vehicles[index].model,
+                                            style: TextStyle(
+                                                color: Colors.amber[900],
+                                                fontWeight: FontWeight.bold),
+                                          ),
+                                          Text(
+                                            car.vin,
+                                            style:
+                                                const TextStyle(fontSize: 15),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Expanded(
+                                      flex: 1,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 6, horizontal: 12),
+                                        decoration: BoxDecoration(
+                                          color: mycolor,
+                                          borderRadius:
+                                              BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          car.ageing,
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    if (widget.shopId != '2047')
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: vehicles.length,
+                          itemBuilder: (context, index) {
+                            // ignore: unused_local_variable
+                            Color categoryColor = colors[index % colors.length];
+                            var vin = vehicles[index].vin;
+                            var model = vehicles[index].model;
+                            // ignore: unused_local_variabl
+                            if (searchText.isNotEmpty &&
+                                !(vin
+                                        .toLowerCase()
+                                        .contains(searchText.toLowerCase()) ||
+                                    model
+                                        .toLowerCase()
+                                        .contains(searchText.toLowerCase()))) {
+                              return Container(); // Return an empty container if not matching
+                            }
+                            return Column(
+                              children: [
+                                SizedBox(height: 5),
+                                Container(
+                                  padding: EdgeInsets.all(12),
+                                  decoration: boxDecoration(
+                                    radius: 10,
+                                    showShadow: true,
+                                    bgColor: Colors.white,
+                                  ),
+                                  child: ListTile(
+                                    onTap: () {
+                                      processSKU(vehicles[index].vin);
+                                    },
+                                    contentPadding: EdgeInsets.all(0),
+                                    leading: CircleAvatar(
+                                      backgroundColor: mycolor,
+                                      foregroundColor: textWhite,
+                                      child: Text("${index + 1}"),
+                                    ),
+                                    title: Text(
+                                      vehicles[index].model,
+                                      style: TextStyle(
+                                          color: Colors.amber[900],
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                    subtitle: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text('VIN: ${vehicles[index].vin}'),
+                                        Row(
+                                          children: [
+                                            Text('lOT: ${vehicles[index].lot}'),
+                                            width(),
+                                            if (vehicles[index].job != 'null' &&
+                                                // ignore: unnecessary_null_comparison
+                                                vehicles[index].job != null)
+                                              Text(
+                                                  'JOB: ${vehicles[index].job}'),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(height: 10),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
                     Container(
                       margin: const EdgeInsets.symmetric(
                           vertical: 15, horizontal: 20),

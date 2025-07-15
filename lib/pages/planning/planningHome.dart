@@ -95,15 +95,6 @@ class _PlanningHomeState extends State<PlanningHome> {
                       );
                     }
                   });
-                  // print(index);
-                  // Navigator.push(
-                  //   context,
-                  //   MaterialPageRoute(
-                  //       builder: (context) => DisplayVehicles(
-                  //             isUnboxing: "Yes",
-                  //           )),
-                  // );
-                  // showEOLBottomSheet(context);
                   return;
                 }
                 if (index == 2) {
@@ -115,22 +106,12 @@ class _PlanningHomeState extends State<PlanningHome> {
                   // showEOLBottomSheet(context);
                   return;
                 }
-                if (index == 5) {
-                  // Handle special case for "Show Received Lots"
-                  // showInDialog(context,
-                  //         builder: (context) => EOLScreenCategory(),
-                  //         dialogAnimation: DialogAnimation.SCALE)
-                  //     .then((value) {});
-
-                  return;
-                }
-                // Navigator.push(
-                //   context,
-                //   MaterialPageRoute(
-                //       builder: (context) => PlaningUnits(
-                //             option: index.toString(),
-                //           )),
-                // );
+                toasty(
+                  context,
+                  "Under Development",
+                  bgColor: Colors.red.shade100,
+                  textColor: Colors.red.shade900,
+                );
               },
             ),
           );

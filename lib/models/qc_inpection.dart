@@ -59,6 +59,7 @@ class Vehicle2 {
   final String cabin_cockpit_moved;
   final String chasis_moved;
   final unitRemaining;
+  final ageing;
 
   Vehicle2({
     required this.model,
@@ -69,6 +70,7 @@ class Vehicle2 {
     required this.cabin_cockpit_moved,
     required this.chasis_moved,
     required this.unitRemaining,
+    required this.ageing,
   });
 
   factory Vehicle2.fromJson(Map<String, dynamic> json) {
@@ -81,7 +83,28 @@ class Vehicle2 {
       cabin_cockpit_moved: json['vehicle']['cabin_cockpit_moved'].toString(),
       chasis_moved: json['vehicle']['chasis_moved'].toString(),
       unitRemaining: json['vehicle']['component_moved'].toString(),
+      ageing: calculateAgeing(json['created_at'].toString()),
     );
+  }
+}
+
+String calculateAgeing(String createdAt) {
+  try {
+    final createdDate = DateTime.parse(createdAt);
+    final now = DateTime.now();
+    final difference = now.difference(createdDate);
+
+    if (difference.inDays > 0) {
+      return "${difference.inDays} day${difference.inDays > 1 ? 's' : ''} ago";
+    } else if (difference.inHours > 0) {
+      return "${difference.inHours} hour${difference.inHours > 1 ? 's' : ''} ago";
+    } else if (difference.inMinutes > 0) {
+      return "${difference.inMinutes} minute${difference.inMinutes > 1 ? 's' : ''} ago";
+    } else {
+      return "Just now";
+    }
+  } catch (e) {
+    return "Unknown";
   }
 }
 

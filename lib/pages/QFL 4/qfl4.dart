@@ -7,6 +7,7 @@ import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/models/qc_inpection.dart';
 import 'package:isuze_pqcs/pages/QFL%204/QFL4_form.dart';
+import 'package:isuze_pqcs/pages/QFL%204/QFL4_view.dart';
 import 'package:nb_utils/nb_utils.dart';
 
 class QFL4 extends StatefulWidget {
@@ -170,13 +171,6 @@ class _QFL4State extends State<QFL4> {
                     Color categoryColor = colors[index % colors.length];
                     var vin = vehicles[index].vin;
                     var model = vehicles[index].model;
-                    var UnitRemaining = 'All';
-                    if (vehicles[index].cabin_cockpit_moved == '1') {
-                      UnitRemaining = 'Chassis';
-                    } else if (vehicles[index].chasis_moved == '1') {
-                      UnitRemaining = 'Cabin Or Cockpit';
-                    }
-
                     if (searchText.isNotEmpty &&
                         !(vin
                                 .toLowerCase()
@@ -206,7 +200,7 @@ class _QFL4State extends State<QFL4> {
                                 child: Text("${index + 1}"),
                               ),
                               title: Text(
-                                vehicles[index].model,
+                                vehicles[index].vin,
                                 style: TextStyle(
                                     color: Colors.amber[900],
                                     fontWeight: FontWeight.bold),
@@ -214,28 +208,15 @@ class _QFL4State extends State<QFL4> {
                               subtitle: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('VIN: ${vehicles[index].vin}'),
                                   // Text('VIN: ${vehicles[index].vin}'),
-                                  Row(
-                                    children: [
-                                      Text('lOT: ${vehicles[index].lot}'),
-                                      width(),
-                                      Text('JOB: ${vehicles[index].job}'),
-                                    ],
+                                  Text(
+                                    vehicles[index].model,
+                                    style: TextStyle(
+                                        // color: Colors.amber[900],
+                                        fontWeight: FontWeight.bold),
                                   ),
-                                  Row(
-                                    children: [
-                                      Text('UNIT REMAINING:'),
-                                      SizedBox(width: 5),
-                                      Text(
-                                        '${UnitRemaining}',
-                                        style: TextStyle(
-                                          color: Colors.amber[900],
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                  Text(
+                                      '${vehicles[index].customer_name ?? ''}'),
                                 ],
                               ),
                               trailing: Container(
@@ -245,10 +226,19 @@ class _QFL4State extends State<QFL4> {
                                           topRight: Radius.circular(10))),
                                   child: TextButton(
                                     onPressed: () {
+                                      // Navigator.push(
+                                      //   context,
+                                      //   MaterialPageRoute(
+                                      //     builder: (context) => QFL4_form(
+                                      //       vehicleId: vehicles[index].id,
+                                      //       modelId: vehicles[index].model_id,
+                                      //     ),
+                                      //   ),
+                                      // );
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (context) => QFL4_form(
+                                          builder: (context) => QFL4_View(
                                             vehicleId: vehicles[index].id,
                                             modelId: vehicles[index].model_id,
                                           ),
@@ -264,42 +254,20 @@ class _QFL4State extends State<QFL4> {
                                   )),
                               onTap: () {
                                 // Navigate to vehicle details page passing the selected vehicle
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => QFL4_form(
-                                      vehicleId: vehicles[index].id,
-                                      modelId: vehicles[index].model_id,
-                                    ),
-                                  ),
-                                );
+                                // Navigator.push(
+                                //   context,
+                                //   MaterialPageRoute(
+                                //     builder: (context) => QFL4_form(
+                                //       vehicleId: vehicles[index].id,
+                                //       modelId: vehicles[index].model_id,
+                                //     ),
+                                //   ),
+                                // );
                               },
                             ),
                           ),
 
                           // 🔷 Badge (top-right)
-                          Positioned(
-                            right: 10,
-                            top: 0,
-                            child: Container(
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: vehicles[index].customer_name != null
-                                    ? Colors.amber[900]
-                                    : null,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                "Section",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
                         ]),
                         SizedBox(height: 10),
                       ],

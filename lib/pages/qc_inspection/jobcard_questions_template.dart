@@ -188,8 +188,10 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                               } else if (get["quiz_type"] == "multiple") {
                                 return MultipleQuestion(
                                     intial_option: get["defect_names"],
-                                    initialImage: question["answer"]
-                                        ?["image_path"],
+                                    initialImage: (get["image_url"] == null ||
+                                            get["image_url"].toString().isEmpty)
+                                        ? null
+                                        : get["image_url"],
                                     onImageChanged: (File? image) {
                                       print("image path $image");
                                       setState(() {
@@ -279,7 +281,10 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                               } else if (get["quiz_type"] == "single") {
                                 //single
                                 return SingleQuestion(
-                                    initialImage: get["image_url"],
+                                    initialImage: (get["image_url"] == null ||
+                                            get["image_url"].toString().isEmpty)
+                                        ? null
+                                        : get["image_url"],
                                     onImageChanged: (File? image) {
                                       print("image path $image");
                                       setState(() {
@@ -380,7 +385,6 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                             },
                           ),
                         ),
-                        
                       ],
                     ),
             )),
@@ -490,93 +494,11 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                     if (answer["answer"] != null) {
                                       answers.add(answer);
                                     }
-                                    // if (answer["defect_description"] != null) {
-                                    //   answers.add(answer);
-                                    // }
                                   }
 
                                   if (answers.isNotEmpty) {
                                     //For normal dialog
                                     saveData(answers);
-                                    // setState(() {
-                                    //   isButtonEnabled = false;
-                                    // });
-                                    // ProgressDialog pr = ProgressDialog(context,
-                                    //     type: ProgressDialogType.normal,
-                                    //     isDismissible: true,
-                                    //     showLogs: true);
-                                    // pr.style(
-                                    //   message: 'Saving answers...',
-                                    //   borderRadius: 8,
-                                    //   backgroundColor: Colors.white,
-                                    //   progressWidget: const SizedBox(
-                                    //       width: 20,
-                                    //       height: 20,
-                                    //       child: Center(
-                                    //           child:
-                                    //               CircularProgressIndicator())),
-                                    //   elevation: 10.0,
-                                    //   insetAnimCurve: Curves.easeInOut,
-                                    // );
-
-                                    // pr.show();
-                                    // saveanswers(answers).then((res) {
-                                    //   pr.hide().then((value) {
-                                    //     setState(() {
-                                    //       isButtonEnabled = true;
-                                    //     });
-                                    //     if (res["success"]) {
-                                    //       Navigator.pop(context);
-                                    //       awesomeTopSnackbar(
-                                    //         context,
-                                    //         '${res["msg"]}',
-                                    //         iconWithDecoration: BoxDecoration(
-                                    //           borderRadius:
-                                    //               BorderRadius.circular(20),
-                                    //           border: Border.all(),
-                                    //           color: Colors.white,
-                                    //         ),
-                                    //         icon: Icon(
-                                    //           Icons.done,
-                                    //           color: Colors.green[900],
-                                    //         ),
-                                    //       );
-                                    //     } else {
-                                    //       awesomeTopSnackbar(
-                                    //         backgroundColor: Colors.red,
-                                    //         context,
-                                    //         '${res["msg"]}',
-                                    //         iconWithDecoration: BoxDecoration(
-                                    //           borderRadius:
-                                    //               BorderRadius.circular(20),
-                                    //           border: Border.all(),
-                                    //           color: Colors.white,
-                                    //         ),
-                                    //       );
-                                    //     }
-                                    //   });
-                                    // });
-                                    // Future.delayed(
-                                    //     const Duration(seconds: dismissseconds),
-                                    //     () {
-                                    //   if (pr.isShowing()) {
-                                    //     pr.hide();
-                                    //     setState(() {
-                                    //       isButtonEnabled = true;
-                                    //     });
-                                    //     awesomeTopSnackbar(
-                                    //       backgroundColor: Colors.red,
-                                    //       context,
-                                    //       "Something Wrong or Check internet Connection",
-                                    //       iconWithDecoration: BoxDecoration(
-                                    //         borderRadius:
-                                    //             BorderRadius.circular(20),
-                                    //         border: Border.all(),
-                                    //         color: Colors.white,
-                                    //       ),
-                                    //     );
-                                    //   }
-                                    // });
                                   } else {
                                     awesomeTopSnackbar(context,
                                         "Please Answer at least one question",

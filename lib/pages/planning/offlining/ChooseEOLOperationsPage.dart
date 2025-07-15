@@ -135,44 +135,50 @@ class _ChooseEOLOperationsPageState extends State<ChooseEOLOperationsPage> {
     // Proceed with selectedOps
   }
 
-  Future<void> saveData() async {
+ Future<void> saveData() async {
     setState(() {
       isLoading2 = true;
     });
-    print(isLoading2);
-    String url = Api.api_url + "moveunitToEOL";
 
-    // ✅ Build the selected operations array
-    List<SubShop> selectedOps = operations.where((op) => op.selected).toList();
+    try {
+      print("isLoading2: $isLoading2");
 
-    var payload = {
-      "shop_id": widget.ShopId,
-      "next_shop_id": 11,
-      "vehicle_id": widget.VehicleId,
-      "model_id": widget.ModelId,
-      "substations": "${selectedOps.map((e) => e.id).toList()}", // ✅ Add here
-    };
+      String url = Api.api_url + "moveunitToEOL";
 
-    print("Payload: $payload"); // Debug log
+      // ✅ Build selected operations list
+      List<SubShop> selectedOps =
+          operations.where((op) => op.selected).toList();
 
-    var response = await httppostwithtoken(
-      url,
-      "${user['data']['token']}",
-      payload,
-      context,
-    );
+      var payload = {
+        "shop_id": widget.ShopId,
+        "next_shop_id": 11,
+        "vehicle_id": widget.VehicleId,
+        "model_id": widget.ModelId,
+        "substations": selectedOps.map((e) => e.id).toList(),
+      };
 
-    setState(() {
-      isLoading2 = false;
-    });
-    log(jsonEncode(response));
-    if (response['success'] != null) {
+      print("Payload: $payload");
+
+      var response = await httppostwithtoken(
+        url,
+        "${user['data']['token']}",
+        payload,
+        context,
+      );
+
+      log("Response: ${jsonEncode(response)}");
+
+      if (response == null || response['success'] == null) {
+        throw Exception("Invalid response received.");
+      }
+
       if (response['success']) {
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => AssemblyStations()),
           (route) => route.isFirst,
         );
+
         awesomeTopSnackbar(
           context,
           "${response["msg"]}",
@@ -186,7 +192,7 @@ class _ChooseEOLOperationsPageState extends State<ChooseEOLOperationsPage> {
       } else {
         awesomeTopSnackbar(
           context,
-          "${response["msg"]}",
+          "${response["msg"] ?? "Submission failed"}",
           iconWithDecoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             border: Border.all(),
@@ -195,6 +201,25 @@ class _ChooseEOLOperationsPageState extends State<ChooseEOLOperationsPage> {
           backgroundColor: Colors.red,
         );
       }
+    } catch (e) {
+      debugPrint("❌ saveData error: $e");
+      setState(() {
+        isLoading2 = false;
+      });
+      awesomeTopSnackbar(
+        context,
+        "An error occurred. Please check your connection or try again.",
+        iconWithDecoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(),
+          color: Colors.white,
+        ),
+        backgroundColor: Colors.red,
+      );
+    } finally {
+      setState(() {
+        isLoading2 = false;
+      });
     }
   }
 

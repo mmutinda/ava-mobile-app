@@ -73,6 +73,8 @@ dependencies:
   printing: ^5.14.2
   pdfrx: ^1.0.101
   share_plus: ^11.0.0
+  dropdown_button2: ^2.3.9
+  barcode_widget: ^2.0.4
 
 dev_dependencies:
   flutter_test:

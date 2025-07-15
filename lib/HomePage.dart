@@ -6,6 +6,7 @@ import 'package:isuze_pqcs/RunningShopsDashboardWidget.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/slider.dart';
 import 'package:isuze_pqcs/pages/QFL%204/qfl4.dart';
+import 'package:isuze_pqcs/pages/QFL5/6/Qfl5/Qfl56Page.dart';
 import 'package:isuze_pqcs/pages/Receiving/display_vehicles.dart';
 import 'package:isuze_pqcs/pages/action.dart';
 import 'package:isuze_pqcs/pages/assembly/assembly_stations.dart';
@@ -20,7 +21,9 @@ import 'package:isuze_pqcs/pages/planning/planningHome.dart';
 import 'package:isuze_pqcs/pages/profile_screen.dart';
 import 'package:isuze_pqcs/pages/ShopsScrean.dart';
 import 'package:isuze_pqcs/pages/planning/scheduleUnits.dart';
-import 'package:isuze_pqcs/qflTest.dart';
+import 'package:isuze_pqcs/pages/qfl3/qfl3_list.dart';
+import 'package:isuze_pqcs/pages/qfl3/qflthreeForm.dart';
+import 'package:isuze_pqcs/pages/tms/TMS_listUnits.dart';
 import 'package:nb_utils/nb_utils.dart';
 
 class HomeScrean extends StatefulWidget {
@@ -142,11 +145,11 @@ class _HomeScreanState extends State<HomeScrean> {
                       ),
                     ),
                   ),
-                  singleDrawerItem(FeatherIcons.folder, "QFL 3", 2, theme),
+                  singleDrawerItem(FeatherIcons.folder, "QFL 3/TMS", 2, theme),
                   singleDrawerItem(FeatherIcons.folderPlus, "QFL 4", 3, theme),
                   singleDrawerItem(
-                      FeatherIcons.folderPlus, "QFL 5/6", 3, theme),
-                  singleDrawerItem(FeatherIcons.folderPlus, "MPA", 3, theme),
+                      FeatherIcons.folderPlus, "QFL 5/6", 56, theme),
+                  singleDrawerItem(FeatherIcons.folderPlus, "MPA", 33, theme),
                   Divider(),
                   Padding(
                     padding: const EdgeInsets.symmetric(
@@ -246,8 +249,19 @@ class _HomeScreanState extends State<HomeScrean> {
               PlanningHome().launch(context,
                   pageRouteAnimation: PageRouteAnimation.Slide);
               break;
+            case 56:
+              QFLPage().launch(context,
+                  pageRouteAnimation: PageRouteAnimation.Slide);
+              // QFLPage
+              // SCheduleUnits().launch(context,
+              break;
             case 2:
-              AuditChecklistPage().launch(context,
+              TMSUnits().launch(context,
+                  pageRouteAnimation: PageRouteAnimation.Slide);
+
+              break;
+            case 33:
+              QFLThreeList().launch(context,
                   pageRouteAnimation: PageRouteAnimation.Slide);
 
               break;
