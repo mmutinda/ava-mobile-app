@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:awesome_top_snackbar/awesome_top_snackbar.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
@@ -10,14 +9,13 @@ import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/loader.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/models/qc_inpection.dart';
-import 'package:isuze_pqcs/pages/planning/EOL/EOLScreen.dart';
 import 'package:isuze_pqcs/pages/planning/EOL/jobcard_questions_template_EOL.dart';
 import 'package:isuze_pqcs/pages/planning/offlining/GCP.dart';
 import 'package:isuze_pqcs/pages/planning/offlining/offliningbaypage.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/qcCategoryQuestions.dart';
 import 'package:isuze_pqcs/pages/planning/scheduleUnits.dart';
+import 'package:isuze_pqcs/scanning.dart';
 import 'package:nb_utils/nb_utils.dart';
-import 'package:honeywell_mobility_sdk/honeywell_mobility_sdk.dart';
 import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
 
 class Scanning extends StatefulWidget {
@@ -44,53 +42,20 @@ class _ScanningState extends State<Scanning> {
   var user = {};
   bool isLoading = false;
   String message = '';
-  BarcodeReader? _barcodeReader;
   String? data;
-  String? error;
-  String? trigger;
+
   @override
   void initState() {
     super.initState();
-    _initiatescanner();
+
     getuserdata().then((value) {
       setState(() {
         user = jsonDecode(value);
       });
       fetchData();
     });
-    Future.delayed(const Duration(seconds: 1), () {
-      _scanfun();
-    });
+
     // fetchData(); // Fetch data when the page is initialized
-  }
-
-  Future<bool> _invoke(
-    Future<void> Function(BarcodeReader reader) callback,
-  ) async {
-    if (_barcodeReader == null) {
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   const SnackBar(content: Text('Unsupported device.')),
-      // );
-      return false;
-    }
-
-    try {
-      await callback(_barcodeReader!);
-    } on PlatformException catch (e) {
-      error = '${e.message} (${e.code}) (${e.details})';
-      if (mounted) setState(() {});
-    }
-    return true;
-  }
-
-  Future<void> _scanfun() async {
-    await _invoke(
-      (reader) => reader.setProperty(
-        BarcodeReaderProperty.trigger.scanMode(TriggerScanMode.oneShot),
-      ),
-    );
-    final supported = await _invoke((reader) => reader.claim());
-    print(supported);
   }
 
   Future<void> fetchData() async {
@@ -268,134 +233,6 @@ class _ScanningState extends State<Scanning> {
     if (mounted) {
       setState(() {});
     }
-  }
-
-  Future<void> _initiatescanner() async {
-    _barcodeReader = await HoneywellMobilitySdk.createBarcodeReader(
-      onRead: (event) {
-        var sku = event.barcodeData;
-        ProgressDialog pr = ProgressDialog(context,
-            type: ProgressDialogType.normal,
-            isDismissible: false,
-            showLogs: true);
-        pr.style(
-          // widgetAboveTheDialog: CustomLoader(),
-          // message: 'Fetching Item...',
-          // child: CustomLoader(),
-          borderRadius: 8,
-          backgroundColor: Colors.white,
-          progressWidget: const SizedBox(
-              width: 20,
-              height: 20,
-              child: Center(child: CircularProgressIndicator())),
-          elevation: 10.0,
-          insetAnimCurve: Curves.easeInOut,
-        );
-
-        EasyLoading.show(
-            status: "Loading Categories...",
-            maskType: EasyLoadingMaskType.black);
-
-        fetchproduct(sku).then((res) {
-          EasyLoading.dismiss().whenComplete(() {
-            res == null
-                ? null
-                : res["data"] == null
-                    ? awesomeTopSnackbar(
-                        context,
-                        "${res["msg"]}",
-                        iconWithDecoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(),
-                            color: Colors.white),
-                        icon: Icon(
-                          Icons.close,
-                          color: Colors.red,
-                        ),
-                      )
-                    : widget.shopId == '2046'
-                        ? OffliningBayPage(
-                            ShopId: widget.shopId,
-                            res: res,
-                            shop_name: widget.shopName,
-                          ).launch(
-                            context,
-                            pageRouteAnimation: PageRouteAnimation.Slide,
-                          )
-                        : widget.shopId == '2047'
-                            ? SummaryGCP(
-                                ageing: res['data']['vehicledata']['vin_no'],
-                                chassis: res['data']['vehicledata']
-                                    ['chassis_no'],
-                                model: res['data']['vehicledata']['model'],
-                                unit_movement_id:
-                                    res['data']['unit_movement_id'].toString(),
-                              ).launch(
-                                context,
-                                pageRouteAnimation: PageRouteAnimation.Slide,
-                              )
-                            : widget.shopId == '11'
-                                ? JobCardQuestionsTemplateEOL(
-                                    chasis_no: res['data']['vehicledata']
-                                        ['vin_no'],
-                                    shop_name: 'EOL station',
-                                    station_id: widget.subStationId,
-                                    shop_id: widget.shopId,
-                                    vehicle_id: res['data']['vehicledata']
-                                        ['id'],
-                                    categoryName: widget.shopName,
-                                  ).launch(
-                                    context,
-                                    pageRouteAnimation:
-                                        PageRouteAnimation.Slide,
-                                  )
-                                : res["data"]['unitcheck'] == false
-                                    ? showInDialog(context,
-                                        builder: (context) => showPosition(
-                                            errorMessage: res["data"]
-                                                    ['currentposion']
-                                                .toString()),
-                                        dialogAnimation:
-                                            DialogAnimation.SLIDE_TOP_BOTTOM)
-                                    : QcCategories(
-                                        ShopId: widget.shopId,
-                                        res: res,
-                                        shop_name: widget.shopName,
-                                      ).launch(context,
-                                        pageRouteAnimation:
-                                            PageRouteAnimation.Slide);
-          });
-        });
-        error = null;
-        if (mounted) {
-          setState(() {});
-        }
-      },
-      onFailure: (event) {
-        error = 'Could not read barcode.';
-
-        awesomeTopSnackbar(context, "Try Again",
-            iconWithDecoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(),
-                color: Colors.white),
-            icon: Icon(
-              Icons.close,
-              color: Colors.red,
-            ),
-            backgroundColor: Colors.red[900]);
-        data = null;
-        if (mounted) {
-          setState(() {});
-        }
-      },
-      onTrigger: (event) {
-        print(event.state);
-        if (mounted) {
-          setState(() {});
-        }
-      },
-    );
   }
 
   TextEditingController searchController = TextEditingController();
@@ -610,7 +447,9 @@ class _ScanningState extends State<Scanning> {
                                   ),
                                   child: ListTile(
                                     onTap: () {
-                                      processSKU(vehicles[index].vin);
+                                      showTapScanToast(context);
+
+                                      // processSKU(vehicles[index].vin);
                                     },
                                     contentPadding: EdgeInsets.all(0),
                                     leading: CircleAvatar(
@@ -662,38 +501,167 @@ class _ScanningState extends State<Scanning> {
                                 backgroundColor: mycolor,
                                 foregroundColor: textWhite),
                             onPressed: () async {
-                              await _invoke(
-                                (reader) => reader.setProperty(
-                                  BarcodeReaderProperty.trigger
-                                      .scanMode(TriggerScanMode.oneShot),
-                                ),
-                              );
-                              final supported =
-                                  await _invoke((reader) => reader.claim());
-                              if (supported) {
-                                await _invoke(
-                                    (reader) => reader.softwareTrigger(true));
-                                setState(() {
-                                  // isButtonEnabled = false;
-                                });
-                                Future.delayed(
-                                  const Duration(seconds: 2),
-                                  () async {
-                                    await _invoke((reader) =>
-                                        reader.softwareTrigger(false));
-                                    // await _invoke((reader) => reader.release());
-                                    setState(() {
-                                      // isButtonEnabled = true;
+                              showInDialog(context,
+                                      contentPadding: EdgeInsets.all(0),
+                                      builder: (context) => QRScanDialog(),
+                                      dialogAnimation: DialogAnimation.SCALE)
+                                  .then((value) {
+                                print(value);
+                                if (value != null) {
+                                  // fetchData();
+                                  EasyLoading.show(
+                                      status: "Loading Categories...",
+                                      maskType: EasyLoadingMaskType.black);
+
+                                  fetchproduct(value).then((res) {
+                                    EasyLoading.dismiss().whenComplete(() {
+                                      res == null
+                                          ? null
+                                          : res["data"] == null
+                                              ? awesomeTopSnackbar(
+                                                  context,
+                                                  "${res["msg"]}",
+                                                  iconWithDecoration:
+                                                      BoxDecoration(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(20),
+                                                          border: Border.all(),
+                                                          color: Colors.white),
+                                                  icon: Icon(
+                                                    Icons.close,
+                                                    color: Colors.red,
+                                                  ),
+                                                )
+                                              : widget.shopId == '2046'
+                                                  ? OffliningBayPage(
+                                                      ShopId: widget.shopId,
+                                                      res: res,
+                                                      shop_name:
+                                                          widget.shopName,
+                                                    ).launch(
+                                                      context,
+                                                      pageRouteAnimation:
+                                                          PageRouteAnimation
+                                                              .Slide,
+                                                    )
+                                                  : widget.shopId == '2047'
+                                                      ? SummaryGCP(
+                                                          ageing: res['data'][
+                                                                  'vehicledata']
+                                                              ['vin_no'],
+                                                          chassis: res['data'][
+                                                                  'vehicledata']
+                                                              ['chassis_no'],
+                                                          model: res['data'][
+                                                                  'vehicledata']
+                                                              ['model'],
+                                                          unit_movement_id: res[
+                                                                      'data'][
+                                                                  'unit_movement_id']
+                                                              .toString(),
+                                                        ).launch(
+                                                          context,
+                                                          pageRouteAnimation:
+                                                              PageRouteAnimation
+                                                                  .Slide,
+                                                        )
+                                                      : widget.shopId == '11'
+                                                          ? JobCardQuestionsTemplateEOL(
+                                                              chasis_no: res[
+                                                                          'data']
+                                                                      [
+                                                                      'vehicledata']
+                                                                  ['vin_no'],
+                                                              shop_name:
+                                                                  'EOL station',
+                                                              station_id: widget
+                                                                  .subStationId,
+                                                              shop_id:
+                                                                  widget.shopId,
+                                                              vehicle_id: res[
+                                                                          'data']
+                                                                      [
+                                                                      'vehicledata']
+                                                                  ['id'],
+                                                              categoryName:
+                                                                  widget
+                                                                      .shopName,
+                                                            ).launch(
+                                                              context,
+                                                              pageRouteAnimation:
+                                                                  PageRouteAnimation
+                                                                      .Slide,
+                                                            )
+                                                          : res["data"][
+                                                                      'unitcheck'] ==
+                                                                  false
+                                                              ? showInDialog(
+                                                                  context,
+                                                                  builder: (context) => showPosition(
+                                                                      errorMessage:
+                                                                          res["data"]['currentposion']
+                                                                              .toString()),
+                                                                  dialogAnimation:
+                                                                      DialogAnimation
+                                                                          .SLIDE_TOP_BOTTOM)
+                                                              : QcCategories(
+                                                                  ShopId: widget
+                                                                      .shopId,
+                                                                  res: res,
+                                                                  shop_name: widget
+                                                                      .shopName,
+                                                                ).launch(
+                                                                  context,
+                                                                  pageRouteAnimation:
+                                                                      PageRouteAnimation
+                                                                          .Slide);
                                     });
-                                  },
-                                );
-                              }
+                                  });
+                                }
+                              });
+                              // await _invoke(
+                              //   (reader) => reader.setProperty(
+                              //     BarcodeReaderProperty.trigger
+                              //         .scanMode(TriggerScanMode.oneShot),
+                              //   ),
+                              // );
+                              // final supported =
+                              //     await _invoke((reader) => reader.claim());
+                              // if (supported) {
+                              //   await _invoke(
+                              //       (reader) => reader.softwareTrigger(true));
+                              //   setState(() {
+                              //     // isButtonEnabled = false;
+                              //   });
+                              //   Future.delayed(
+                              //     const Duration(seconds: 2),
+                              //     () async {
+                              //       await _invoke((reader) =>
+                              //           reader.softwareTrigger(false));
+                              //       // await _invoke((reader) => reader.release());
+                              //       setState(() {
+                              //         // isButtonEnabled = true;
+                              //       });
+                              //     },
+                              //   );
+                              // }
                             },
                             child: const Text('SCAN')),
                       ),
                     ),
                   ],
                 ),
+    );
+  }
+
+  void showTapScanToast(BuildContext context) {
+    toasty(
+      context,
+      "Tap Scan below 👇",
+      bgColor: mycolor,
+      textColor: Colors.white,
+      length: Toast.LENGTH_SHORT,
     );
   }
 }

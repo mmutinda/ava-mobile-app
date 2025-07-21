@@ -75,6 +75,7 @@ dependencies:
   share_plus: ^11.0.0
   dropdown_button2: ^2.3.9
   barcode_widget: ^2.0.4
+  qr_code_scanner: ^1.0.1
 
 dev_dependencies:
   flutter_test:

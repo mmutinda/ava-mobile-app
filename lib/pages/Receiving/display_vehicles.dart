@@ -149,13 +149,6 @@ class _DisplayVehiclesState extends State<DisplayVehicles> {
                             var engine_no = vehicles[index]["engine_no"];
                             var client = vehicles[index]["customer"]["name"];
                             Color categoryColor = colors[index % colors.length];
-                            // Check if the title contains the search text
-                            // if (searchText.isNotEmpty &&
-                            //     !(chasisNo
-                            //         .toLowerCase()
-                            //         .contains(searchText.toLowerCase()))||) {
-                            //   return Container();
-                            // }
                             if (searchText.isNotEmpty &&
                                 !(vin_no
                                         .toLowerCase()
@@ -197,18 +190,19 @@ class _DisplayVehiclesState extends State<DisplayVehicles> {
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          // Text('Insprcted 0 out of 10'),
-                                          // Text('VIN: ${vehicles[index].vin}'),
-                                          Row(
-                                            children: [
-                                              Text(
-                                                  'lOT Number: ${vehicles[index]['lot_number']}'),
-                                              width(),
-                                              // if (vehicles[index]['job_no'] !=
-                                              //     null)
-                                              Text(
-                                                  'lOT Quantity: ${vehicles[index]['lot_qty'] ?? 'N/A'}'),
-                                            ],
+                                          Text(
+                                            'LOT Number: ${vehicles[index]['lot_number']}',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.indigo[900],
+                                            ),
+                                          ),
+                                          SizedBox(height: 4),
+                                          Text(
+                                            'LOT Quantity: ${vehicles[index]['lot_qty'] ?? 'N/A'}',
+                                            style: TextStyle(
+                                              color: Colors.grey[700],
+                                            ),
                                           ),
                                         ],
                                       ),
