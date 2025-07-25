@@ -7,56 +7,149 @@ import 'package:isuze_pqcs/common/functions.dart';
 
 class ChecklistItemCard extends StatelessWidget {
   final Map<String, dynamic> checklistItem;
+  final int? index;
 
   const ChecklistItemCard({
     Key? key,
     required this.checklistItem,
+    this.index,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: Colors.white,
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 1,
+    bool isOK = checklistItem['query_answer'] == 'OK';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isOK
+              ? [Colors.green.shade50, Colors.green.shade100]
+              : [Colors.red.shade50, Colors.red.shade100],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isOK ? Colors.green.shade300 : Colors.red.shade300,
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: isOK
+                ? Colors.green.withOpacity(0.1)
+                : Colors.red.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            // ❓ Query Name
+            // Index number with gradient
+            if (index != null)
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: isOK
+                        ? [Colors.green.shade400, Colors.green.shade600]
+                        : [Colors.red.shade400, Colors.red.shade600],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color:
+                          (isOK ? Colors.green : Colors.red).withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    '${(index ?? 0) + 1}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ),
+
+            if (index != null) const SizedBox(width: 16),
+
+            // Question text
             Expanded(
-              child: Text(
-                '${checklistItem['query_name']}',
-                style:
-                    const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              flex: 2,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Question',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    checklistItem['query_name'] ?? 'Unknown Question',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade800,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
               ),
             ),
-            Spacer(),
-            Expanded(
-              child: Row(
-                children: [
-                  const Text(
-                    'Answer: ',
-                    style: TextStyle(fontSize: 14),
+
+            const SizedBox(width: 16),
+
+            // Answer badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: isOK
+                      ? [Colors.green.shade400, Colors.green.shade600]
+                      : [Colors.red.shade400, Colors.red.shade600],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: (isOK ? Colors.green : Colors.red).withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
                   ),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: checklistItem['query_answer'] == 'OK'
-                          ? Colors.green[600]
-                          : Colors.red[600],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      checklistItem['query_answer'] ?? '',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    isOK ? Icons.check_circle : Icons.cancel,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    checklistItem['query_answer'] ?? 'N/A',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
                     ),
                   ),
                 ],

@@ -8,7 +8,6 @@ import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/models/shops.dart';
 import 'package:isuze_pqcs/pages/planning/EOL/EOLScreen.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/scanning.dart';
-import 'package:isuze_pqcs/services/sqlite_db_helper.dart';
 import 'package:isuze_pqcs/widgets/shops.dart';
 
 import 'package:nb_utils/nb_utils.dart';

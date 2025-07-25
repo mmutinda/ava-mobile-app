@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_feather_icons/flutter_feather_icons.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
-import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/pages/Receiving/QcList.dart';
 import 'package:isuze_pqcs/pages/Receiving/form_receiving.dart';
-import 'package:isuze_pqcs/pages/planning/scheduleUnits.dart';
 import 'package:nb_utils/nb_utils.dart';
 import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
 
@@ -18,7 +18,8 @@ class DisplayVehicles extends StatefulWidget {
   State<DisplayVehicles> createState() => _DisplayVehiclesState();
 }
 
-class _DisplayVehiclesState extends State<DisplayVehicles> {
+class _DisplayVehiclesState extends State<DisplayVehicles>
+    with SingleTickerProviderStateMixin {
   var user = {};
   var vehicles = [];
   // var vehicles;
@@ -29,13 +30,31 @@ class _DisplayVehiclesState extends State<DisplayVehicles> {
   TextEditingController searchController = TextEditingController();
   String searchText = '';
   bool _isSearching = false;
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+
   final List<Color> colors = [
-    Colors.amber.shade900,
-    Colors.indigo,
-    Colors.teal,
+    mycolor,
+    // Colors.amber.shade900,
+    // Colors.indigo,
+    // Colors.teal,
   ];
   @override
   void initState() {
+    super.initState();
+
+    _animationController = AnimationController(
+      duration: Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+
     getuserdata().then((value) {
       setState(() {
         user = jsonDecode(value);
@@ -48,44 +67,122 @@ class _DisplayVehiclesState extends State<DisplayVehicles> {
               loadingText = 'No Lots available at the moment';
             });
           }
+          _animationController.forward();
         },
       );
     });
-    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    searchController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    ThemeData theme = Theme.of(context);
+
     Widget _buildSearchField() {
-      return TextField(
-        autofocus: true,
-        style: TextStyle(color: Colors.white),
-        cursorColor: Colors.white,
-        controller: searchController,
-        onChanged: (value) {
-          setState(() {
-            searchText = value;
-          });
-        },
-        decoration: InputDecoration(
-            hintText: 'Chassis Number or RegNo...',
+      return Container(
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(25),
+        ),
+        child: TextField(
+          autofocus: true,
+          style: GoogleFonts.poppins(color: Colors.white, fontSize: 16),
+          cursorColor: Colors.white,
+          controller: searchController,
+          onChanged: (value) {
+            setState(() {
+              searchText = value;
+            });
+          },
+          decoration: InputDecoration(
+            hintText: 'Search chassis or registration...',
             border: InputBorder.none,
-            hintStyle: TextStyle(color: Colors.white)),
+            hintStyle: GoogleFonts.poppins(
+              color: Colors.white.withOpacity(0.8),
+              fontSize: 14,
+            ),
+            prefixIcon: Icon(
+              FeatherIcons.search,
+              color: Colors.white.withOpacity(0.8),
+              size: 20,
+            ),
+            contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          ),
+        ),
       );
     }
 
     return Scaffold(
+      backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
+        elevation: 0,
+        backgroundColor: theme.primaryColor,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                theme.primaryColor,
+                theme.primaryColor.withOpacity(0.8),
+              ],
+            ),
+          ),
+        ),
         title: _isSearching
             ? _buildSearchField()
-            : widget.isPlanning == 'Yes'
-                ? Text("Scheduled Lots")
-                : Text('Received Lots'),
+            : Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      widget.isPlanning == 'Yes'
+                          ? FeatherIcons.calendar
+                          : FeatherIcons.truck,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Text(
+                    widget.isPlanning == 'Yes'
+                        ? "Scheduled Lots"
+                        : 'Received Lots',
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 20,
+                      color: Colors.white,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
         actions: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
+          Container(
+            margin: EdgeInsets.only(right: 8),
             child: IconButton(
-              icon: Icon(_isSearching ? Icons.close : Icons.search),
+              icon: Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  _isSearching ? FeatherIcons.x : FeatherIcons.search,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
               onPressed: () {
                 setState(() {
                   _isSearching = !_isSearching;
@@ -99,426 +196,827 @@ class _DisplayVehiclesState extends State<DisplayVehicles> {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        color: mycolor,
-        onRefresh: () {
-          return Future.delayed(
-            const Duration(seconds: 1),
-            () {
-              fetchVehicles().then(
-                (value) {
-                  toasty(context, "Refreshed",
-                      bgColor: mycolor,
-                      textColor: textWhite,
-                      padding: EdgeInsets.all(12));
-                },
-              );
-            },
-          );
-        },
-        child: SizedBox(
-            child: isLoading
-                ? Center(child: CircularProgressIndicator())
-                : loadingText.isNotEmpty
-                    ? ErrorMessageWidget(
-                        errorMessage: loadingText,
-                        onRetry: () {
-                          fetchVehicles().then(
-                            (value) {
-                              if (vehicles.isEmpty) {
-                                setState(() {
-                                  loadingText =
-                                      'No vehicles available at the moment';
-                                });
-                              }
-                            },
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.grey.shade50,
+              Colors.white,
+            ],
+          ),
+        ),
+        child: Column(
+          children: [
+            // Header Stats Card
+            Container(
+              margin: EdgeInsets.all(16),
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    theme.primaryColor.withOpacity(0.1),
+                    theme.primaryColor.withOpacity(0.05),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: theme.primaryColor.withOpacity(0.2)),
+                boxShadow: [
+                  BoxShadow(
+                    color: theme.primaryColor.withOpacity(0.1),
+                    blurRadius: 15,
+                    offset: Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(15),
+                    decoration: BoxDecoration(
+                      color: theme.primaryColor,
+                      borderRadius: BorderRadius.circular(15),
+                      boxShadow: [
+                        BoxShadow(
+                          color: theme.primaryColor.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      FeatherIcons.package,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                  SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.isPlanning == 'Yes'
+                              ? "Scheduled Vehicles"
+                              : "Received Vehicles",
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: theme.primaryColor,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          "Total: ${vehicles.length} lots",
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(FeatherIcons.list, color: Colors.blue, size: 14),
+                        SizedBox(width: 6),
+                        Text(
+                          "List",
+                          style: GoogleFonts.poppins(
+                            color: Colors.blue[700],
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Content Area
+            Expanded(
+              child: RefreshIndicator(
+                color: theme.primaryColor,
+                backgroundColor: Colors.white,
+                strokeWidth: 3,
+                onRefresh: () {
+                  return Future.delayed(
+                    const Duration(seconds: 1),
+                    () {
+                      fetchVehicles().then(
+                        (value) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Row(
+                                children: [
+                                  Icon(FeatherIcons.refreshCw,
+                                      color: Colors.white, size: 20),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Data refreshed successfully!',
+                                    style: GoogleFonts.poppins(
+                                        fontWeight: FontWeight.w500),
+                                  ),
+                                ],
+                              ),
+                              backgroundColor: Colors.green,
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
                           );
                         },
-                      )
-                    : SizedBox(
-                        child: ListView.builder(
-                          itemCount: vehicles.length,
-                          itemBuilder: (context, index) {
-                            // Sort vehicles by delivery_date in descending order
-                            vehicles.sort((a, b) {
-                              // Assuming delivery_date is in a format that can be directly compared as strings
-                              return b['created_at'].compareTo(a['created_at']);
-                            });
-                            var vehicle = vehicles[index];
-                            var vin_no = vehicle["vin_no"];
-                            var engine_no = vehicles[index]["engine_no"];
-                            var client = vehicles[index]["customer"]["name"];
-                            Color categoryColor = colors[index % colors.length];
-                            if (searchText.isNotEmpty &&
-                                !(vin_no
-                                        .toLowerCase()
-                                        .contains(searchText.toLowerCase()) ||
-                                    engine_no
-                                        .toLowerCase()
-                                        .contains(searchText.toLowerCase()) ||
-                                    client
-                                        .toLowerCase()
-                                        .contains(searchText.toLowerCase()))) {
-                              return Container(); // Return an empty container if not matching
-                            }
-                            return Column(
-                              children: [
-                                SizedBox(height: 5),
-                                Stack(children: [
-                                  Container(
-                                    padding: EdgeInsets.all(12),
-                                    decoration: boxDecoration(
-                                      radius: 10,
-                                      showShadow: true,
-                                      bgColor: Colors.white,
-                                    ),
-                                    child: ListTile(
-                                      contentPadding: EdgeInsets.all(0),
-                                      leading: CircleAvatar(
-                                        backgroundColor:
-                                            Color.fromARGB(255, 168, 88, 32),
-                                        foregroundColor: Colors.white,
-                                        child: Text("${index + 1}"),
-                                      ),
-                                      title: Text(
-                                        vehicles[index]['model']?['model_name'],
-                                        style: TextStyle(
-                                            color: Colors.amber[900],
-                                            fontWeight: FontWeight.bold),
-                                      ),
-                                      subtitle: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            'LOT Number: ${vehicles[index]['lot_number']}',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.indigo[900],
-                                            ),
-                                          ),
-                                          SizedBox(height: 4),
-                                          Text(
-                                            'LOT Quantity: ${vehicles[index]['lot_qty'] ?? 'N/A'}',
-                                            style: TextStyle(
-                                              color: Colors.grey[700],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      trailing: Container(
-                                        decoration: BoxDecoration(
-                                            border: Border.all(
-                                                color: categoryColor),
-                                            borderRadius: BorderRadius.only(
-                                                topRight: Radius.circular(10))),
-                                        child: TextButton(
-                                          onPressed: () {
-                                            if (widget.isPlanning == 'Yes') {
-                                              String? selectedBay = 'Bay 1';
-                                              String? selectedRoute = 'Route 1';
-
-                                              // ID maps
-                                              final bayIds = {
-                                                'Bay 1': 'Bay 1',
-                                                'Bay 2': 'Bay 2',
-                                                'Bay 3': 'Bay 3'
-                                              };
-                                              final routeIds = {
-                                                'Route 1': '1',
-                                                'Route 2': '2',
-                                                'Route 3': '3'
-                                              };
-
-                                              showDialog(
-                                                context: context,
-                                                builder:
-                                                    (BuildContext context) {
-                                                  return StatefulBuilder(
-                                                    builder: (BuildContext
-                                                            context,
-                                                        StateSetter setState) {
-                                                      return AlertDialog(
-                                                        shape:
-                                                            RoundedRectangleBorder(
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(20),
-                                                        ),
-                                                        title: const Text(
-                                                          'Choose Bay and Route',
-                                                          style: TextStyle(
-                                                            fontWeight:
-                                                                FontWeight.bold,
-                                                          ),
-                                                        ),
-                                                        content: Column(
-                                                          mainAxisSize:
-                                                              MainAxisSize.min,
-                                                          children: [
-                                                            DropdownButtonFormField<
-                                                                String>(
-                                                              value:
-                                                                  selectedBay,
-                                                              onChanged:
-                                                                  (value) {
-                                                                setState(() {
-                                                                  selectedBay =
-                                                                      value!;
-                                                                });
-                                                              },
-                                                              items: [
-                                                                'Bay 1',
-                                                                'Bay 2',
-                                                                'Bay 3'
-                                                              ].map<
-                                                                  DropdownMenuItem<
-                                                                      String>>((String
-                                                                  value) {
-                                                                return DropdownMenuItem<
-                                                                    String>(
-                                                                  value: value,
-                                                                  child: Text(
-                                                                      value),
-                                                                );
-                                                              }).toList(),
-                                                              decoration:
-                                                                  InputDecoration(
-                                                                labelText:
-                                                                    'Select Bay',
-                                                                border:
-                                                                    OutlineInputBorder(
-                                                                  borderRadius:
-                                                                      BorderRadius
-                                                                          .circular(
-                                                                              12),
-                                                                ),
-                                                                contentPadding:
-                                                                    const EdgeInsets
-                                                                        .symmetric(
-                                                                        horizontal:
-                                                                            12,
-                                                                        vertical:
-                                                                            10),
-                                                              ),
-                                                            ),
-                                                            const SizedBox(
-                                                                height: 15),
-                                                            DropdownButtonFormField<
-                                                                String>(
-                                                              value:
-                                                                  selectedRoute,
-                                                              onChanged:
-                                                                  (value) {
-                                                                setState(() {
-                                                                  selectedRoute =
-                                                                      value!;
-                                                                });
-                                                              },
-                                                              items: [
-                                                                'Route 1',
-                                                                'Route 2',
-                                                                'Route 3'
-                                                              ].map<
-                                                                  DropdownMenuItem<
-                                                                      String>>((String
-                                                                  value) {
-                                                                return DropdownMenuItem<
-                                                                    String>(
-                                                                  value: value,
-                                                                  child: Text(
-                                                                      value),
-                                                                );
-                                                              }).toList(),
-                                                              decoration:
-                                                                  InputDecoration(
-                                                                labelText:
-                                                                    'Select Route',
-                                                                border:
-                                                                    OutlineInputBorder(
-                                                                  borderRadius:
-                                                                      BorderRadius
-                                                                          .circular(
-                                                                              12),
-                                                                ),
-                                                                contentPadding:
-                                                                    const EdgeInsets
-                                                                        .symmetric(
-                                                                        horizontal:
-                                                                            12,
-                                                                        vertical:
-                                                                            10),
-                                                              ),
-                                                            ),
-                                                            const SizedBox(
-                                                                height: 20),
-                                                            SizedBox(
-                                                              width: double
-                                                                  .infinity,
-                                                              child:
-                                                                  ElevatedButton(
-                                                                style: ElevatedButton
-                                                                    .styleFrom(
-                                                                  padding: const EdgeInsets
-                                                                      .symmetric(
-                                                                      vertical:
-                                                                          14),
-                                                                  shape:
-                                                                      RoundedRectangleBorder(
-                                                                    borderRadius:
-                                                                        BorderRadius.circular(
-                                                                            12),
-                                                                  ),
-                                                                ),
-                                                                onPressed:
-                                                                    () async {
-                                                                  final fields =
-                                                                      {
-                                                                    'vehicle_receiving_id':
-                                                                        vehicles[index]
-                                                                            [
-                                                                            'id'],
-                                                                    'vehicle_bay':
-                                                                        bayIds[
-                                                                            selectedBay],
-                                                                    'vehicle_route':
-                                                                        routeIds[
-                                                                            selectedRoute],
-                                                                  };
-                                                                  // print(fields);
-
-                                                                  await submitForm(
-                                                                    context:
-                                                                        context,
-                                                                    url:
-                                                                        '${Api.api_url}pushBay',
-                                                                    fields:
-                                                                        fields,
-                                                                    token: user[
-                                                                            'data']
-                                                                        [
-                                                                        'token'],
-                                                                  );
-                                                                  print(fields);
-                                                                  Navigator.pop(
-                                                                      context);
-                                                                },
-                                                                child: Text(
-                                                                  'PUSH TO ${selectedBay!}',
-                                                                  style:
-                                                                      const TextStyle(
-                                                                    fontSize:
-                                                                        16,
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .bold,
-                                                                  ),
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      );
-                                                    },
-                                                  );
-                                                },
-                                              );
-                                            } else {
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) => QClist(
-                                                    Id: vehicles[index]['id'],
-                                                    LotNo: vehicles[index]
-                                                        ['lot_number'],
-                                                  ),
-                                                ),
-                                              ).then((value) {
-                                                fetchVehicles();
-                                              });
-                                            }
-                                          },
-                                          child: Text(
-                                            "SELECT",
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      onTap: () {
-                                        Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                                builder: (context) => QClist(
-                                                      Id: vehicles[index]['id'],
-                                                      LotNo: vehicles[index]
-                                                          ['lot_number'],
-                                                    ))).then((value) {
-                                          fetchVehicles();
-                                        });
-                                      },
-                                    ),
-                                  ),
-
-                                  // 🔷 Badge (top-right)
-                                  Positioned(
-                                    right: 10,
-                                    top: 0,
-                                    child: Container(
-                                      padding: EdgeInsets.symmetric(
-                                          horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color:
-                                            vehicles[index]['customer'] != null
-                                                ? Colors.amber[900]
-                                                : null,
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Text(
-                                        vehicles[index]['customer']?['name'] ??
-                                            '',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ]),
-                                SizedBox(height: 10),
-                              ],
-                            );
-                          },
-                        ),
-                      )),
+                      );
+                    },
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: isLoading
+                      ? _buildLoadingWidget(theme)
+                      : loadingText.isNotEmpty
+                          ? _buildErrorWidget(theme)
+                          : _buildVehiclesList(theme),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: widget.isPlanning == 'Yes'
           ? null
-          : FloatingActionButton(
-              onPressed: () {
-                Navigator.push(context, MaterialPageRoute(
-                  builder: (context) {
-                    return ReceivingForm();
-                  },
-                )).then(
-                  (value) {
-                    fetchVehicles().then(
-                      (value) {
-                        if (vehicles.isEmpty) {
-                          print(value);
-                          setState(() {
-                            loadingText = 'No Lots available at the moment';
+          : Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    theme.primaryColor,
+                    theme.primaryColor.withOpacity(0.8),
+                  ],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: theme.primaryColor.withOpacity(0.3),
+                    blurRadius: 15,
+                    offset: Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: FloatingActionButton(
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(
+                    builder: (context) {
+                      return ReceivingForm();
+                    },
+                  )).then(
+                    (value) {
+                      fetchVehicles().then(
+                        (value) {
+                          if (vehicles.isEmpty) {
+                            print(value);
+                            setState(() {
+                              loadingText = 'No Lots available at the moment';
+                            });
+                          }
+                        },
+                      );
+                    },
+                  );
+                },
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                child: Icon(
+                  FeatherIcons.plus,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
+            ),
+    );
+  }
+
+  Widget _buildLoadingWidget(ThemeData theme) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: Offset(0, 10),
+                ),
+              ],
+            ),
+            child: CircularProgressIndicator(
+              strokeWidth: 3,
+              valueColor: AlwaysStoppedAnimation<Color>(theme.primaryColor),
+            ),
+          ),
+          SizedBox(height: 20),
+          Text(
+            'Loading vehicles...',
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorWidget(ThemeData theme) {
+    return Container(
+      margin: EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.red.shade200),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(FeatherIcons.alertCircle, color: Colors.red, size: 48),
+          SizedBox(height: 16),
+          Text(
+            'No Data Available',
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: Colors.red[800],
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            loadingText,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              color: Colors.red[600],
+            ),
+          ),
+          SizedBox(height: 20),
+          ElevatedButton.icon(
+            onPressed: () {
+              fetchVehicles().then(
+                (value) {
+                  if (vehicles.isEmpty) {
+                    setState(() {
+                      loadingText = 'No vehicles available at the moment';
+                    });
+                  }
+                },
+              );
+            },
+            icon: Icon(FeatherIcons.refreshCw, size: 18),
+            label: Text('Retry'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVehiclesList(ThemeData theme) {
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: ListView.builder(
+        physics: BouncingScrollPhysics(),
+        itemCount: vehicles.length,
+        itemBuilder: (context, index) {
+          // Sort vehicles by delivery_date in descending order
+          vehicles.sort((a, b) {
+            // Assuming delivery_date is in a format that can be directly compared as strings
+            return b['created_at'].compareTo(a['created_at']);
+          });
+          var vehicle = vehicles[index];
+          var vin_no = vehicle["vin_no"];
+          var engine_no = vehicles[index]["engine_no"];
+          var client = vehicles[index]["customer"]["name"];
+          Color categoryColor = colors[index % colors.length];
+
+          if (searchText.isNotEmpty &&
+              !(vin_no.toLowerCase().contains(searchText.toLowerCase()) ||
+                  engine_no.toLowerCase().contains(searchText.toLowerCase()) ||
+                  client.toLowerCase().contains(searchText.toLowerCase()))) {
+            return Container(); // Return an empty container if not matching
+          }
+
+          return _buildVehicleCard(vehicle, index, categoryColor, theme);
+        },
+      ),
+    );
+  }
+
+  Widget _buildVehicleCard(
+      Map vehicle, int index, Color categoryColor, ThemeData theme) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 15,
+            offset: Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => QClist(
+                  Id: vehicles[index]['id'],
+                  LotNo: vehicles[index]['lot_number'],
+                ),
+              ),
+            ).then((value) {
+              fetchVehicles();
+            });
+          },
+          child: Padding(
+            padding: EdgeInsets.all(20),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            categoryColor,
+                            categoryColor.withOpacity(0.8)
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: categoryColor.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        "${index + 1}",
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            vehicles[index]['model']?['model_name'] ??
+                                'Unknown Model',
+                            style: GoogleFonts.poppins(
+                              color: Colors.grey[800],
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(FeatherIcons.hash,
+                                  size: 14, color: Colors.grey[600]),
+                              SizedBox(width: 6),
+                              Text(
+                                'LOT: ${vehicles[index]['lot_number']}',
+                                style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.w600,
+                                  color: theme.primaryColor,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(FeatherIcons.layers,
+                                  size: 14, color: Colors.grey[600]),
+                              SizedBox(width: 6),
+                              Text(
+                                'QTY: ${vehicles[index]['lot_qty'] ?? 'N/A'}',
+                                style: GoogleFonts.poppins(
+                                  color: Colors.grey[600],
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (vehicles[index]['customer'] != null)
+                      Container(
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.amber[900],
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.amber.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          vehicles[index]['customer']?['name'] ?? '',
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [categoryColor, categoryColor.withOpacity(0.8)],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: categoryColor.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () {
+                        if (widget.isPlanning == 'Yes') {
+                          _showBaySelectionDialog(vehicle, index);
+                        } else {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => QClist(
+                                Id: vehicles[index]['id'],
+                                LotNo: vehicles[index]['lot_number'],
+                              ),
+                            ),
+                          ).then((value) {
+                            fetchVehicles();
                           });
                         }
                       },
-                    );
-                  },
-                );
-              },
-              child: Icon(Icons.add),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 14),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              widget.isPlanning == 'Yes'
+                                  ? FeatherIcons.send
+                                  : FeatherIcons.eye,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              widget.isPlanning == 'Yes'
+                                  ? "PUSH TO BAY"
+                                  : "SELECT",
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                                fontSize: 14,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showBaySelectionDialog(Map vehicle, int index) {
+    String? selectedBay = 'Bay 1';
+    String? selectedRoute = 'Route 1';
+
+    // ID maps
+    final bayIds = {'Bay 1': 'Bay 1', 'Bay 2': 'Bay 2', 'Bay 3': 'Bay 3'};
+    final routeIds = {'Route 1': '1', 'Route 2': '2', 'Route 3': '3'};
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        ThemeData theme = Theme.of(context);
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              backgroundColor: Colors.transparent,
+              contentPadding: EdgeInsets.zero,
+              content: Container(
+                width: MediaQuery.of(context).size.width * 0.9,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 20,
+                      offset: Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Header
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            theme.primaryColor,
+                            theme.primaryColor.withOpacity(0.8),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(20),
+                          topRight: Radius.circular(20),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(
+                              FeatherIcons.navigation,
+                              color: Colors.white,
+                              size: 24,
+                            ),
+                          ),
+                          SizedBox(width: 16),
+                          Text(
+                            'Choose Bay and Route',
+                            style: GoogleFonts.poppins(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Content
+                    Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Column(
+                        children: [
+                          _buildStyledDropdown(
+                            value: selectedBay!,
+                            items: ['Bay 1', 'Bay 2', 'Bay 3'],
+                            label: 'Select Bay',
+                            icon: FeatherIcons.mapPin,
+                            onChanged: (value) {
+                              setState(() {
+                                selectedBay = value;
+                              });
+                            },
+                          ),
+                          SizedBox(height: 20),
+                          _buildStyledDropdown(
+                            value: selectedRoute!,
+                            items: ['Route 1', 'Route 2', 'Route 3'],
+                            label: 'Select Route',
+                            icon: FeatherIcons.navigation,
+                            onChanged: (value) {
+                              setState(() {
+                                selectedRoute = value;
+                              });
+                            },
+                          ),
+                          SizedBox(height: 24),
+                          Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  theme.primaryColor,
+                                  theme.primaryColor.withOpacity(0.8),
+                                ],
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: theme.primaryColor.withOpacity(0.3),
+                                  blurRadius: 12,
+                                  offset: Offset(0, 6),
+                                ),
+                              ],
+                            ),
+                            child: Material(
+                              color: Colors.transparent,
+                              borderRadius: BorderRadius.circular(12),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(12),
+                                onTap: () async {
+                                  final fields = {
+                                    'vehicle_receiving_id': vehicles[index]
+                                        ['id'],
+                                    'vehicle_bay': bayIds[selectedBay],
+                                    'vehicle_route': routeIds[selectedRoute],
+                                  };
+
+                                  await submitForm(
+                                    context: context,
+                                    url: '${Api.api_url}pushBay',
+                                    fields: fields,
+                                    token: user['data']['token'],
+                                  );
+                                  print(fields);
+                                  Navigator.pop(context);
+                                },
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 16),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(FeatherIcons.send,
+                                          color: Colors.white, size: 18),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        'PUSH TO $selectedBay',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.white,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildStyledDropdown({
+    required String value,
+    required List<String> items,
+    required String label,
+    required IconData icon,
+    required Function(String?) onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.only(left: 4, bottom: 8),
+          child: Row(
+            children: [
+              Icon(icon, size: 16, color: Colors.grey[600]),
+              SizedBox(width: 8),
+              Text(
+                label,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[700],
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 8,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: DropdownButtonFormField<String>(
+            value: value,
+            onChanged: onChanged,
+            items: items.map<DropdownMenuItem<String>>((String item) {
+              return DropdownMenuItem<String>(
+                value: item,
+                child: Text(
+                  item,
+                  style: GoogleFonts.poppins(fontSize: 14),
+                ),
+              );
+            }).toList(),
+            decoration: InputDecoration(
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide:
+                    BorderSide(color: Theme.of(context).primaryColor, width: 2),
+              ),
+              filled: true,
+              fillColor: Colors.grey.shade50,
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -553,7 +1051,7 @@ class _DisplayVehiclesState extends State<DisplayVehicles> {
 
       setState(() {
         isLoading = false;
-        vehicles = (responsedata["data"] as List<dynamic>) ?? [];
+        vehicles = (responsedata["data"] as List<dynamic>);
       });
     } else {
       pr.hide().whenComplete(() {

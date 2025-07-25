@@ -1,20 +1,18 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:developer'; // For logging
+// For logging
 import 'package:dropdown_textfield/dropdown_textfield.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_feather_icons/flutter_feather_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:isuze_pqcs/common/ApiService.dart';
 import 'package:isuze_pqcs/common/UIHelper.dart';
 import 'package:isuze_pqcs/common/loader.dart';
-import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/functions.dart';
-import 'package:isuze_pqcs/pages/Receiving/WizardForm.dart';
 import 'package:http/http.dart' as http;
-import 'package:isuze_pqcs/pages/Receiving/form_receiving_claim.dart';
 import 'package:isuze_pqcs/pages/planning/widget.dart';
 import 'package:nb_utils/nb_utils.dart';
 import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
@@ -24,13 +22,16 @@ class ReceivingForm extends StatefulWidget {
   State<ReceivingForm> createState() => _ReceivingFormState();
 }
 
-class _ReceivingFormState extends State<ReceivingForm> {
+class _ReceivingFormState extends State<ReceivingForm>
+    with SingleTickerProviderStateMixin {
   late SingleValueDropDownController _carModel;
   late SingleValueDropDownController _customerModel;
   late TextEditingController _lotNo;
   late TextEditingController _lotQty;
   final TextEditingController _fileController = TextEditingController();
   final TextEditingController _fileController2 = TextEditingController();
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
 
   List<dynamic> clients = [];
   List<dynamic> models = [];
@@ -68,11 +69,25 @@ class _ReceivingFormState extends State<ReceivingForm> {
     _customerModel = SingleValueDropDownController();
     _lotNo = TextEditingController();
     _lotQty = TextEditingController();
+
+    _animationController = AnimationController(
+      duration: Duration(milliseconds: 1000),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+
     getuserdata().then((value) {
       setState(() {
         user = jsonDecode(value);
       });
       _fetchData();
+      _animationController.forward();
     });
     super.initState();
   }
@@ -85,6 +100,7 @@ class _ReceivingFormState extends State<ReceivingForm> {
     _lotQty.dispose();
     _fileController.dispose();
     _fileController2.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
@@ -126,286 +142,944 @@ class _ReceivingFormState extends State<ReceivingForm> {
 
   @override
   Widget build(BuildContext context) {
+    ThemeData theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text('Receiving Form')),
-      body: isLoading
-          ? Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                const SizedBox(height: 8),
-                // Padding(
-                //   padding: const EdgeInsets.symmetric(horizontal: 15.0),
-                //   child: ProgressSteps(
-                //     currentStep: 1,
-                //     totalSteps: selectedValue == 'YES' ? 4 : 3,
-                //     stepLabels: [
-                //       'Receiving', // current step
-                //       if (selectedValue == 'YES') 'Raise Claim', // next step
-                //       'QC list',
-
-                //       'Qc Checklist',
-                //     ],
-                //   ),
-                // ),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: errorText.isNotEmpty
-                        ? ErrorMessageWidget(
-                            errorMessage: errorText,
-                            onRetry: _fetchData,
-                          )
-                        : SingleChildScrollView(
-                            child: Form(
-                              key: _formKey,
-                              child: Card(
-                                color: Colors.white,
-                                elevation: 1,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      if (errorModel.isNotEmpty)
-                                        Padding(
-                                          padding: const EdgeInsets.all(8.0),
-                                          child: Text(
-                                            errorModel,
-                                            style: TextStyle(color: Colors.red),
-                                          ),
-                                        ),
-                                      DropDownTextField(
-                                        controller: _customerModel,
-                                        clearOption: false,
-                                        dropDownIconProperty: IconProperty(
-                                            color: mycolor, size: 30),
-                                        textFieldDecoration: InputDecoration(
-                                          labelText: 'Customer',
-                                          floatingLabelBehavior:
-                                              FloatingLabelBehavior.always,
-                                          border: OutlineInputBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(8.0),
-                                          ),
-                                          filled: true,
-                                          fillColor: Colors.grey.shade50,
-                                        ),
-                                        dropDownItemCount: 5,
-                                        enableSearch: true,
-                                        validator: (value) =>
-                                            (value == null || value.isEmpty)
-                                                ? "*Required"
-                                                : null,
-                                        dropDownList: clients.map((client) {
-                                          return DropDownValueModel(
-                                            name: client['name'] ?? 'Unknown',
-                                            value: client['id'],
-                                          );
-                                        }).toList(),
-                                        onChanged: (val) async {
-                                          selectedCustomerId = val.value;
-                                          setState(
-                                              () => _isLoadingModels = true);
-                                          try {
-                                            final response =
-                                                await fetchCarModel(
-                                                    selectedCustomerId);
-                                            models = response['data'] ?? [];
-                                          } catch (e) {
-                                            models = [];
-                                            errorModel =
-                                                'Failed to load models: $e';
-                                          } finally {
-                                            setState(() {
-                                              _isLoadingModels = false;
-                                              _carModel.clearDropDown();
-                                            });
-                                          }
-                                        },
-                                      ),
-                                      const SizedBox(height: 8),
-                                      _isLoadingModels
-                                          ? Center(
-                                              child:
-                                                  CircularProgressIndicator())
-                                          : DropDownTextField(
-                                              controller: _carModel,
-                                              clearOption: false,
-                                              dropDownIconProperty:
-                                                  IconProperty(
-                                                      color: mycolor, size: 30),
-                                              textFieldDecoration:
-                                                  InputDecoration(
-                                                labelText: 'Vehicle Model',
-                                                floatingLabelBehavior:
-                                                    FloatingLabelBehavior
-                                                        .always,
-                                                border: OutlineInputBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                          8.0),
-                                                ),
-                                                filled: true,
-                                                fillColor: Colors.grey.shade50,
-                                              ),
-                                              dropDownItemCount: 5,
-                                              enableSearch: true,
-                                              validator: (value) =>
-                                                  (value == null ||
-                                                          value.isEmpty)
-                                                      ? "*Required"
-                                                      : null,
-                                              dropDownList: models.map((model) {
-                                                return DropDownValueModel(
-                                                  name:
-                                                      model['model_name'] ?? '',
-                                                  value: model['id'],
-                                                );
-                                              }).toList(),
-                                              onChanged: (val) {
-                                                modelId = val.value;
-                                              },
-                                            ),
-                                      const SizedBox(height: 8),
-                                      CustomTextFormField(
-                                        label: 'Lot No',
-                                        hint: 'Enter Lot number',
-                                        controller: _lotNo,
-                                        validator: (value) =>
-                                            (value == null || value.isEmpty)
-                                                ? '*Required'
-                                                : null,
-                                      ),
-                                      const SizedBox(height: 8),
-                                      CustomTextFormField(
-                                        label: 'Lot Quantity',
-                                        hint: 'Enter Lot number',
-                                        controller: _lotQty,
-                                        validator: (value) =>
-                                            (value == null || value.isEmpty)
-                                                ? '*Required'
-                                                : null,
-                                      ),
-                                      const SizedBox(height: 16),
-                                      CustomUploadFormField(
-                                        label: 'Upload Packing List (Excel)',
-                                        hint: 'No file chosen',
-                                        controller: _fileController,
-                                        onUploadPressed: () => _pickFile(0),
-                                      ),
-                                      const SizedBox(height: 15),
-                                      CustomUploadFormField(
-                                        label: 'Upload Geology Data (Excel)',
-                                        hint: 'No file chosen',
-                                        controller: _fileController2,
-                                        onUploadPressed: () => _pickFile(1),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      Row(
-                                        // crossAxisAlignment: WrapCrossAlignment.center,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceAround,
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              "Any Packaging Issue?",
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 14,
-                                                color: mycolor,
-                                                letterSpacing: 1.2,
-                                              ),
-                                            ),
-                                          ),
-                                          ChoiceChip(
-                                            label: Text('YES'),
-                                            selected: selectedValue == 'YES',
-                                            selectedColor: Colors.red,
-                                            onSelected: (selected) {
-                                              setState(() {
-                                                selectedValue = 'YES';
-                                              });
-                                              _showIssueDialog();
-                                            },
-                                            labelStyle: TextStyle(
-                                              color: selectedValue == 'YES'
-                                                  ? Colors.white
-                                                  : Colors.black,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          SizedBox(width: 10),
-                                          ChoiceChip(
-                                            label: Text('NO'),
-                                            selected: selectedValue == 'NO',
-                                            selectedColor: Colors.green,
-                                            onSelected: (selected) {
-                                              setState(() {
-                                                selectedValue = 'NO';
-                                              });
-                                            },
-                                            labelStyle: TextStyle(
-                                              color: selectedValue == 'NO'
-                                                  ? Colors.white
-                                                  : Colors.black,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      if (issueData != null) ...[
-                                        SizedBox(height: 20),
-                                        Text("Issue Summary",
-                                            style: GoogleFonts.poppins(
-                                                fontWeight: FontWeight.bold)),
-                                        Text(
-                                            "Part No: ${issueData!['partNo']}"),
-                                        Text(
-                                            "Category: ${issueData!['category']}"),
-                                        Text(
-                                            "Classification: ${issueData!['classification']}"),
-                                        if (issueData!['image'] != null)
-                                          Padding(
-                                            padding:
-                                                const EdgeInsets.only(top: 10),
-                                            child: Image.file(
-                                                issueData!['image'],
-                                                height: 100),
-                                          ),
-                                      ],
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(25),
-                  child: Container(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => _submitForm(context),
-                      child: const Text('Submit'),
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        backgroundColor: mycolor,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        textStyle: const TextStyle(fontSize: 16),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
-                      ),
-                    ),
-                  ),
-                ),
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: theme.primaryColor,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                theme.primaryColor,
+                theme.primaryColor.withOpacity(0.8),
               ],
             ),
+          ),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                FeatherIcons.truck,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+            SizedBox(width: 12),
+            Text(
+              'Receiving Form',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 22,
+                color: Colors.white,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          Container(
+            margin: EdgeInsets.only(right: 16),
+            child: IconButton(
+              icon: Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  FeatherIcons.save,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              onPressed: () => _submitForm(context),
+            ),
+          ),
+        ],
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.grey.shade50,
+              Colors.white,
+            ],
+          ),
+        ),
+        child: isLoading
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 20,
+                            offset: Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 3,
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(theme.primaryColor),
+                      ),
+                    ),
+                    SizedBox(height: 20),
+                    Text(
+                      'Loading form data...',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : FadeTransition(
+                opacity: _fadeAnimation,
+                child: Column(
+                  children: [
+                    // Header Card
+                    Container(
+                      margin: EdgeInsets.all(16),
+                      padding: EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            theme.primaryColor.withOpacity(0.1),
+                            theme.primaryColor.withOpacity(0.05),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                            color: theme.primaryColor.withOpacity(0.2)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: theme.primaryColor.withOpacity(0.1),
+                            blurRadius: 15,
+                            offset: Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(15),
+                            decoration: BoxDecoration(
+                              color: theme.primaryColor,
+                              borderRadius: BorderRadius.circular(15),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: theme.primaryColor.withOpacity(0.3),
+                                  blurRadius: 8,
+                                  offset: Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              FeatherIcons.package,
+                              color: Colors.white,
+                              size: 24,
+                            ),
+                          ),
+                          SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Vehicle Receiving",
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                    color: theme.primaryColor,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  "Register new lot & vehicle details",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[600],
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                  color: Colors.blue.withOpacity(0.3)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(FeatherIcons.edit3,
+                                    color: Colors.blue, size: 14),
+                                SizedBox(width: 6),
+                                Text(
+                                  "Form",
+                                  style: TextStyle(
+                                    color: Colors.blue[700],
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Form Content
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: errorText.isNotEmpty
+                            ? _buildErrorWidget()
+                            : _buildFormContent(theme),
+                      ),
+                    ),
+                    // Submit Button
+                    _buildSubmitButton(theme),
+                  ],
+                ),
+              ),
+      ),
+    );
+  }
+
+  Widget _buildErrorWidget() {
+    return Container(
+      margin: EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.red.shade200),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(FeatherIcons.alertCircle, color: Colors.red, size: 48),
+          SizedBox(height: 16),
+          Text(
+            'Error Loading Data',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: Colors.red[800],
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            errorText,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.red[600],
+            ),
+          ),
+          SizedBox(height: 20),
+          ElevatedButton.icon(
+            onPressed: _fetchData,
+            icon: Icon(FeatherIcons.refreshCw, size: 18),
+            label: Text('Retry'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFormContent(ThemeData theme) {
+    return SingleChildScrollView(
+      physics: BouncingScrollPhysics(),
+      child: Form(
+        key: _formKey,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 20,
+                offset: Offset(0, 10),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (errorModel.isNotEmpty)
+                Container(
+                  margin: EdgeInsets.only(bottom: 16),
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.red.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(FeatherIcons.alertTriangle,
+                          color: Colors.red, size: 20),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          errorModel,
+                          style: TextStyle(
+                              color: Colors.red[700],
+                              fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              _buildStyledDropdown(
+                controller: _customerModel,
+                label: 'Customer',
+                icon: FeatherIcons.users,
+                items: clients.map((client) {
+                  return DropDownValueModel(
+                    name: client['name'] ?? 'Unknown',
+                    value: client['id'],
+                  );
+                }).toList(),
+                onChanged: (val) async {
+                  selectedCustomerId = val.value;
+                  setState(() => _isLoadingModels = true);
+                  try {
+                    final response = await fetchCarModel(selectedCustomerId);
+                    models = response['data'] ?? [];
+                  } catch (e) {
+                    models = [];
+                    errorModel = 'Failed to load models: $e';
+                  } finally {
+                    setState(() {
+                      _isLoadingModels = false;
+                      _carModel.clearDropDown();
+                    });
+                  }
+                },
+              ),
+              const SizedBox(height: 20),
+              _isLoadingModels
+                  ? Container(
+                      padding: EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(15),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                  theme.primaryColor),
+                            ),
+                          ),
+                          SizedBox(width: 12),
+                          Text(
+                            'Loading vehicle models...',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : _buildStyledDropdown(
+                      controller: _carModel,
+                      label: 'Vehicle Model',
+                      icon: FeatherIcons.truck,
+                      items: models.map((model) {
+                        return DropDownValueModel(
+                          name: model['model_name'] ?? '',
+                          value: model['id'],
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        modelId = val.value;
+                      },
+                    ),
+              const SizedBox(height: 20),
+              _buildStyledTextField(
+                controller: _lotNo,
+                label: 'Lot Number',
+                hint: 'Enter lot number',
+                icon: FeatherIcons.hash,
+              ),
+              const SizedBox(height: 20),
+              _buildStyledTextField(
+                controller: _lotQty,
+                label: 'Lot Quantity',
+                hint: 'Enter lot quantity',
+                icon: FeatherIcons.layers,
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 24),
+              _buildFileUploadSection(theme),
+              const SizedBox(height: 24),
+              _buildPackagingIssueSection(theme),
+              if (issueData != null) ...[
+                SizedBox(height: 24),
+                _buildIssueSummary(theme),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStyledDropdown({
+    required SingleValueDropDownController controller,
+    required String label,
+    required IconData icon,
+    required List<DropDownValueModel> items,
+    required Function(DropDownValueModel) onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.only(left: 4, bottom: 8),
+          child: Row(
+            children: [
+              Icon(icon, size: 18, color: Colors.grey[600]),
+              SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[700],
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(15),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 8,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: DropDownTextField(
+            controller: controller,
+            clearOption: false,
+            dropDownIconProperty:
+                IconProperty(color: Colors.grey[600], size: 24),
+            textFieldDecoration: InputDecoration(
+              hintText: 'Select $label',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide:
+                    BorderSide(color: Theme.of(context).primaryColor, width: 2),
+              ),
+              filled: true,
+              fillColor: Colors.grey.shade50,
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            ),
+            dropDownItemCount: 5,
+            enableSearch: true,
+            validator: (value) =>
+                (value == null || value.isEmpty) ? "*Required" : null,
+            dropDownList: items,
+            onChanged: (value) => onChanged(value),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStyledTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    TextInputType? keyboardType,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.only(left: 4, bottom: 8),
+          child: Row(
+            children: [
+              Icon(icon, size: 18, color: Colors.grey[600]),
+              SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[700],
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(15),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 8,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: TextFormField(
+            controller: controller,
+            keyboardType: keyboardType,
+            decoration: InputDecoration(
+              hintText: hint,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide:
+                    BorderSide(color: Theme.of(context).primaryColor, width: 2),
+              ),
+              filled: true,
+              fillColor: Colors.grey.shade50,
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            ),
+            validator: (value) =>
+                (value == null || value.isEmpty) ? '*Required' : null,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFileUploadSection(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.only(left: 4, bottom: 16),
+          child: Row(
+            children: [
+              Icon(FeatherIcons.upload, size: 18, color: Colors.grey[600]),
+              SizedBox(width: 8),
+              Text(
+                'File Uploads',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.grey[700],
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ],
+          ),
+        ),
+        _buildFileUploadCard(
+          label: 'Packing List (Excel)',
+          controller: _fileController,
+          onUpload: () => _pickFile(0),
+          icon: FeatherIcons.fileText,
+          color: Colors.green,
+        ),
+        SizedBox(height: 16),
+        _buildFileUploadCard(
+          label: 'Geology Data (Excel)',
+          controller: _fileController2,
+          onUpload: () => _pickFile(1),
+          icon: FeatherIcons.database,
+          color: Colors.blue,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFileUploadCard({
+    required String label,
+    required TextEditingController controller,
+    required VoidCallback onUpload,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: color.withOpacity(0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.05),
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        borderRadius: BorderRadius.circular(15),
+        color: color.withOpacity(0.05),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(15),
+          onTap: onUpload,
+          child: Padding(
+            padding: EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: Colors.white, size: 20),
+                ),
+                SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[800],
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        controller.text.isEmpty
+                            ? 'No file selected'
+                            : controller.text,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: controller.text.isEmpty
+                              ? Colors.grey[500]
+                              : color,
+                          fontWeight: controller.text.isEmpty
+                              ? FontWeight.normal
+                              : FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(FeatherIcons.upload, color: color, size: 20),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPackagingIssueSection(ThemeData theme) {
+    return Container(
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(FeatherIcons.alertTriangle, size: 18, color: Colors.orange),
+              SizedBox(width: 8),
+              Text(
+                "Any Packaging Issue?",
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                  color: Colors.grey[800],
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildChoiceChip(
+                  label: 'YES',
+                  isSelected: selectedValue == 'YES',
+                  color: Colors.red,
+                  onSelected: () {
+                    setState(() {
+                      selectedValue = 'YES';
+                    });
+                    _showIssueDialog();
+                  },
+                ),
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: _buildChoiceChip(
+                  label: 'NO',
+                  isSelected: selectedValue == 'NO',
+                  color: Colors.green,
+                  onSelected: () {
+                    setState(() {
+                      selectedValue = 'NO';
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChoiceChip({
+    required String label,
+    required bool isSelected,
+    required Color color,
+    required VoidCallback onSelected,
+  }) {
+    return Material(
+      borderRadius: BorderRadius.circular(12),
+      color: isSelected ? color : Colors.white,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onSelected,
+        child: Container(
+          padding: EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected ? color : Colors.grey.shade300,
+              width: isSelected ? 2 : 1,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.grey[600],
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIssueSummary(ThemeData theme) {
+    return Container(
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.red.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(FeatherIcons.alertCircle, color: Colors.red, size: 20),
+              SizedBox(width: 8),
+              Text(
+                "Issue Summary",
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                  color: Colors.red[800],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12),
+          _buildSummaryItem("Part No", issueData!['partNo']),
+          _buildSummaryItem("Category", issueData!['category']),
+          _buildSummaryItem("Classification", issueData!['classification']),
+          if (issueData!['image'] != null) ...[
+            SizedBox(height: 12),
+            Container(
+              padding: EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.red.shade200),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.file(
+                  issueData!['image'],
+                  height: 100,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryItem(String label, String value) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              "$label:",
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Colors.red[700],
+                fontSize: 13,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                color: Colors.red[600],
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSubmitButton(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: Offset(0, -5),
+          ),
+        ],
+      ),
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(15),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              theme.primaryColor,
+              theme.primaryColor.withOpacity(0.8),
+            ],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: theme.primaryColor.withOpacity(0.3),
+              blurRadius: 15,
+              offset: Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(15),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(15),
+            onTap: () => _submitForm(context),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(FeatherIcons.send, color: Colors.white, size: 20),
+                  SizedBox(width: 12),
+                  Text(
+                    'Submit Form',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -467,6 +1141,11 @@ class _ReceivingFormState extends State<ReceivingForm> {
       child: CustomLoader(),
       borderRadius: 8,
       backgroundColor: Colors.white,
+      messageTextStyle: TextStyle(
+        color: Colors.black,
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+      ),
       progressWidget: const SizedBox(
         width: 20,
         height: 20,

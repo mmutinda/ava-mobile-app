@@ -3,13 +3,11 @@ import 'dart:developer';
 
 import 'package:awesome_top_snackbar/awesome_top_snackbar.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/loader.dart';
 import 'package:isuze_pqcs/pages/assembly/assembly_stations.dart';
 import 'package:isuze_pqcs/pages/planning/offlining/ChooseEOLOperationsPage.dart';
-import 'package:isuze_pqcs/pages/planning/offlining/GCPlist.dart';
 
 // Simulated data model
 class Issue {

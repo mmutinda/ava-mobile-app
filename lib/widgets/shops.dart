@@ -23,30 +23,49 @@ class ShopItems extends StatelessWidget {
       child: Card(
         color: Colors.white,
         child: Container(
-          padding: EdgeInsets.all(12),
+          padding: EdgeInsets.all(8),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
+              Flexible(
+                child: Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: dividerColor,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    number.toString(),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(height: 6),
               Container(
-                padding: EdgeInsets.all(15),
+                height: 2,
+                width: 30,
                 decoration: BoxDecoration(
                   color: dividerColor,
-                  shape: BoxShape.circle,
+                  borderRadius: BorderRadius.circular(1),
                 ),
+              ),
+              SizedBox(height: 6),
+              Flexible(
                 child: Text(
-                  number.toString(),
-                  style: TextStyle(color: Colors.white),
+                  "$name",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
+                  textAlign: TextAlign.center,
                 ),
-              ),
-              Divider(
-                color: dividerColor,
-              ),
-              Text(
-                "$name",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                ),
-                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -103,35 +122,43 @@ class StationsItems extends StatelessWidget {
               ),
               const SizedBox(width: 16),
               Expanded(
+                flex: 3,
                 child: Text(
                   name,
                   style: const TextStyle(
                     fontWeight: FontWeight.w600,
-                    fontSize: 18,
+                    fontSize: 16,
                     color: Colors.black87,
                   ),
                   overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
-              const SizedBox(width: 12),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
-                decoration: BoxDecoration(
-                  color: dividerColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: dividerColor, width: 1),
-                ),
-                child: Text(
-                  number == "0"
-                      ? "No Units"
-                      : number == "1"
-                          ? "1 Unit"
-                          : "$number Units",
-                  style: TextStyle(
-                    color: dividerColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
+              const SizedBox(width: 8),
+              Flexible(
+                flex: 2,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                  decoration: BoxDecoration(
+                    color: dividerColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: dividerColor, width: 1),
+                  ),
+                  child: Text(
+                    number == "0"
+                        ? "No Units"
+                        : number == "1"
+                            ? "1 Unit"
+                            : "$number Units",
+                    style: TextStyle(
+                      color: dividerColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    textAlign: TextAlign.center,
                   ),
                 ),
               ),

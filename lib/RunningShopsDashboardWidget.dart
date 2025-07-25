@@ -169,14 +169,12 @@ class _RunningShopsDashboardWidgetState
         Expanded(
           child: GridView.builder(
             padding: const EdgeInsets.all(8),
-            // shrinkWrap: true,
-            // physics: NeverScrollableScrollPhysics(),
             itemCount: runningShops.length,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2, // Number of columns
-              crossAxisSpacing: 10.0,
-              mainAxisSpacing: 10.0,
-              childAspectRatio: 3 / 2, // Grid item aspect ratio
+              crossAxisSpacing: 12.0,
+              mainAxisSpacing: 12.0,
+              childAspectRatio: 1.2, // Increased aspect ratio for more height
             ),
             itemBuilder: (_, index) {
               final shop = runningShops[index];

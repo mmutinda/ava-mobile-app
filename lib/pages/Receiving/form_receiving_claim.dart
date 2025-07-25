@@ -10,10 +10,7 @@ import 'package:isuze_pqcs/common/loader.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/functions.dart';
-import 'package:isuze_pqcs/pages/Receiving/QcList.dart';
-import 'package:isuze_pqcs/pages/Receiving/WizardForm.dart';
 import 'package:http/http.dart' as http;
-import 'package:nb_utils/nb_utils.dart';
 import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
 
 class ReceivingFormClaim extends StatefulWidget {

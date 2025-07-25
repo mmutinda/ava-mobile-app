@@ -8,21 +8,15 @@ import 'package:isuze_pqcs/common/slider.dart';
 import 'package:isuze_pqcs/pages/QFL%204/qfl4.dart';
 import 'package:isuze_pqcs/pages/QFL5/6/Qfl5/Qfl56Page.dart';
 import 'package:isuze_pqcs/pages/Receiving/display_vehicles.dart';
-import 'package:isuze_pqcs/pages/action.dart';
 import 'package:isuze_pqcs/pages/assembly/assembly_stations.dart';
 import 'package:isuze_pqcs/pages/claimforms/FiveS.dart';
-import 'package:isuze_pqcs/pages/claimforms/FiveSAuditPage%20.dart';
-import 'package:isuze_pqcs/pages/claimforms/NearMissForm.dart';
 import 'package:isuze_pqcs/pages/claimforms/claimHome.dart';
 import 'package:isuze_pqcs/pages/claimforms/nearMiss.dart';
 import 'package:isuze_pqcs/pages/defetects/QCDefectsUnits.dart';
 import 'package:isuze_pqcs/pages/planning/planningHome.dart';
 
 import 'package:isuze_pqcs/pages/profile_screen.dart';
-import 'package:isuze_pqcs/pages/ShopsScrean.dart';
-import 'package:isuze_pqcs/pages/planning/scheduleUnits.dart';
 import 'package:isuze_pqcs/pages/qfl3/qfl3_list.dart';
-import 'package:isuze_pqcs/pages/qfl3/qflthreeForm.dart';
 import 'package:isuze_pqcs/pages/tms/TMS_listUnits.dart';
 import 'package:nb_utils/nb_utils.dart';
 
@@ -77,144 +71,657 @@ class _HomeScreanState extends State<HomeScrean> {
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        title: Text("Home", style: TextStyle(fontWeight: FontWeight.w600)),
+        elevation: 0,
+        backgroundColor: theme.primaryColor,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                theme.primaryColor,
+                theme.primaryColor.withOpacity(0.8),
+              ],
+            ),
+          ),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                FeatherIcons.home,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+            SizedBox(width: 12),
+            Text(
+              "Dashboard",
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 22,
+                color: Colors.white,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          Container(
+            margin: EdgeInsets.only(right: 16),
+            child: IconButton(
+              icon: Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  FeatherIcons.bell,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              onPressed: () {
+                // Add notification functionality
+              },
+            ),
+          ),
+        ],
       ),
-      drawer: Drawer(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            DrawerHeader(
-              decoration: BoxDecoration(color: theme.primaryColor),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  CircleAvatar(
-                    radius: 40,
-                    backgroundImage: AssetImage("images/profile1.jpg"),
-                  ),
-                  Text("${user['data']?['name'] ?? ''}",
-                      style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white)),
-                  Text("${user['data']?['email'] ?? ''}",
-                      style: TextStyle(fontSize: 14, color: Colors.white70)),
+      drawer: Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 20,
+              offset: Offset(5, 0),
+            ),
+          ],
+        ),
+        child: Drawer(
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.white,
+                  Colors.grey.shade50,
                 ],
               ),
             ),
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: <Widget>[
-                  singleDrawerItem(FeatherIcons.home, "Dashboard", 0, theme),
-                  Divider(),
-                  // Section label
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16.0, vertical: 8.0),
-                    child: Text(
-                      "OPERATIONS",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: theme.primaryColor,
-                        letterSpacing: 1.2,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Container(
+                  constraints: BoxConstraints(maxHeight: 300),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        theme.primaryColor,
+                        theme.primaryColor.withOpacity(0.8),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(25),
+                      bottomRight: Radius.circular(25),
+                    ),
+                  ),
+                  child: SafeArea(
+                    child: Padding(
+                      padding: EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(height: 30),
+                          Row(
+                            children: [
+                              Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(30),
+                                  border:
+                                      Border.all(color: Colors.white, width: 2),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.2),
+                                      blurRadius: 6,
+                                      offset: Offset(0, 3),
+                                    ),
+                                  ],
+                                ),
+                                child: CircleAvatar(
+                                  radius: 25,
+                                  backgroundImage:
+                                      AssetImage("images/profile1.jpg"),
+                                ),
+                              ),
+                              SizedBox(width: 25),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        "${user['data']?['name'] ?? 'Welcome User'}",
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.white,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    SizedBox(height: 4),
+                                    Text(
+                                      "${user['data']?['email'] ?? 'user@company.com'}",
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.white.withOpacity(0.9),
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 20),
+                          Container(
+                            alignment: Alignment.center,
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                  color: Colors.white.withOpacity(0.3)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(FeatherIcons.zap,
+                                    color: Colors.white, size: 12),
+                                SizedBox(width: 4),
+                                Text(
+                                  "AVA PQCS System",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-
-                  singleDrawerItem(
-                      FeatherIcons.truck, "Vehicle Receiving", 5, theme),
-
-                  singleDrawerItem(FeatherIcons.calendar, "Planning", 1, theme),
-                  singleDrawerItem(
-                      FeatherIcons.calendar, "Assembly", 16, theme),
-
-                  Divider(),
-                  // Section label
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16.0, vertical: 8.0),
-                    child: Text(
-                      "QUALITY",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: theme.primaryColor,
-                        letterSpacing: 1.2,
-                      ),
+                ),
+                Expanded(
+                  child: Container(
+                    padding: EdgeInsets.symmetric(vertical: 5),
+                    child: ListView(
+                      padding: EdgeInsets.zero,
+                      physics: BouncingScrollPhysics(),
+                      children: <Widget>[
+                        singleDrawerItem(
+                            FeatherIcons.home, "Dashboard", 0, theme),
+                        _buildSectionDivider("OPERATIONS", theme),
+                        singleDrawerItem(
+                            FeatherIcons.truck, "Vehicle Receiving", 5, theme),
+                        singleDrawerItem(
+                            FeatherIcons.calendar, "Planning", 1, theme),
+                        singleDrawerItem(
+                            FeatherIcons.calendar, "Assembly", 16, theme),
+                        _buildSectionDivider("QUALITY", theme),
+                        singleDrawerItem(
+                            FeatherIcons.folder, "QFL 3/TMS", 2, theme),
+                        singleDrawerItem(
+                            FeatherIcons.folderPlus, "QFL 4", 3, theme),
+                        singleDrawerItem(
+                            FeatherIcons.folderPlus, "QFL 5/6", 56, theme),
+                        singleDrawerItem(
+                            FeatherIcons.folderPlus, "MPA", 33, theme),
+                        _buildSectionDivider("Claims and Defects", theme),
+                        singleDrawerItem(
+                            FeatherIcons.xCircle, "Quality Defects", 14, theme),
+                        singleDrawerItem(
+                            FeatherIcons.messageSquare, "Claims", 15, theme),
+                        _buildSectionDivider("SAFETY", theme),
+                        singleDrawerItem(FeatherIcons.alertTriangle,
+                            "Near Miss Report", 13, theme),
+                        singleDrawerItem(
+                            FeatherIcons.checkSquare, "5S Audit", 12, theme),
+                        _buildSectionDivider("OTHERS", theme),
+                        singleDrawerItem(FeatherIcons.helpCircle,
+                            "Information Desk", 13, theme),
+                        SizedBox(height: 20), // Add bottom padding for scroll
+                      ],
                     ),
                   ),
-                  singleDrawerItem(FeatherIcons.folder, "QFL 3/TMS", 2, theme),
-                  singleDrawerItem(FeatherIcons.folderPlus, "QFL 4", 3, theme),
-                  singleDrawerItem(
-                      FeatherIcons.folderPlus, "QFL 5/6", 56, theme),
-                  singleDrawerItem(FeatherIcons.folderPlus, "MPA", 33, theme),
-                  Divider(),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16.0, vertical: 8.0),
-                    child: Text(
-                      "Claims and Defets",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: theme.primaryColor,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.grey.shade50,
+              Colors.white,
+            ],
+          ),
+        ),
+        child: Column(
+          children: [
+            // Welcome Card
+            Container(
+              margin: EdgeInsets.all(16),
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    theme.primaryColor.withOpacity(0.1),
+                    theme.primaryColor.withOpacity(0.05),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: theme.primaryColor.withOpacity(0.2)),
+                boxShadow: [
+                  BoxShadow(
+                    color: theme.primaryColor.withOpacity(0.1),
+                    blurRadius: 15,
+                    offset: Offset(0, 5),
                   ),
-                  singleDrawerItem(
-                      FeatherIcons.xCircle, "Quality Defects", 14, theme),
-                  singleDrawerItem(
-                      FeatherIcons.messageSquare, "Claims", 15, theme),
-                  Divider(),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16.0, vertical: 8.0),
-                    child: Text(
-                      "SAFETY",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: theme.primaryColor,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                  ),
-                  singleDrawerItem(FeatherIcons.alertTriangle,
-                      "Near Miss Report", 13, theme),
-                  singleDrawerItem(
-                      FeatherIcons.checkSquare, "5S Audit", 12, theme),
-
-                  Divider(),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16.0, vertical: 8.0),
-                    child: Text(
-                      "OTHERS",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: theme.primaryColor,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                  ),
-                  singleDrawerItem(
-                      FeatherIcons.helpCircle, "Information Desk", 13, theme),
-                  // singleDrawerItem(FeatherIcons.user, "Profile", 11, theme),
                 ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(15),
+                    decoration: BoxDecoration(
+                      color: theme.primaryColor,
+                      borderRadius: BorderRadius.circular(15),
+                      boxShadow: [
+                        BoxShadow(
+                          color: theme.primaryColor.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      FeatherIcons.zap,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                  SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Welcome to AVA PQCS",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: theme.primaryColor,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          "Quality Control & Management System",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.green.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: Colors.green,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          "Online",
+                          style: TextStyle(
+                            color: Colors.green[700],
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Image Slider
+            Container(
+              margin: EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 15,
+                    offset: Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: BeautySlider(items: sliderItems),
+              ),
+            ),
+            SizedBox(height: 16),
+            // Dashboard Content
+            Expanded(
+              child: Container(
+                margin: EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(25),
+                    topRight: Radius.circular(25),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: Offset(0, -5),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(25),
+                    topRight: Radius.circular(25),
+                  ),
+                  child: RunningShopsDashboardWidget(),
+                ),
               ),
             ),
           ],
         ),
       ),
-      body: Column(
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: theme.primaryColor.withOpacity(0.3),
+              blurRadius: 15,
+              offset: Offset(0, 6),
+            ),
+          ],
+        ),
+        child: FloatingActionButton.extended(
+          onPressed: () {
+            // Show quick actions bottom sheet
+            _showQuickActionsBottomSheet(context, theme);
+          },
+          backgroundColor: theme.primaryColor,
+          elevation: 0,
+          icon: Container(
+            padding: EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              FeatherIcons.zap,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+          label: Text(
+            "Quick Actions",
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showQuickActionsBottomSheet(BuildContext context, ThemeData theme) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.6,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(25),
+            topRight: Radius.circular(25),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: Offset(0, -5),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Container(
+              margin: EdgeInsets.only(top: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: theme.primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      FeatherIcons.zap,
+                      color: theme.primaryColor,
+                      size: 20,
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Text(
+                    "Quick Actions",
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.grey[800],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: GridView.count(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 1.2,
+                  children: [
+                    _buildQuickActionCard(
+                      FeatherIcons.truck,
+                      "Vehicle\nReceiving",
+                      Colors.blue,
+                      () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => DisplayVehicles())),
+                    ),
+                    _buildQuickActionCard(
+                      FeatherIcons.calendar,
+                      "Planning",
+                      Colors.green,
+                      () => PlanningHome().launch(context,
+                          pageRouteAnimation: PageRouteAnimation.Slide),
+                    ),
+                    _buildQuickActionCard(
+                      FeatherIcons.folder,
+                      "QFL 3/TMS",
+                      Colors.orange,
+                      () => TMSUnits().launch(context,
+                          pageRouteAnimation: PageRouteAnimation.Slide),
+                    ),
+                    _buildQuickActionCard(
+                      FeatherIcons.xCircle,
+                      "Quality\nDefects",
+                      Colors.red,
+                      () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => DefectsUnit())),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActionCard(
+      IconData icon, String title, Color color, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withOpacity(0.3)),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.1),
+              blurRadius: 8,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Icon(
+                icon,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+            SizedBox(height: 12),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: color.withOpacity(0.8),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionDivider(String title, ThemeData theme) {
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 4, horizontal: 16),
+      child: Column(
         children: [
-          BeautySlider(items: sliderItems),
-          SizedBox(height: 10),
-          Expanded(child: RunningShopsDashboardWidget()),
+          Divider(color: Colors.grey.shade300, thickness: 0.5, height: 6),
+          SizedBox(height: 2),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: theme.primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: theme.primaryColor.withOpacity(0.3)),
+            ),
+            child: Text(
+              title,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 9,
+                color: theme.primaryColor,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ),
+          SizedBox(height: 2),
         ],
       ),
     );
@@ -222,19 +729,47 @@ class _HomeScreanState extends State<HomeScrean> {
 
   Widget singleDrawerItem(
       IconData iconData, String title, int position, ThemeData theme) {
-    return ListTile(
-        leading: Icon(
-          iconData,
-          color:
-              _selectedPage == position ? theme.primaryColor : Colors.grey[700],
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 8, vertical: 1),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        color: _selectedPage == position
+            ? theme.primaryColor.withOpacity(0.1)
+            : Colors.transparent,
+      ),
+      child: ListTile(
+        dense: true,
+        contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+        minVerticalPadding: 0,
+        leading: Container(
+          padding: EdgeInsets.all(5),
+          decoration: BoxDecoration(
+            color: _selectedPage == position
+                ? theme.primaryColor
+                : Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Icon(
+            iconData,
+            color: _selectedPage == position ? Colors.white : Colors.grey[600],
+            size: 16,
+          ),
         ),
         title: Text(
           title,
           style: TextStyle(
             fontWeight:
-                _selectedPage == position ? FontWeight.w600 : FontWeight.w500,
+                _selectedPage == position ? FontWeight.w700 : FontWeight.w500,
+            color: _selectedPage == position
+                ? theme.primaryColor
+                : Colors.grey[800],
+            fontSize: 12,
           ),
         ),
+        trailing: _selectedPage == position
+            ? Icon(FeatherIcons.chevronRight,
+                color: theme.primaryColor, size: 14)
+            : null,
         onTap: () {
           setState(() {
             _selectedPage = position;
@@ -242,33 +777,27 @@ class _HomeScreanState extends State<HomeScrean> {
           // Navigate based on selected position
           switch (position) {
             case 0:
-              _scaffoldKey.currentState!.openEndDrawer();
+              _scaffoldKey.currentState!.closeDrawer();
               break;
             case 1:
-              // SCheduleUnits().launch(context,
               PlanningHome().launch(context,
                   pageRouteAnimation: PageRouteAnimation.Slide);
               break;
             case 56:
               QFLPage().launch(context,
                   pageRouteAnimation: PageRouteAnimation.Slide);
-              // QFLPage
-              // SCheduleUnits().launch(context,
               break;
             case 2:
               TMSUnits().launch(context,
                   pageRouteAnimation: PageRouteAnimation.Slide);
-
               break;
             case 33:
               QFLThreeList().launch(context,
                   pageRouteAnimation: PageRouteAnimation.Slide);
-
               break;
             case 3:
               QFL4().launch(context,
                   pageRouteAnimation: PageRouteAnimation.Slide);
-
               break;
             case 5:
               Navigator.push(
@@ -313,6 +842,8 @@ class _HomeScreanState extends State<HomeScrean> {
               );
               break;
           }
-        });
+        },
+      ),
+    );
   }
 }

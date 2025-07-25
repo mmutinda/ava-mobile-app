@@ -1,19 +1,13 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
-import 'package:isuze_pqcs/pages/Receiving/ProgressPhotosHome.dart';
 import 'package:isuze_pqcs/pages/Receiving/ViewQcdata.dart';
-import 'package:isuze_pqcs/pages/Receiving/WizardForm.dart';
-import 'package:isuze_pqcs/pages/Receiving/form_receiving.dart';
 import 'package:isuze_pqcs/pages/Receiving/receivingChecklist.dart';
 import 'package:isuze_pqcs/pages/Receiving/widget.dart';
-import 'package:isuze_pqcs/pages/planning/scheduleUnits.dart';
 import 'package:nb_utils/nb_utils.dart';
 import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
 
@@ -26,22 +20,27 @@ class QClist extends StatefulWidget {
   State<QClist> createState() => _QClistState();
 }
 
-class _QClistState extends State<QClist> {
+class _QClistState extends State<QClist> with SingleTickerProviderStateMixin {
   var user = {};
   var vehicles = [];
-  // var vehicles;
   var loadingText = '';
   bool isLoading = false;
   TextEditingController searchController = TextEditingController();
   String searchText = '';
   bool _isSearching = false;
-  final List<Color> colors = [
-    Colors.amber.shade900,
-    Colors.indigo,
-    Colors.teal,
-  ];
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
   @override
   void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+
     getuserdata().then((value) {
       setState(() {
         user = jsonDecode(value);
@@ -54,11 +53,16 @@ class _QClistState extends State<QClist> {
               loadingText = 'No Any Lot available at the moment';
             });
           }
+          _animationController.forward();
         },
       );
-      ;
     });
-    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   @override
@@ -83,14 +87,50 @@ class _QClistState extends State<QClist> {
 
     return Scaffold(
       appBar: AppBar(
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [mycolor, mycolor.withOpacity(0.8)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        foregroundColor: Colors.white,
         title: _isSearching
             ? _buildSearchField()
-            : Text('Units in Lot ${widget.LotNo}'),
+            : Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.inventory_2, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Units in Lot ${widget.LotNo}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
         actions: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
+          Container(
+            margin: const EdgeInsets.only(right: 16),
             child: IconButton(
               icon: Icon(_isSearching ? Icons.close : Icons.search),
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.white.withOpacity(0.2),
+                foregroundColor: Colors.white,
+              ),
               onPressed: () {
                 setState(() {
                   _isSearching = !_isSearching;
@@ -123,6 +163,106 @@ class _QClistState extends State<QClist> {
         },
         child: Column(
           children: [
+            // Header stats card
+            if (vehicles.isNotEmpty)
+              FadeTransition(
+                opacity: _fadeAnimation,
+                child: Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.blue.shade50, Colors.blue.shade100],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: mycolor.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: mycolor,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.directions_car,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Total Vehicles',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey.shade600,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${vehicles.length}',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: mycolor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: vehicles.every((v) =>
+                                  v['receiving_checklist_done']
+                                      ?.toString()
+                                      .toLowerCase() ==
+                                  'yes')
+                              ? Colors.green.shade100
+                              : Colors.orange.shade100,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          vehicles.every((v) =>
+                                  v['receiving_checklist_done']
+                                      ?.toString()
+                                      .toLowerCase() ==
+                                  'yes')
+                              ? 'All Complete'
+                              : 'In Progresss',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: vehicles.every((v) =>
+                                    v['receiving_checklist_done']
+                                        ?.toString()
+                                        .toLowerCase() ==
+                                    'yes')
+                                ? Colors.green.shade700
+                                : Colors.orange.shade700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
             Expanded(
               child: SizedBox(
                   child: isLoading
@@ -144,162 +284,351 @@ class _QClistState extends State<QClist> {
                               },
                             )
                           : SizedBox(
-                              child: ListView.builder(
-                                itemCount: vehicles.length,
-                                itemBuilder: (context, index) {
-                                  var vehicle = vehicles[index];
-                                  var chassis_number =
-                                      vehicle["chassis_number"];
-                                  var engine_no =
-                                      vehicles[index]["engine_number"];
+                              child: FadeTransition(
+                                opacity: _fadeAnimation,
+                                child: ListView.builder(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16),
+                                  itemCount: vehicles.length,
+                                  itemBuilder: (context, index) {
+                                    var vehicle = vehicles[index];
+                                    var chassis_number =
+                                        vehicle["chassis_number"];
+                                    var engine_no =
+                                        vehicles[index]["engine_number"];
+                                    bool isCompleted =
+                                        vehicle['receiving_checklist_done']
+                                                ?.toString()
+                                                .toLowerCase() ==
+                                            'yes';
 
-                                  Color categoryColor =
-                                      colors[index % colors.length];
+                                    if (searchText.isNotEmpty &&
+                                        !(chassis_number.toLowerCase().contains(
+                                                searchText.toLowerCase()) ||
+                                            engine_no.toLowerCase().contains(
+                                                searchText.toLowerCase()))) {
+                                      return const SizedBox.shrink();
+                                    }
 
-                                  if (searchText.isNotEmpty &&
-                                      !(chassis_number.toLowerCase().contains(
-                                              searchText.toLowerCase()) ||
-                                          engine_no.toLowerCase().contains(
-                                              searchText.toLowerCase()) ||
-                                          engine_no.toLowerCase().contains(
-                                              searchText.toLowerCase()))) {
-                                    return Container(); // Return an empty container if not matching
-                                  }
-                                  return Column(
-                                    children: [
-                                      const SizedBox(height: 5),
-
-                                      // 📦 Card with vehicle info
-                                      Stack(
+                                    return Container(
+                                      margin: const EdgeInsets.only(bottom: 16),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            Colors.white,
+                                            Colors.grey.shade50
+                                          ],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        ),
+                                        borderRadius: BorderRadius.circular(16),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color:
+                                                Colors.black.withOpacity(0.08),
+                                            blurRadius: 10,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Stack(
                                         children: [
-                                          // 🔳 Main container with shadow and rounded corners
-                                          Container(
-                                            padding: const EdgeInsets.all(5),
-                                            decoration: boxDecoration(
-                                              radius: 10,
-                                              showShadow: true,
-                                              bgColor: Colors.white,
-                                            ),
-                                            child: ListTile(
-                                              contentPadding: EdgeInsets.zero,
-                                              // 🔵 Leading: index circle
-                                              leading: CircleAvatar(
-                                                backgroundColor:
-                                                    const Color.fromARGB(
-                                                        255, 168, 88, 32),
-                                                foregroundColor: Colors.white,
-                                                child: Text("${index + 1}"),
-                                              ),
-
-                                              // 🏷️ Title: Chassis info
-                                              title: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  const Text('Chassis No'),
-                                                  Text(
-                                                    vehicles[index][
-                                                            'chassis_number'] ??
-                                                        '',
-                                                    style: TextStyle(
-                                                      color: Colors.amber[900],
-                                                      fontWeight:
-                                                          FontWeight.bold,
+                                          // Main content
+                                          Padding(
+                                            padding: const EdgeInsets.all(16),
+                                            child: Row(
+                                              children: [
+                                                // Vehicle number with gradient
+                                                Container(
+                                                  width: 60,
+                                                  height: 60,
+                                                  decoration: BoxDecoration(
+                                                    gradient: LinearGradient(
+                                                      colors: isCompleted
+                                                          ? [
+                                                              Colors.green
+                                                                  .shade400,
+                                                              Colors.green
+                                                                  .shade600
+                                                            ]
+                                                          : [
+                                                              mycolor,
+                                                              mycolor
+                                                                  .withOpacity(
+                                                                      0.8)
+                                                            ],
+                                                      begin: Alignment.topLeft,
+                                                      end:
+                                                          Alignment.bottomRight,
+                                                    ),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            16),
+                                                    boxShadow: [
+                                                      BoxShadow(
+                                                        color: (isCompleted
+                                                                ? Colors.green
+                                                                : mycolor)
+                                                            .withOpacity(0.3),
+                                                        blurRadius: 8,
+                                                        offset:
+                                                            const Offset(0, 4),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  child: Center(
+                                                    child: Text(
+                                                      "${index + 1}",
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        fontSize: 18,
+                                                      ),
                                                     ),
                                                   ),
-                                                ],
-                                              ),
+                                                ),
 
-                                              // 📝 Subtitle: Engine info
+                                                const SizedBox(width: 16),
 
-                                              // 👉 Trailing: Action button
-                                              trailing: Container(
-                                                decoration: BoxDecoration(
-                                                  border: Border.all(
-                                                      color: categoryColor),
-                                                  borderRadius:
-                                                      const BorderRadius.only(
-                                                    topRight:
-                                                        Radius.circular(10),
+                                                // Vehicle details
+                                                Expanded(
+                                                  child: Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Row(
+                                                        children: [
+                                                          Text(
+                                                            'Chassis No',
+                                                            style: TextStyle(
+                                                              fontSize: 12,
+                                                              color: Colors.grey
+                                                                  .shade600,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w500,
+                                                            ),
+                                                          ),
+                                                          const Spacer(),
+                                                          Container(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .symmetric(
+                                                                    horizontal:
+                                                                        8,
+                                                                    vertical:
+                                                                        4),
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              color: isCompleted
+                                                                  ? Colors.green
+                                                                      .shade100
+                                                                  : Colors
+                                                                      .orange
+                                                                      .shade100,
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          12),
+                                                            ),
+                                                            child: Text(
+                                                              isCompleted
+                                                                  ? 'Completed'
+                                                                  : 'Pending',
+                                                              style: TextStyle(
+                                                                fontSize: 10,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w600,
+                                                                color: isCompleted
+                                                                    ? Colors
+                                                                        .green
+                                                                        .shade700
+                                                                    : Colors
+                                                                        .orange
+                                                                        .shade700,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      const SizedBox(height: 4),
+                                                      Text(
+                                                        chassis_number ?? '',
+                                                        style: TextStyle(
+                                                          fontSize: 16,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          color: Colors
+                                                              .blue.shade700,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      Text(
+                                                        'Engine: ${engine_no ?? 'N/A'}',
+                                                        style: TextStyle(
+                                                          fontSize: 12,
+                                                          color: Colors
+                                                              .grey.shade600,
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
                                                 ),
-                                                child: TextButton(
-                                                  onPressed: () {
+
+                                                const SizedBox(width: 12),
+
+                                                // Action button
+                                                Container(
+                                                  decoration: BoxDecoration(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            12),
+                                                    gradient: LinearGradient(
+                                                      colors: isCompleted
+                                                          ? [
+                                                              Colors.blue
+                                                                  .shade400,
+                                                              Colors
+                                                                  .blue.shade600
+                                                            ]
+                                                          : [
+                                                              Colors.orange
+                                                                  .shade400,
+                                                              Colors.orange
+                                                                  .shade600
+                                                            ],
+                                                      begin: Alignment.topLeft,
+                                                      end:
+                                                          Alignment.bottomRight,
+                                                    ),
+                                                  ),
+                                                  child: ElevatedButton(
+                                                    onPressed: () {
+                                                      if (isCompleted) {
+                                                        Navigator.push(
+                                                          context,
+                                                          MaterialPageRoute(
+                                                            builder: (_) => QCView(
+                                                                chasis:
+                                                                    chassis_number,
+                                                                Id: vehicle[
+                                                                    'id']),
+                                                          ),
+                                                        ).then((_) =>
+                                                            fetchVehicles());
+                                                      } else {
+                                                        Navigator.push(
+                                                          context,
+                                                          MaterialPageRoute(
+                                                            builder: (_) =>
+                                                                QCChecklist(
+                                                              id: vehicle['id'],
+                                                              title:
+                                                                  chassis_number,
+                                                              sku:
+                                                                  chassis_number,
+                                                            ),
+                                                          ),
+                                                        ).then((_) =>
+                                                            fetchVehicles());
+                                                      }
+                                                    },
+                                                    style: ElevatedButton
+                                                        .styleFrom(
+                                                      backgroundColor:
+                                                          Colors.transparent,
+                                                      shadowColor:
+                                                          Colors.transparent,
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                          horizontal: 20,
+                                                          vertical: 12),
+                                                      shape:
+                                                          RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(12),
+                                                      ),
+                                                    ),
+                                                    child: Text(
+                                                      isCompleted
+                                                          ? "View"
+                                                          : "Start",
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        fontSize: 12,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+
+                                          // Tap overlay
+                                          Positioned.fill(
+                                            child: Material(
+                                              color: Colors.transparent,
+                                              child: InkWell(
+                                                borderRadius:
+                                                    BorderRadius.circular(16),
+                                                onTap: () {
+                                                  if (isCompleted) {
                                                     Navigator.push(
                                                       context,
                                                       MaterialPageRoute(
-                                                        builder: (_) => vehicles[
-                                                                        index][
-                                                                    'receiving_checklist_done'] ==
-                                                                'Yes'
-                                                            ? QCView(
-                                                                chasis: vehicles[
-                                                                        index][
-                                                                    'chassis_number'],
-                                                                Id: vehicles[
-                                                                        index]
-                                                                    ['id'])
-                                                            : QCChecklist(
-                                                                id: vehicles[
-                                                                        index]
-                                                                    ['id'],
-                                                                title: vehicles[
-                                                                        index][
-                                                                    'chassis_number'],
-                                                                sku: vehicles[
-                                                                        index][
-                                                                    'chassis_number'],
-                                                              ),
+                                                        builder: (_) => QCView(
+                                                            chasis:
+                                                                chassis_number,
+                                                            Id: vehicle['id']),
                                                       ),
                                                     ).then(
                                                         (_) => fetchVehicles());
-                                                  },
-                                                  child: Text(
-                                                    vehicles[index][
-                                                                'receiving_checklist_done'] ==
-                                                            'Yes'
-                                                        ? "View"
-                                                        : "Start Inspection",
-                                                    style: const TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                ),
+                                                  } else {
+                                                    Navigator.push(
+                                                      context,
+                                                      MaterialPageRoute(
+                                                        builder: (_) =>
+                                                            QCChecklist(
+                                                          id: vehicle['id'],
+                                                          title: chassis_number,
+                                                          sku: chassis_number,
+                                                        ),
+                                                      ),
+                                                    ).then(
+                                                        (_) => fetchVehicles());
+                                                  }
+                                                },
                                               ),
-
-                                              // 🖱️ Whole tile onTap: same action as trailing
-                                              onTap: () {
-                                                Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder: (_) => QCChecklist(
-                                                      id: vehicles[index]['id'],
-                                                      title: vehicles[index]
-                                                          ['chassis_number'],
-                                                      sku: vehicles[index]
-                                                          ['chassis_number'],
-                                                    ),
-                                                  ),
-                                                ).then((_) => fetchVehicles());
-                                              },
                                             ),
                                           ),
                                         ],
                                       ),
-
-                                      const SizedBox(height: 10),
-                                    ],
-                                  );
-                                },
+                                    );
+                                  },
+                                ),
                               ),
                             )),
             ),
+            // Enhanced bottom button
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
+              ),
               child: Builder(builder: (context) {
-                // Check if ALL vehicles are completed
                 final allChecklistsDone = vehicles.isNotEmpty &&
                     vehicles.every((v) =>
                         v['receiving_checklist_done']
@@ -307,53 +636,101 @@ class _QClistState extends State<QClist> {
                             .toLowerCase() ==
                         'yes');
 
-                return ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: allChecklistsDone ? mycolor : Colors.grey,
-                    padding: const EdgeInsets.all(15),
-                    foregroundColor: Colors.white,
-                    textStyle: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                return Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: allChecklistsDone
+                          ? [Colors.green.shade400, Colors.green.shade600]
+                          : [Colors.grey.shade300, Colors.grey.shade400],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: allChecklistsDone
+                        ? [
+                            BoxShadow(
+                              color: Colors.green.withOpacity(0.3),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ]
+                        : [],
+                  ),
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    onPressed: allChecklistsDone
+                        ? () async {
+                            final result = await showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (_) => LotIssueDialogReceiving(
+                                lotId: widget.Id,
+                                user: user['data']['token'],
+                                lotNumber: widget.LotNo,
+                              ),
+                            );
+
+                            if (result != null) {
+                              print("Push to Planning with: $result");
+                            }
+                          }
+                        : () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Row(
+                                  children: [
+                                    Icon(Icons.warning_amber_rounded,
+                                        color: Colors.white),
+                                    const SizedBox(width: 12),
+                                    const Expanded(
+                                      child: Text(
+                                        "Complete all vehicle inspections first",
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.w500),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                backgroundColor: Colors.orange.shade600,
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                margin: const EdgeInsets.all(16),
+                              ),
+                            );
+                          },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          allChecklistsDone ? Icons.rocket_launch : Icons.lock,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          "Push to Planning",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  onPressed: allChecklistsDone
-                      ? () async {
-                          final result = await showDialog(
-                            context: context,
-                            barrierDismissible: false,
-                            builder: (_) => LotIssueDialogReceiving(
-                              lotId: widget.Id,
-                              user: user['data']['token'],
-                              lotNumber: widget.LotNo,
-                            ),
-                          );
-
-                          if (result != null) {
-                            // ✅ Do your push to planning with issue details
-                            print("Push to Planning with: $result");
-                          }
-                        }
-                      : () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              margin: const EdgeInsets.all(50),
-                              padding: const EdgeInsets.all(10),
-                              behavior: SnackBarBehavior.floating,
-                              content: const Text(
-                                  "Inspection incomplete for some vehicles."),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        },
-                  child: const Text("Push to Planning"),
                 );
               }),
             ),
-            SizedBox(height: 5),
           ],
         ),
       ),

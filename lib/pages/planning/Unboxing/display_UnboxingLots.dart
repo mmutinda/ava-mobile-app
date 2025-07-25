@@ -5,7 +5,6 @@ import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
-import 'package:isuze_pqcs/pages/Receiving/QcList.dart';
 import 'package:isuze_pqcs/pages/planning/Unboxing/UnboxingList.dart';
 import 'package:isuze_pqcs/pages/planning/scheduleUnits.dart';
 import 'package:nb_utils/nb_utils.dart';
@@ -137,9 +136,7 @@ class _display_UnboxingLotsState extends State<display_UnboxingLots> {
                         child: ListView.builder(
                           itemCount: vehicles.length,
                           itemBuilder: (context, index) {
-                            // Sort vehicles by delivery_date in descending order
-                            vehicles.sort((a, b) {
-                              // Assuming delivery_date is in a format that can be directly compared as strings
+                            vehicles.sort((a, b) {       
                               return b['created_at'].compareTo(a['created_at']);
                             });
                             var vehicle = vehicles[index];
@@ -147,13 +144,6 @@ class _display_UnboxingLotsState extends State<display_UnboxingLots> {
                             var engine_no = vehicles[index]["engine_no"];
                             var client = vehicles[index]["customer"]["name"];
                             Color categoryColor = colors[index % colors.length];
-                            // Check if the title contains the search text
-                            // if (searchText.isNotEmpty &&
-                            //     !(chasisNo
-                            //         .toLowerCase()
-                            //         .contains(searchText.toLowerCase()))||) {
-                            //   return Container();
-                            // }
                             if (searchText.isNotEmpty &&
                                 !(vin_no
                                         .toLowerCase()
@@ -195,15 +185,11 @@ class _display_UnboxingLotsState extends State<display_UnboxingLots> {
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          // Text('Insprcted 0 out of 10'),
-                                          // Text('VIN: ${vehicles[index].vin}'),
                                           Row(
                                             children: [
                                               Text(
                                                   'lOT Number: ${vehicles[index]['lot_number']}'),
                                               width(),
-                                              // if (vehicles[index]['job_no'] !=
-                                              //     null)
                                               Text(
                                                   'lOT Quantity: ${vehicles[index]['lot_qty'] ?? 'N/A'}'),
                                             ],
@@ -242,13 +228,15 @@ class _display_UnboxingLotsState extends State<display_UnboxingLots> {
                                       ),
                                       onTap: () {
                                         Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                                builder: (context) => QClist(
-                                                      Id: vehicles[index]['id'],
-                                                      LotNo: vehicles[index]
-                                                          ['lot_number'],
-                                                    ))).then((value) {
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => UnboxingList(
+                                              Id: vehicles[index]['id'],
+                                              LotNo: vehicles[index]
+                                                  ['lot_number'],
+                                            ),
+                                          ),
+                                        ).then((value) {
                                           fetchVehicles();
                                         });
                                       },
@@ -340,8 +328,6 @@ class _display_UnboxingLotsState extends State<display_UnboxingLots> {
           isLoading = false;
           loadingText = internetmessage;
         });
-        // ScaffoldMessenger.of(context)
-        //     .showSnackBar(snackBar(internetmessage, snackred));
       }
     });
   }
