@@ -350,7 +350,10 @@ class _DisplayVehiclesState extends State<DisplayVehicles>
                   child: isLoading
                       ? _buildLoadingWidget(theme)
                       : loadingText.isNotEmpty
-                          ? _buildErrorWidget(theme)
+                          ? SizedBox(
+                              height: MediaQuery.of(context).size.height * 0.4,
+                              child: _buildErrorWidget(theme),
+                            )
                           : _buildVehiclesList(theme),
                 ),
               ),
@@ -487,7 +490,7 @@ class _DisplayVehiclesState extends State<DisplayVehicles>
                 (value) {
                   if (vehicles.isEmpty) {
                     setState(() {
-                      loadingText = 'No vehicles available at the moment';
+                      loadingText = 'No any Lot available at the moment';
                     });
                   }
                 },
@@ -561,17 +564,21 @@ class _DisplayVehiclesState extends State<DisplayVehicles>
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => QClist(
-                  Id: vehicles[index]['id'],
-                  LotNo: vehicles[index]['lot_number'],
+            if (widget.isPlanning == 'Yes') {
+              _showBaySelectionDialog(vehicle, index);
+            } else {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => QClist(
+                    Id: vehicles[index]['id'],
+                    LotNo: vehicles[index]['lot_number'],
+                  ),
                 ),
-              ),
-            ).then((value) {
-              fetchVehicles();
-            });
+              ).then((value) {
+                fetchVehicles();
+              });
+            }
           },
           child: Padding(
             padding: EdgeInsets.all(20),
@@ -765,7 +772,13 @@ class _DisplayVehiclesState extends State<DisplayVehicles>
     String? selectedRoute = 'Route 1';
 
     // ID maps
-    final bayIds = {'Bay 1': 'Bay 1', 'Bay 2': 'Bay 2', 'Bay 3': 'Bay 3'};
+    final bayIds = {
+      'Bay 1': 'Bay 1',
+      'Bay 2': 'Bay 2',
+      'Bay 3': 'Bay 3',
+      'Bay 4': 'Bay 4',
+      'Bus Bay': 'Bus Bay',
+    };
     final routeIds = {'Route 1': '1', 'Route 2': '2', 'Route 3': '3'};
 
     showDialog(
@@ -845,7 +858,13 @@ class _DisplayVehiclesState extends State<DisplayVehicles>
                         children: [
                           _buildStyledDropdown(
                             value: selectedBay!,
-                            items: ['Bay 1', 'Bay 2', 'Bay 3'],
+                            items: [
+                              'Bay 1',
+                              'Bay 2',
+                              'Bay 3',
+                              'Bay 4',
+                              'Bus Bay'
+                            ],
                             label: 'Select Bay',
                             icon: FeatherIcons.mapPin,
                             onChanged: (value) {

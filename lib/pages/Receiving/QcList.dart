@@ -276,7 +276,7 @@ class _QClistState extends State<QClist> with SingleTickerProviderStateMixin {
                                     if (vehicles.isEmpty) {
                                       setState(() {
                                         loadingText =
-                                            'No vehicles available at the moment';
+                                            'No Any Lot available at the moment';
                                       });
                                     }
                                   },
@@ -346,10 +346,10 @@ class _QClistState extends State<QClist> with SingleTickerProviderStateMixin {
                                                     gradient: LinearGradient(
                                                       colors: isCompleted
                                                           ? [
-                                                              Colors.green
-                                                                  .shade400,
-                                                              Colors.green
-                                                                  .shade600
+                                                              mycolor,
+                                                              mycolor
+                                                                  .withOpacity(
+                                                                      0.8)
                                                             ]
                                                           : [
                                                               mycolor,
@@ -641,7 +641,7 @@ class _QClistState extends State<QClist> with SingleTickerProviderStateMixin {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: allChecklistsDone
-                          ? [Colors.green.shade400, Colors.green.shade600]
+                          ? [mycolor.withOpacity(0.8), mycolor]
                           : [Colors.grey.shade300, Colors.grey.shade400],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -650,7 +650,7 @@ class _QClistState extends State<QClist> with SingleTickerProviderStateMixin {
                     boxShadow: allChecklistsDone
                         ? [
                             BoxShadow(
-                              color: Colors.green.withOpacity(0.3),
+                              color: mycolor.withOpacity(0.3),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
