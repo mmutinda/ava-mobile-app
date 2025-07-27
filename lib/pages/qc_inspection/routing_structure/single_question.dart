@@ -151,28 +151,6 @@ class _SingleQuestionState extends State<SingleQuestion>
                         ),
                         Column(
                           children: [
-                            // widget.initialRadioValue != null
-                            //     ? Row(
-                            //         children: [
-                            //           Container(
-                            //             decoration: BoxDecoration(
-                            //                 borderRadius:
-                            //                     BorderRadius.circular(10),
-                            //                 color: widget.initialRadioValue ==
-                            //                         'NOK'
-                            //                     ? Colors.red
-                            //                     : Colors.green),
-                            //             padding: EdgeInsets.all(8),
-                            //             child: Text(
-                            //               "${widget.initialRadioValue}",
-                            //               style: TextStyle(
-                            //                 color: textWhite,
-                            //               ),
-                            //             ),
-                            //           ),
-                            //         ],
-                            //       )
-                            //     :
                             Row(
                               children: [
                                 Radio(
@@ -248,60 +226,56 @@ class _SingleQuestionState extends State<SingleQuestion>
                                         ),
                                   ),
                           )
-                        : (widget.hasDescription == 'Yes')
-                            ? Row(
-                                children: [
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(8.0),
-                                      child: TextFormField(
-                                        maxLines: null,
-                                        // enabled:
-                                        //     widget.initialDecripValue.runtimeType ==
-                                        //                 Null &&
-                                        //             widget.initialRadioValue == null
-                                        //         ? true
-                                        //         : false,
-                                        controller: inputController,
-                                        decoration: InputDecoration(
-                                          labelText: 'Description',
-                                          isDense: true,
-                                          hintText: '',
-                                          floatingLabelBehavior:
-                                              FloatingLabelBehavior.always,
-                                          border: OutlineInputBorder(),
-                                          // filled: true,
-                                          // fillColor: mycolor.withOpacity(0.06),
-                                        ),
-                                      ),
+                        :
+                        // (widget.hasDescription == 'Yes')
+                        //     ?
+                        Row(
+                            children: [
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: TextFormField(
+                                    maxLines: null,
+                                    controller: inputController,
+                                    decoration: InputDecoration(
+                                      labelText: 'Description',
+                                      isDense: true,
+                                      hintText: '',
+                                      floatingLabelBehavior:
+                                          FloatingLabelBehavior.always,
+                                      border: OutlineInputBorder(),
+                                      // filled: true,
+                                      // fillColor: mycolor.withOpacity(0.06),
                                     ),
                                   ),
-                                  Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: widget.initialImage == null
-                                        ? GestureDetector(
-                                            onTap: _captureImage,
-                                            child: Container(
-                                              padding: EdgeInsets.all(8),
-                                              // width: 80,
-                                              // height: 80,
-                                              decoration: BoxDecoration(
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: Center(
-                                                child: Icon(
-                                                  Icons.camera_alt,
-                                                  color: Colors.teal,
-                                                  size: 30,
-                                                ),
-                                              ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: widget.initialImage == null
+                                    ? GestureDetector(
+                                        onTap: _captureImage,
+                                        child: Container(
+                                          padding: EdgeInsets.all(8),
+                                          // width: 80,
+                                          // height: 80,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Center(
+                                            child: Icon(
+                                              Icons.camera_alt,
+                                              color: Colors.teal,
+                                              size: 30,
                                             ),
-                                          )
-                                        : Container(),
-                                  ),
-                                ],
-                              )
-                            : Container(),
+                                          ),
+                                        ),
+                                      )
+                                    : Container(),
+                              ),
+                            ],
+                          ),
+                    // : Container(),
 
                     if (widget.can_sign == 'Yes' &&
                         widget.checkanswered == false) ...[

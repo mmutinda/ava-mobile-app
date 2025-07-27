@@ -13,6 +13,8 @@ import 'package:isuze_pqcs/pages/claimforms/FiveS.dart';
 import 'package:isuze_pqcs/pages/claimforms/claimHome.dart';
 import 'package:isuze_pqcs/pages/claimforms/nearMiss.dart';
 import 'package:isuze_pqcs/pages/defetects/QCDefectsUnits.dart';
+import 'package:isuze_pqcs/pages/help/help_page.dart';
+import 'package:isuze_pqcs/pages/login/login.dart';
 import 'package:isuze_pqcs/pages/planning/planningHome.dart';
 
 import 'package:isuze_pqcs/pages/profile_screen.dart';
@@ -261,7 +263,7 @@ class _HomeScreanState extends State<HomeScrean> {
                                     color: Colors.white, size: 12),
                                 SizedBox(width: 4),
                                 Text(
-                                  "AVA PQCS System",
+                                  "InfoPlus System",
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w600,
@@ -312,8 +314,13 @@ class _HomeScreanState extends State<HomeScrean> {
                         singleDrawerItem(
                             FeatherIcons.checkSquare, "5S Audit", 12, theme),
                         _buildSectionDivider("OTHERS", theme),
-                        singleDrawerItem(FeatherIcons.helpCircle,
-                            "Information Desk", 13, theme),
+                        singleDrawerItem(
+                            FeatherIcons.helpCircle, "Help", 133, theme),
+                        _buildSectionDivider("ACCOUNT", theme),
+                        singleDrawerItem(
+                            FeatherIcons.user, "My Profile", 11, theme),
+                        singleDrawerItem(
+                            FeatherIcons.logOut, "Logout", 99, theme),
                         SizedBox(height: 20), // Add bottom padding for scroll
                       ],
                     ),
@@ -387,7 +394,7 @@ class _HomeScreanState extends State<HomeScrean> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Welcome to AVA PQCS",
+                          "Welcome to InfoPlus",
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
@@ -624,13 +631,13 @@ class _HomeScreanState extends State<HomeScrean> {
                           pageRouteAnimation: PageRouteAnimation.Slide),
                     ),
                     _buildQuickActionCard(
-                      FeatherIcons.xCircle,
-                      "Quality\nDefects",
-                      Colors.red,
+                      FeatherIcons.user,
+                      "My Profile",
+                      Colors.purple,
                       () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => DefectsUnit())),
+                              builder: (context) => ProfileTab())),
                     ),
                   ],
                 ),
@@ -841,9 +848,157 @@ class _HomeScreanState extends State<HomeScrean> {
                 MaterialPageRoute(builder: (context) => AssemblyStations()),
               );
               break;
+            case 133:
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => HelpPage()),
+              );
+              break;
+            case 99:
+              _showLogoutDialog(context);
+              break;
           }
         },
       ),
     );
+  }
+
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Container(
+            padding: EdgeInsets.symmetric(vertical: 10),
+            child: Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.red.shade400, Colors.red.shade600],
+                    ),
+                    shape: BoxShape.circle,
+                  ),
+                  child:
+                      Icon(FeatherIcons.logOut, color: Colors.white, size: 20),
+                ),
+                SizedBox(width: 12),
+                Text(
+                  "Confirm Logout",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          content: Text(
+            "Are you sure you want to logout from your account?",
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                "Cancel",
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.red.shade400, Colors.red.shade600],
+                ),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _performLogout();
+                },
+                child: Text(
+                  "Logout",
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _performLogout() async {
+    try {
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return Center(
+            child: Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(15),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                        Theme.of(context).primaryColor),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    "Logging you out...",
+                    style: TextStyle(
+                      color: Colors.grey.shade700,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+
+      // Clear user data
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+
+      // Close loading dialog
+      Navigator.pop(context);
+
+      // Navigate to login page
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const Login()),
+        (_) => false,
+      );
+    } catch (e) {
+      // Close loading dialog if still open
+      Navigator.pop(context);
+
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Error during logout. Please try again."),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }

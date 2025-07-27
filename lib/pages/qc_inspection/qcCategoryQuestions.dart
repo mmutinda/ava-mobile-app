@@ -12,7 +12,6 @@ import 'package:isuze_pqcs/pages/assembly/assembly_stations.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/QcViewlistDefects.dart';
 import 'package:isuze_pqcs/pages/claimforms/RaiseClaim.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/jobcard_questions_template.dart';
-import 'package:isuze_pqcs/pages/planning/scheduleUnits.dart';
 import 'package:nb_utils/nb_utils.dart';
 import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
 
@@ -57,21 +56,26 @@ class _QcCategoriesState extends State<QcCategories> {
     );
     return Scaffold(
       floatingActionButton: SpeedDial(
-        backgroundColor: Colors.blueAccent, // Makes FAB more visible
-        foregroundColor: Colors.white, // Icon color
-        overlayColor: Colors.black, // Background overlay color
-        overlayOpacity: 0.3, // Slightly darker for focus
+        backgroundColor: mycolor,
+        foregroundColor: Colors.white,
+        overlayColor: Colors.black,
+        overlayOpacity: 0.4,
         animatedIcon: AnimatedIcons.menu_close,
-        spacing: 12, // Space between children
-        spaceBetweenChildren: 8,
-        elevation: 8, // Adds shadow
+        spacing: 15,
+        spaceBetweenChildren: 10,
+        elevation: 12,
+        buttonSize: Size(60, 60),
         children: [
           SpeedDialChild(
-            backgroundColor: Colors.green, // Custom child button color
-            foregroundColor: Colors.white, // Icon color
-            labelStyle:
-                TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
-            child: Icon(Icons.check_circle_outline),
+            backgroundColor: Colors.green.shade600,
+            foregroundColor: Colors.white,
+            labelStyle: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+              fontSize: 14,
+            ),
+            labelBackgroundColor: Colors.white,
+            child: Icon(Icons.check_circle_outline, size: 24),
             label: 'Correct Defects',
             onTap: () {
               QCDefectsPage(
@@ -80,176 +84,370 @@ class _QcCategoriesState extends State<QcCategories> {
             },
           ),
           SpeedDialChild(
-            backgroundColor: Colors.red, // Custom child button color
+            backgroundColor: Colors.red.shade600,
             foregroundColor: Colors.white,
-            labelStyle:
-                TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
-            child: Icon(Icons.report_problem_outlined),
+            labelStyle: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+              fontSize: 14,
+            ),
+            labelBackgroundColor: Colors.white,
+            child: Icon(Icons.report_problem_outlined, size: 24),
             label: 'Raise Claim',
             onTap: () {
-              ClaimForm(
-                      // vehileId: widget.res['data']['vehicledata']['id'],
-                      )
-                  .launch(context,
-                      pageRouteAnimation: PageRouteAnimation.Slide);
+              ClaimForm().launch(context,
+                  pageRouteAnimation: PageRouteAnimation.Slide);
             },
           ),
         ],
       ),
       appBar: AppBar(
-        title: Column(
-          children: [
-            Text(
-              widget.shop_name,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 2,
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                mycolor,
+                mycolor.withOpacity(0.8),
+              ],
             ),
-            Text(
-              widget.res['data']['vehicledata']['vin_no'],
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 2,
-            ),
-          ],
+          ),
+        ),
+        title: Container(
+          padding: EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.assessment, color: Colors.white, size: 20),
+                  SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      widget.shop_name,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 4),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  widget.res['data']['vehicledata']['vin_no'],
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                    fontFamily: 'monospace',
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ),
+            ],
+          ),
         ),
         actions: [
-          InkWell(
-            onTap: () {
-              fetchCategories(widget.ShopId);
-            },
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Icon(Icons.refresh),
+          Container(
+            margin: EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withOpacity(0.2),
+            ),
+            child: IconButton(
+              onPressed: () {
+                fetchCategories(widget.ShopId);
+              },
+              icon: Icon(Icons.refresh, color: Colors.white),
+              tooltip: 'Refresh Categories',
             ),
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: isLoading
-                  ? Center(
-                      child: Container(
-                        width: double.infinity,
-                        child: CustomLoader(),
-                      ),
-                    )
-                  : message.isNotEmpty
-                      ? ErrorMessageWidget(
-                          errorMessage: message,
-                          onRetry: () {
-                            fetchCategories(widget.ShopId);
-                          },
-                        )
-                      : ListView.builder(
-                          shrinkWrap: true,
-                          itemCount: categories.length,
-                          itemBuilder: (context, index) {
-                            var category = categories[index];
-                            Color categoryColor = colors[index % colors.length];
-                            return GestureDetector(
-                              onTap: () async {
-                                // ignore: unused_local_variable
-                                final result = await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        JobCardQuestionsTemplate(
-                                      chasis_no: widget.res['data']
-                                          ['vehicledata']['vin_no'],
-                                      shop_name: widget.shop_name,
-                                      query_id: category['id'],
-                                      shop_id: widget.ShopId,
-                                      vehicle_id: widget.res['data']
-                                          ['vehicledata']['id'],
-                                      categoryName: category["category_name"],
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.grey.shade50,
+              Colors.white,
+            ],
+          ),
+        ),
+        child: Column(
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: isLoading
+                    ? Center(
+                        child: Container(
+                          padding: EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black12,
+                                blurRadius: 10,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CustomLoader(),
+                              SizedBox(height: 16),
+                              Text(
+                                'Loading categories...',
+                                style: TextStyle(
+                                  color: mycolor,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : message.isNotEmpty
+                        ? ErrorMessageWidget(
+                            errorMessage: message,
+                            onRetry: () {
+                              fetchCategories(widget.ShopId);
+                            },
+                          )
+                        : ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: categories.length,
+                            itemBuilder: (context, index) {
+                              var category = categories[index];
+                              Color categoryColor =
+                                  colors[index % colors.length];
+                              return GestureDetector(
+                                onTap: () async {
+                                  // ignore: unused_local_variable
+                                  final result = await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          JobCardQuestionsTemplate(
+                                        chasis_no: widget.res['data']
+                                            ['vehicledata']['vin_no'],
+                                        shop_name: widget.shop_name,
+                                        query_id: category['id'],
+                                        shop_id: widget.ShopId,
+                                        vehicle_id: widget.res['data']
+                                            ['vehicledata']['id'],
+                                        categoryName: category["category_name"],
+                                      ),
+                                    ),
+                                  ).then((value) =>
+                                      fetchCategories2(widget.ShopId));
+                                },
+                                child: Container(
+                                  margin: const EdgeInsets.only(bottom: 16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: mycolor.withOpacity(0.15),
+                                        blurRadius: 10,
+                                        offset: Offset(0, 4),
+                                        spreadRadius: 1,
+                                      ),
+                                    ],
+                                    border: Border.all(
+                                      color: mycolor.withOpacity(0.2),
+                                      width: 1,
                                     ),
                                   ),
-                                ).then(
-                                    (value) => fetchCategories2(widget.ShopId));
-                              },
-                              child: Container(
-                                padding: EdgeInsets.all(12),
-                                margin: const EdgeInsets.only(
-                                    top: 10, left: 16, bottom: 16, right: 16),
-                                decoration: boxDecoration(
-                                  radius: 10,
-                                  showShadow: true,
-                                  bgColor: Colors.white,
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: <Widget>[
-                                    Row(
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    padding: EdgeInsets.all(20),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: <Widget>[
-                                        CircleAvatar(
-                                          backgroundColor: mycolor,
-                                          foregroundColor: textWhite,
-                                          child: Text("${index + 1}"),
-                                        ),
-                                        const SizedBox(width: 16),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: <Widget>[
-                                              Text(category["category_name"]),
-                                              Text(
-                                                "(${category["query_code"]})",
-                                                style: TextStyle(
-                                                    color: Colors.amber[900],
-                                                    fontWeight:
-                                                        FontWeight.bold),
+                                        Row(
+                                          children: <Widget>[
+                                            Container(
+                                              width: 50,
+                                              height: 50,
+                                              decoration: BoxDecoration(
+                                                gradient: LinearGradient(
+                                                  colors: [
+                                                    mycolor,
+                                                    mycolor.withOpacity(0.8),
+                                                  ],
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(15),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: mycolor
+                                                        .withOpacity(0.3),
+                                                    blurRadius: 6,
+                                                    offset: Offset(0, 3),
+                                                  ),
+                                                ],
                                               ),
-                                              const SizedBox(height: 5),
-                                              Text(
-                                                  '${category["queryanswers"].length} out ${category["queries_count"]} Answered'),
-                                            ],
-                                          ),
-                                        ),
-                                        CircleAvatar(
-                                          radius: 15,
-                                          backgroundColor: categoryColor,
-                                          child: Icon(
-                                            Icons.arrow_forward_ios,
-                                            size: 10,
-                                            color: Colors.white,
-                                          ),
+                                              child: Center(
+                                                child: Text(
+                                                  "${index + 1}",
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 18,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 20),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: <Widget>[
+                                                  Text(
+                                                    category["category_name"],
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: Colors.black87,
+                                                    ),
+                                                  ),
+                                                  SizedBox(height: 4),
+                                                  Container(
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4,
+                                                    ),
+                                                    decoration: BoxDecoration(
+                                                      color: categoryColor
+                                                          .withOpacity(0.1),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              8),
+                                                    ),
+                                                    child: Text(
+                                                      "(${category["query_code"]})",
+                                                      style: TextStyle(
+                                                        color: categoryColor,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        fontSize: 12,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 8),
+                                                  Row(
+                                                    children: [
+                                                      Icon(
+                                                        Icons.quiz_outlined,
+                                                        size: 16,
+                                                        color: Colors
+                                                            .grey.shade600,
+                                                      ),
+                                                      SizedBox(width: 4),
+                                                      Text(
+                                                        '${category["queryanswers"].length} of ${category["queries_count"]} answered',
+                                                        style: TextStyle(
+                                                          color: Colors
+                                                              .grey.shade600,
+                                                          fontSize: 14,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            Container(
+                                              width: 40,
+                                              height: 40,
+                                              decoration: BoxDecoration(
+                                                color: categoryColor
+                                                    .withOpacity(0.1),
+                                                borderRadius:
+                                                    BorderRadius.circular(20),
+                                              ),
+                                              child: Icon(
+                                                Icons.arrow_forward_ios,
+                                                size: 16,
+                                                color: categoryColor,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(height: 16),
-                                  ],
+                                  ),
                                 ),
-                              ),
-                            );
-                          },
-                        ),
+                              );
+                            },
+                          ),
+              ),
             ),
-          ),
-          categories.isEmpty
-              ? Container()
-              : isLoading2
-                  ? CustomLoader()
-                  : Container(
-                      margin: const EdgeInsets.symmetric(
-                          vertical: 10, horizontal: 10),
-                      child: SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                                backgroundColor:
-                                    datacheck == '0' ? Colors.red : mycolor,
-                                shape: const RoundedRectangleBorder(),
-                                foregroundColor: textWhite),
-                            onPressed: () async {
+            categories.isEmpty
+                ? Container()
+                : isLoading2
+                    ? Container(
+                        padding: EdgeInsets.all(20),
+                        child: CustomLoader(),
+                      )
+                    : Container(
+                        margin: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: datacheck == '0'
+                                ? [Colors.red.shade600, Colors.red.shade800]
+                                : [mycolor, Colors.amber.shade700],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: (datacheck == '0' ? Colors.red : mycolor)
+                                  .withOpacity(0.3),
+                              blurRadius: 12,
+                              offset: Offset(0, 6),
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(16),
+                            onTap: () async {
                               if (defect_exist) {
                                 if (widget.ShopId == '15' ||
                                     widget.ShopId == '16' ||
@@ -310,10 +508,35 @@ class _QcCategoriesState extends State<QcCategories> {
                                 );
                               }
                             },
-                            child: const Text('PUSH TO THE NEXT SHOP')),
-                      ),
-                    )
-        ],
+                            child: Container(
+                              width: double.infinity,
+                              height: 56,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.send_rounded,
+                                    color: Colors.white,
+                                    size: 24,
+                                  ),
+                                  SizedBox(width: 12),
+                                  Text(
+                                    'PUSH TO THE NEXT SHOP',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      )
+          ],
+        ),
       ),
     );
   }
@@ -357,7 +580,7 @@ class _QcCategoriesState extends State<QcCategories> {
           iconWithDecoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             border: Border.all(),
-          color: Colors.white,
+            color: Colors.white,
           ),
           backgroundColor: Colors.green,
         );

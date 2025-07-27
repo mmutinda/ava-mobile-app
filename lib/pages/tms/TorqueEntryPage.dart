@@ -18,7 +18,8 @@ class TorqueEntryPage extends StatefulWidget {
   _TorqueEntryPageState createState() => _TorqueEntryPageState();
 }
 
-class _TorqueEntryPageState extends State<TorqueEntryPage> {
+class _TorqueEntryPageState extends State<TorqueEntryPage>
+    with TickerProviderStateMixin {
   String? selectedStation;
   String? selectedOperation;
 
@@ -34,9 +35,35 @@ class _TorqueEntryPageState extends State<TorqueEntryPage> {
   bool isLoadingPrev = false;
   bool isLoading2 = false;
   var user = {};
+
+  late AnimationController _animationController;
+  late Animation<double> _slideAnimation;
+  late Animation<double> _fadeAnimation;
   @override
   void initState() {
     super.initState();
+
+    _animationController = AnimationController(
+      duration: Duration(milliseconds: 600),
+      vsync: this,
+    );
+
+    _slideAnimation = Tween<double>(
+      begin: 30.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOut,
+    ));
+
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeIn,
+    ));
+
     torqueEntries.add(TorqueItem());
     getuserdata().then((value) {
       setState(() {
@@ -55,6 +82,7 @@ class _TorqueEntryPageState extends State<TorqueEntryPage> {
       if (response != null && response["data"]["shop"] != null) {
         stationList = response["data"]["shop"];
         print(stationList);
+        _animationController.forward();
       }
     } catch (e) {
       errorText = "Error loading shops: $e";
@@ -120,7 +148,7 @@ class _TorqueEntryPageState extends State<TorqueEntryPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              "Failed to load operations. Please try again.",
+              "Operation not found. Please try again.",
               textAlign: TextAlign.center,
             ),
             backgroundColor: Colors.red,
@@ -184,12 +212,21 @@ class _TorqueEntryPageState extends State<TorqueEntryPage> {
           );
         }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(response['msg'] ?? "Failed to load torque entries."),
-            backgroundColor: Colors.red,
-          ),
-        );
+        if (response['msg'] != "No record found.") {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(response['msg']),
+              backgroundColor: Colors.red,
+            ),
+          );
+        } else {
+          // ScaffoldMessenger.of(context).showSnackBar(
+          //   const SnackBar(
+          //     content: Text("Failed to load previous torque values."),
+          //     backgroundColor: Colors.red,
+          //   ),
+          // );
+        }
       }
     } catch (e) {
       debugPrint("Error fetching initial entries: $e");
@@ -204,6 +241,12 @@ class _TorqueEntryPageState extends State<TorqueEntryPage> {
         isLoadingPrev = false;
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   void addTorqueEntry() {
@@ -316,21 +359,56 @@ class _TorqueEntryPageState extends State<TorqueEntryPage> {
         return Expanded(
           child: Center(
             child: Container(
-              padding: const EdgeInsets.all(16),
-              margin: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(24),
+              margin: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.orange.shade100,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.orange),
+                // gradient: LinearGradient(
+                //   begin: Alignment.topLeft,
+                //   end: Alignment.bottomRight,
+                //   colors: [mycolor, Colors.orange.shade50],
+                // ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: mycolor.withOpacity(0.3), width: 2),
+                // boxShadow: [
+                //   BoxShadow(
+                //     color: mycolor.withOpacity(0.2),
+                //     blurRadius: 10,
+                //     // offset: Offset(0, 5),
+                //   ),
+                // ],
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: const [
-                  Icon(Icons.warning, color: Colors.orange, size: 36),
-                  SizedBox(height: 10),
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: mycolor.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.warning_amber_rounded,
+                      color: mycolor,
+                      size: 40,
+                    ),
+                  ),
+                  SizedBox(height: 16),
                   Text(
-                    "Please select a Station and Operation first.",
-                    style: TextStyle(fontSize: 16, color: Colors.black87),
+                    "Selection Required",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: mycolor,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    "Please select both Station and Operation to continue.",
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.orange.shade700,
+                      height: 1.4,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -356,42 +434,128 @@ class _TorqueEntryPageState extends State<TorqueEntryPage> {
           itemBuilder: (context, index) {
             final entry = torqueEntries[index];
             return Card(
-              color: Colors.white,
               margin: const EdgeInsets.symmetric(vertical: 8),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              elevation: 1,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Row(
-                  children: [
-                    Expanded(
-                        child: TextFormField(
-                      controller: entry.controller,
-                      keyboardType: TextInputType.number,
-                      enabled: !entry.isExisting, // ✅ Disable if existing data
-                      decoration: InputDecoration(
-                        labelText: 'Torque Value (Nm)',
-                        border: const OutlineInputBorder(),
-                        // fillColor:
-                        //     entry.isExisting ? Colors.grey.shade100 : null,
-                        // filled: entry.isExisting,
-                        suffixIcon: entry.isExisting
-                            ? const Tooltip(
-                                message:
-                                    'This is existing data and cannot be edited.',
-                                child: Icon(Icons.lock, color: Colors.grey),
-                              )
-                            : null,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              elevation: 4,
+              // shadowColor: entry.isExisting
+              //     ? Colors.grey.shade300
+              //     : Colors.amber.shade200,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: entry.isExisting
+                        ? [Colors.grey.shade50, Colors.grey.shade100]
+                        : [Colors.white, Colors.white.withOpacity(0.5)],
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color:
+                              entry.isExisting ? Colors.grey.shade400 : mycolor,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: entry.isExisting
+                                  ? Colors.grey.shade300
+                                  : mycolor.withOpacity(0.3),
+                              blurRadius: 4,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          entry.isExisting ? Icons.lock : Icons.edit,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                       ),
-                    )),
-                    const SizedBox(width: 10),
-                    if (torqueEntries.length > 1 && !entry.isExisting)
-                      IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () => removeTorqueEntry(index),
+                      SizedBox(width: 16),
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: entry.isExisting
+                                  ? Colors.grey.shade300
+                                  : mycolor.withOpacity(0.3),
+                            ),
+                          ),
+                          child: TextFormField(
+                            controller: entry.controller,
+                            keyboardType: TextInputType.number,
+                            enabled: !entry.isExisting,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: entry.isExisting
+                                  ? Colors.grey.shade600
+                                  : mycolor,
+                            ),
+                            decoration: InputDecoration(
+                              labelText: 'Torque Value (Nm)',
+                              labelStyle: TextStyle(
+                                color: entry.isExisting
+                                    ? Colors.grey.shade500
+                                    : mycolor,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              filled: true,
+                              fillColor: entry.isExisting
+                                  ? Colors.grey.shade100
+                                  : Colors.amber.shade50,
+                              prefixIcon: Icon(
+                                Icons.speed,
+                                color: entry.isExisting
+                                    ? Colors.grey.shade400
+                                    : mycolor.withOpacity(0.7),
+                              ),
+                              suffixIcon: entry.isExisting
+                                  ? Tooltip(
+                                      message:
+                                          'This is existing data and cannot be edited.',
+                                      child: Icon(Icons.info_outline,
+                                          color: Colors.grey.shade400),
+                                    )
+                                  : null,
+                            ),
+                          ),
+                        ),
                       ),
-                  ],
+                      const SizedBox(width: 12),
+                      if (torqueEntries.length > 1 && !entry.isExisting)
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade400,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.red.shade200,
+                                blurRadius: 4,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: IconButton(
+                            icon: const Icon(Icons.delete,
+                                color: Colors.white, size: 20),
+                            onPressed: () => removeTorqueEntry(index),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -401,11 +565,66 @@ class _TorqueEntryPageState extends State<TorqueEntryPage> {
     }
 
     return Scaffold(
+        backgroundColor: Colors.grey.shade50,
         appBar: AppBar(
-          title: const Text('Torque Entry'),
+          elevation: 0,
+          backgroundColor: mycolor,
+          title: Text(
+            'Torque Entry',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+            ),
+          ),
+          iconTheme: IconThemeData(color: Colors.white),
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  mycolor,
+                  mycolor.withOpacity(0.8),
+                ],
+              ),
+            ),
+          ),
         ),
         body: isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(15),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.amber.shade200,
+                            blurRadius: 10,
+                            offset: Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.amber.shade900),
+                      ),
+                    ),
+                    SizedBox(height: 20),
+                    Text(
+                      'Loading form data...',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              )
             : Padding(
                 padding: const EdgeInsets.all(5),
                 child: errorText.isNotEmpty
@@ -482,155 +701,97 @@ class _TorqueEntryPageState extends State<TorqueEntryPage> {
                             ),
                             const SizedBox(height: 20),
                             buildTorqueEntryList(),
-
-                            // isLoadingPrev
-                            //     ? Expanded(child: CustomLoader())
-                            //     : Expanded(
-                            //         child: torqueEntries.isEmpty
-                            //             ? Center(
-                            //                 child: Text(
-                            //                   "No previous data found. Please enter a new torque value.",
-                            //                   style: TextStyle(
-                            //                       fontSize: 16,
-                            //                       color: Colors.grey[600]),
-                            //                 ),
-                            //               )
-                            //             : ListView.builder(
-                            //                 itemCount: torqueEntries.length,
-                            //                 itemBuilder: (context, index) {
-                            //                   final entry =
-                            //                       torqueEntries[index];
-                            //                   return Card(
-                            //                     color: Colors.white,
-                            //                     margin:
-                            //                         const EdgeInsets.symmetric(
-                            //                             vertical: 8),
-                            //                     shape: RoundedRectangleBorder(
-                            //                         borderRadius:
-                            //                             BorderRadius.circular(
-                            //                                 12)),
-                            //                     elevation: 2,
-                            //                     child: Padding(
-                            //                       padding:
-                            //                           const EdgeInsets.all(12),
-                            //                       child: Column(
-                            //                         children: [
-                            //                           Row(
-                            //                             children: [
-                            //                               Expanded(
-                            //                                 child:
-                            //                                     TextFormField(
-                            //                                   controller: entry
-                            //                                       .controller,
-                            //                                   keyboardType:
-                            //                                       TextInputType
-                            //                                           .number,
-                            //                                   decoration:
-                            //                                       const InputDecoration(
-                            //                                     labelText:
-                            //                                         'Torque Value (Nm)',
-                            //                                     border:
-                            //                                         OutlineInputBorder(),
-                            //                                   ),
-                            //                                 ),
-                            //                               ),
-                            //                               const SizedBox(
-                            //                                   width: 10),
-                            //                               if (torqueEntries
-                            //                                       .length >
-                            //                                   1)
-                            //                                 IconButton(
-                            //                                   icon: const Icon(
-                            //                                       Icons.delete,
-                            //                                       color: Colors
-                            //                                           .red),
-                            //                                   onPressed: () =>
-                            //                                       removeTorqueEntry(
-                            //                                           index),
-                            //                                 ),
-                            //                             ],
-                            //                           ),
-                            //                         ],
-                            //                       ),
-                            //                     ),
-                            //                   );
-                            //                 },
-                            //               ),
-                            //       ),
                             const SizedBox(height: 10),
                             isLoading2
                                 ? CustomLoader()
                                 : Row(
                                     children: [
                                       ElevatedButton.icon(
-                                        onPressed: addTorqueEntry,
+                                        onPressed: selectedOperation != null &&
+                                                selectedOperation!.isNotEmpty &&
+                                                selectedStation != null
+                                            ? addTorqueEntry
+                                            : null,
                                         icon: const Icon(Icons.add),
                                         label: const Text('Add Entry'),
                                       ),
                                       const SizedBox(width: 20),
                                       Expanded(
                                         child: ElevatedButton.icon(
-                                          onPressed: () {
-                                            if (selectedOperation == null) {
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(
-                                                const SnackBar(
-                                                  content: Text(
-                                                      "Please select an operation"),
-                                                  backgroundColor: Colors.red,
-                                                ),
-                                              );
-                                              return;
-                                            }
-                                            final newEntries = torqueEntries
-                                                .where((entry) =>
-                                                    !entry.isExisting)
-                                                .toList();
+                                          onPressed: selectedOperation !=
+                                                      null &&
+                                                  selectedOperation!
+                                                      .isNotEmpty &&
+                                                  selectedStation != null
+                                              ? () {
+                                                  if (selectedOperation ==
+                                                      null) {
+                                                    ScaffoldMessenger.of(
+                                                            context)
+                                                        .showSnackBar(
+                                                      const SnackBar(
+                                                        content: Text(
+                                                            "Please select an operation"),
+                                                        backgroundColor:
+                                                            Colors.red,
+                                                      ),
+                                                    );
+                                                    return;
+                                                  }
+                                                  final newEntries =
+                                                      torqueEntries
+                                                          .where((entry) =>
+                                                              !entry.isExisting)
+                                                          .toList();
 
-                                            if (newEntries.isEmpty) {
-                                              awesomeTopSnackbar(
-                                                context,
-                                                "No new torque entries to submit.",
-                                                iconWithDecoration:
-                                                    BoxDecoration(
-                                                  borderRadius:
-                                                      BorderRadius.circular(20),
-                                                  border: Border.all(),
-                                                  color: Colors.white,
-                                                ),
-                                                backgroundColor: Colors.red,
-                                              );
+                                                  if (newEntries.isEmpty) {
+                                                    awesomeTopSnackbar(
+                                                      context,
+                                                      "No new torque entries to submit.",
+                                                      iconWithDecoration:
+                                                          BoxDecoration(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(20),
+                                                        border: Border.all(),
+                                                        color: Colors.white,
+                                                      ),
+                                                      backgroundColor:
+                                                          Colors.red,
+                                                    );
 
-                                              return;
-                                            }
-                                            for (int i = 0;
-                                                i < newEntries.length;
-                                                i++) {
-                                              if (newEntries[i]
-                                                  .controller
-                                                  .text
-                                                  .trim()
-                                                  .isEmpty) {
-                                                awesomeTopSnackbar(
-                                                  context,
-                                                  "Torque value missing in new entry ${i + 1}",
-                                                  iconWithDecoration:
-                                                      BoxDecoration(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            20),
-                                                    border: Border.all(),
-                                                    color: Colors.white,
-                                                  ),
-                                                  backgroundColor: Colors.red,
-                                                );
+                                                    return;
+                                                  }
+                                                  for (int i = 0;
+                                                      i < newEntries.length;
+                                                      i++) {
+                                                    if (newEntries[i]
+                                                        .controller
+                                                        .text
+                                                        .trim()
+                                                        .isEmpty) {
+                                                      awesomeTopSnackbar(
+                                                        context,
+                                                        "Torque value missing in new entry ${i + 1}",
+                                                        iconWithDecoration:
+                                                            BoxDecoration(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(20),
+                                                          border: Border.all(),
+                                                          color: Colors.white,
+                                                        ),
+                                                        backgroundColor:
+                                                            Colors.red,
+                                                      );
 
-                                                return;
-                                              }
-                                            }
-                                            _showConfirmDialog(
-                                                context, newEntries);
-                                          },
+                                                      return;
+                                                    }
+                                                  }
+                                                  _showConfirmDialog(
+                                                      context, newEntries);
+                                                }
+                                              : null,
                                           icon: const Icon(Icons.send),
                                           label: const Text('Submit'),
                                           style: ElevatedButton.styleFrom(
@@ -650,39 +811,126 @@ class _TorqueEntryPageState extends State<TorqueEntryPage> {
   void _showConfirmDialog(BuildContext context, newEntries) {
     showDialog(
       context: context,
-      barrierDismissible: false, // Prevents closing by tapping outside
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: const [
-            Icon(Icons.warning, color: Colors.orange),
-            SizedBox(width: 8),
-            Text('Confirm Submission'),
-          ],
-        ),
-        content: const Text(
-          'Are you sure you want to submit the torque data?',
-          style: TextStyle(fontSize: 16),
-        ),
-        actionsPadding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        actions: [
-          TextButton.icon(
-            onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(Icons.cancel, color: Colors.red),
-            label: const Text('Cancel', style: TextStyle(color: Colors.red)),
-          ),
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
+        backgroundColor: Colors.white,
+        title: Container(
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [mycolor, mycolor.withOpacity(0.8)],
             ),
-            onPressed: () {
-              Navigator.of(context).pop(); // Close dialog
-              submitData(newEntries); // Then call the function
-            },
-            icon: const Icon(Icons.check),
-            label: const Text('Yes, Submit'),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: mycolor,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.warning_amber, color: Colors.white),
+              ),
+              SizedBox(width: 12),
+              Text(
+                'Confirm',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+        content: Container(
+          padding: EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Are you sure you want to submit the torque data?',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey.shade700,
+                  height: 1.4,
+                ),
+              ),
+              SizedBox(height: 12),
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.amber.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: mycolor, size: 20),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '${newEntries.length} new entr${newEntries.length == 1 ? 'y' : 'ies'} will be submitted',
+                        style: TextStyle(
+                          color: Colors.grey.shade700,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        actionsPadding: const EdgeInsets.all(16),
+        actions: [
+          Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.red.shade300),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: TextButton.icon(
+              onPressed: () => Navigator.of(context).pop(),
+              icon: const Icon(Icons.cancel, color: Colors.red),
+              label: const Text('Cancel',
+                  style: TextStyle(
+                      color: Colors.red, fontWeight: FontWeight.w600)),
+            ),
+          ),
+          SizedBox(width: 8),
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.green.shade400, Colors.green.shade600],
+              ),
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.green.shade200,
+                  blurRadius: 4,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+                submitData(newEntries);
+              },
+              icon: const Icon(Icons.check, color: Colors.white),
+              label: const Text(
+                'Yes, Submit',
+                style:
+                    TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ),
           ),
         ],
       ),

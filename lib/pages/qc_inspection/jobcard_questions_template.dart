@@ -9,7 +9,6 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
-import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/routing_structure/multiple_question.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/routing_structure/numerical_question.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/routing_structure/others.dart';
@@ -90,432 +89,534 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Column(
-          children: [
-            Text(
-              widget.categoryName,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 2,
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                mycolor,
+                mycolor.withOpacity(0.8),
+              ],
             ),
-            Text(
-              widget.chasis_no,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 2,
-            ),
-          ],
+          ),
+        ),
+        title: Container(
+          padding: EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    widget.categoryName,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ],
+              ),
+              SizedBox(height: 4),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  widget.chasis_no,
+                  // textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                    fontFamily: 'monospace',
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
       body: Form(
         key: _formKey,
         child: Column(
           children: [
-            gap(),
+            SizedBox(height: 8),
             Expanded(
-                child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: questions.isEmpty
-                  ? Center(child: SizedBox.shrink())
-                  : Column(
-                      children: [
-                        if (Category['imageUri'].toString() !=
-                                '${Api.main_url}/upload/default.jpg' &&
-                            Category['imageUri'].toString() != 'null')
-                          Container(
-                            height: 150,
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(20),
-                              color:
-                                  Colors.grey[200], // background while loading
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(20),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: questions.isEmpty
+                    ? Center(
+                        child: Text(
+                          'No questions available',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 16,
+                          ),
+                        ),
+                      )
+                    : Column(
+                        children: [
+                          if (Category['imageUri'].toString() !=
+                                  '${Api.main_url}/upload/default.jpg' &&
+                              Category['imageUri'].toString() != 'null')
+                            Container(
+                              height: 180,
+                              width: double.infinity,
+                              margin: EdgeInsets.only(bottom: 16),
                               child: CachedNetworkImage(
                                 imageUrl: Category['imageUri'].toString(),
-                                fit: BoxFit.fill,
-                                placeholder: (context, url) => const Center(
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => Center(
                                   child: CircularProgressIndicator(),
                                 ),
-                                errorWidget: (context, url, error) => Container(
-                                  color: Colors.grey[300],
-                                  alignment: Alignment.center,
-                                  child: Icon(Icons.broken_image,
-                                      color: Colors.grey, size: 40),
+                                errorWidget: (context, url, error) => Center(
+                                  child: Text('Image not available'),
                                 ),
                               ),
                             ),
-                          ),
-                        Expanded(
-                          child: ListView.builder(
-                            shrinkWrap: true,
-                            itemCount: questions.length,
-                            itemBuilder: (context, index) {
-                              var answ = questions[index];
-                              var get = questions[index];
-                              var can_sign = get['can_sign'];
-                              var checkanswered = get['checkanswered'];
-                              var answer_given = get['answer_given'];
-                              // print(get);
-                              print(get['quiz_type']);
-                              haserror = get['haserror'].toString();
-                              if (get["quiz_type"] == "traceable") {
-                                //traceable
-                                return TraceableQuestion(
-                                  answer_given: answer_given,
-                                  can_sign: can_sign,
-                                  checkanswered: checkanswered,
-                                  id: get['id'],
-                                  onValueChanged: (value) {
-                                    var qid = get['id'];
-                                    setState(() {
-                                      traceableValues[qid] = value;
-                                      // print(traceableValues);
-                                    });
-                                  },
-                                  onValueChanged2: (value) {
-                                    var qid = get['id'];
-                                    setState(() {
-                                      traceableSignature[qid] = value;
-                                      // print(traceableSignature);
-                                    });
-                                  },
-                                  question: get["query_name"] as String,
-                                );
-                              } else if (get["quiz_type"] == "multiple") {
-                                return MultipleQuestion(
-                                    intial_option: get["defect_names"],
-                                    initialImage: (get["image_url"] == null ||
-                                            get["image_url"].toString().isEmpty)
-                                        ? null
-                                        : get["image_url"],
-                                    onImageChanged: (File? image) {
-                                      print("image path $image");
-                                      setState(() {
-                                        if (image == null) {
-                                          images.remove(get['id']);
-                                        } else {
-                                          images[get['id']] = image;
-                                        }
-                                      });
-                                    },
-                                    onUsersSelected: (List<String> value) {
+                          Expanded(
+                            child: ListView.builder(
+                              shrinkWrap: true,
+                              itemCount: questions.length,
+                              itemBuilder: (context, index) {
+                                var answ = questions[index];
+                                var get = questions[index];
+                                var can_sign = get['can_sign'];
+                                var checkanswered = get['checkanswered'];
+                                var answer_given = get['answer_given'];
+                                // print(get);
+                                print(get['quiz_type']);
+                                haserror = get['haserror'].toString();
+
+                                Widget questionWidget;
+
+                                if (get["quiz_type"] == "traceable") {
+                                  //traceable
+                                  questionWidget = TraceableQuestion(
+                                    answer_given: answer_given,
+                                    can_sign: can_sign,
+                                    checkanswered: checkanswered,
+                                    id: get['id'],
+                                    onValueChanged: (value) {
                                       var qid = get['id'];
                                       setState(() {
-                                        selectedUsers[qid] = value;
+                                        traceableValues[qid] = value;
+                                        // print(traceableValues);
                                       });
                                     },
-                                    // users: [
-                                    //   {
-                                    //     'name': 'Mercy',
-                                    //     'email': 'mercy@ava.co.ke'
-                                    //   },
-                                    //   {'name': 'ICT', 'email': 'ict@technoguru.co.tz'}
-                                    // ],
-                                    users: (get['emails'] as List<dynamic>)
-                                        .map((user) {
-                                      return {
-                                        'name': user['name'].toString(),
-                                        'email': user['email'].toString(),
-                                      };
-                                    }).toList(),
-                                    index: index + 1,
+                                    onValueChanged2: (value) {
+                                      var qid = get['id'];
+                                      setState(() {
+                                        traceableSignature[qid] = value;
+                                        // print(traceableSignature);
+                                      });
+                                    },
+                                    question: get["query_name"] as String,
+                                  );
+                                } else if (get["quiz_type"] == "multiple") {
+                                  questionWidget = MultipleQuestion(
+                                      intial_option: get["defect_names"],
+                                      initialImage: (get["image_url"] == null ||
+                                              get["image_url"]
+                                                  .toString()
+                                                  .isEmpty)
+                                          ? null
+                                          : get["image_url"],
+                                      onImageChanged: (File? image) {
+                                        print("image path $image");
+                                        setState(() {
+                                          if (image == null) {
+                                            images.remove(get['id']);
+                                          } else {
+                                            images[get['id']] = image;
+                                          }
+                                        });
+                                      },
+                                      onUsersSelected: (List<String> value) {
+                                        var qid = get['id'];
+                                        setState(() {
+                                          selectedUsers[qid] = value;
+                                        });
+                                      },
+                                      users: (get['emails'] as List<dynamic>)
+                                          .map((user) {
+                                        return {
+                                          'name': user['name'].toString(),
+                                          'email': user['email'].toString(),
+                                        };
+                                      }).toList(),
+                                      index: index + 1,
+                                      id: get['id'],
+                                      options: get["options"],
+                                      onRadioChanged: (value) {
+                                        var qid = get['id'];
+                                        setState(() {
+                                          multipleValue[qid] = value;
+
+                                          if (value == "OK") {
+                                            multipleValues[qid] =
+                                                multipleValues[qid] ?? [];
+                                            multipleValues[qid]!.clear();
+                                          }
+                                        });
+                                      },
+                                      onValuesChanged: (value) {
+                                        // print(values);
+                                        var qid = get['id'];
+                                        setState(() {
+                                          multipleValues[qid] = value;
+                                          // print(multipleValues);
+                                        });
+                                      },
+                                      onValueChanged2: (value) {
+                                        var qid = get['id'];
+                                        setState(() {
+                                          traceableSignature[qid] = value;
+                                          // print(traceableSignature);
+                                        });
+                                      },
+                                      initialRadioValue: answer_given != ''
+                                          ? answer_given
+                                          : null,
+                                      question: get["query_name"] as String);
+                                } else if (get["quiz_type"] == "numeric") {
+                                  //numeric
+                                  questionWidget = NumericQuestion(
+                                      initialDecripValue: answer_given != ''
+                                          ? answer_given
+                                          : null,
+                                      id: questions[index]['id'],
+                                      onValueChanged: (value) {
+                                        var qid = get['id'];
+                                        setState(() {
+                                          numericValues[qid] = value;
+                                          // print(numericValues);
+                                        });
+                                      },
+                                      onValueChanged2: (value) {
+                                        var qid = get['id'];
+                                        setState(() {
+                                          traceableSignature[qid] = value;
+                                          // print(traceableSignature);
+                                        });
+                                      },
+                                      question: get["query_name"] as String);
+                                } else if (get["quiz_type"] == "single") {
+                                  //single
+                                  questionWidget = SingleQuestion(
+                                      initialImage: (get["image_url"] == null ||
+                                              get["image_url"]
+                                                  .toString()
+                                                  .isEmpty)
+                                          ? null
+                                          : get["image_url"],
+                                      onImageChanged: (File? image) {
+                                        print("image path $image");
+                                        setState(() {
+                                          if (image == null) {
+                                            images.remove(get['id']);
+                                          } else {
+                                            images[get['id']] = image;
+                                          }
+                                        });
+                                      },
+                                      onUsersSelected: (List<String> value) {
+                                        var qid = get['id'];
+                                        setState(() {
+                                          selectedUsers[qid] = value;
+                                        });
+                                      },
+                                      // users: [
+                                      //   {
+                                      //     'name': 'Mercy',
+                                      //     'email': 'mercy@ava.co.ke'
+                                      //   },
+                                      //   {'name': 'ICT', 'email': 'ict@technoguru.co.tz'}
+                                      // ],
+                                      users: (get['emails'] as List<dynamic>)
+                                          .map((user) {
+                                        return {
+                                          'name': user['name'].toString(),
+                                          'email': user['email'].toString(),
+                                        };
+                                      }).toList(),
+                                      initialDecripValue:
+                                          get["defect_description"],
+                                      hasDescription:
+                                          get["additional_field"] as String,
+                                      index: index + 1,
+                                      id: get['id'],
+                                      onValueChanged: (value) {
+                                        var qid = get['id'];
+                                        setState(() {
+                                          singleValues[qid] = value;
+                                          print(singleValues);
+                                        });
+                                      },
+                                      onInputValueChanged: (value) {
+                                        var qid = get['id'];
+                                        setState(() {
+                                          DescipTextValues[qid] = value;
+                                          print(DescipTextValues);
+                                        });
+                                      },
+                                      onValueChanged2: (value) {
+                                        var qid = get['id'];
+                                        setState(() {
+                                          traceableSignature[qid] = value;
+                                          print(traceableSignature);
+                                        });
+                                      },
+                                      initialRadioValue: answer_given != ''
+                                          ? answer_given
+                                          : null,
+                                      question: get['query_name'] as String);
+                                } else if (get["quiz_type"] == "others") {
+                                  //others
+                                  questionWidget = Others(
                                     id: get['id'],
                                     options: get["options"],
+                                    onValueChanged: (value) {
+                                      var qid = get['id'];
+                                      setState(() {
+                                        singleDescipTextValues[qid] = value;
+
+                                        // print(singleDescipTextValues);
+                                      });
+                                    },
+                                    onValueChanged2: (value) {
+                                      var qid = get['id'];
+                                      setState(() {
+                                        traceableSignature[qid] = value;
+                                        // print(traceableSignature);
+                                      });
+                                    },
                                     onRadioChanged: (value) {
-                                      var qid = get['id'];
+                                      var qid = questions[index]['id'];
                                       setState(() {
-                                        multipleValue[qid] = value;
-
-                                        if (value == "OK") {
-                                          multipleValues[qid] =
-                                              multipleValues[qid] ?? [];
-                                          multipleValues[qid]!.clear();
-                                        }
+                                        singleDescripCategory[qid] = value;
+                                        // print(singleDescripCategory);
                                       });
                                     },
-                                    onValuesChanged: (value) {
-                                      // print(values);
-                                      var qid = get['id'];
-                                      setState(() {
-                                        multipleValues[qid] = value;
-                                        // print(multipleValues);
-                                      });
-                                    },
-                                    onValueChanged2: (value) {
-                                      var qid = get['id'];
-                                      setState(() {
-                                        traceableSignature[qid] = value;
-                                        // print(traceableSignature);
-                                      });
-                                    },
+                                    initialDecripValue: answ != null
+                                        ? answ["description"]
+                                        : null,
                                     initialRadioValue: answer_given != ''
                                         ? answer_given
                                         : null,
-                                    question: get["query_name"] as String);
-                              } else if (get["quiz_type"] == "numeric") {
-                                //numeric
-                                return NumericQuestion(
-                                    initialDecripValue: answer_given != ''
-                                        ? answer_given
-                                        : null,
-                                    id: questions[index]['id'],
-                                    onValueChanged: (value) {
-                                      var qid = get['id'];
-                                      setState(() {
-                                        numericValues[qid] = value;
-                                        // print(numericValues);
-                                      });
-                                    },
-                                    onValueChanged2: (value) {
-                                      var qid = get['id'];
-                                      setState(() {
-                                        traceableSignature[qid] = value;
-                                        // print(traceableSignature);
-                                      });
-                                    },
-                                    question: get["query_name"] as String);
-                              } else if (get["quiz_type"] == "single") {
-                                //single
-                                return SingleQuestion(
-                                    initialImage: (get["image_url"] == null ||
-                                            get["image_url"].toString().isEmpty)
-                                        ? null
-                                        : get["image_url"],
-                                    onImageChanged: (File? image) {
-                                      print("image path $image");
-                                      setState(() {
-                                        if (image == null) {
-                                          images.remove(get['id']);
-                                        } else {
-                                          images[get['id']] = image;
-                                        }
-                                      });
-                                    },
-                                    onUsersSelected: (List<String> value) {
-                                      var qid = get['id'];
-                                      setState(() {
-                                        selectedUsers[qid] = value;
-                                      });
-                                    },
-                                    // users: [
-                                    //   {
-                                    //     'name': 'Mercy',
-                                    //     'email': 'mercy@ava.co.ke'
-                                    //   },
-                                    //   {'name': 'ICT', 'email': 'ict@technoguru.co.tz'}
-                                    // ],
-                                    users: (get['emails'] as List<dynamic>)
-                                        .map((user) {
-                                      return {
-                                        'name': user['name'].toString(),
-                                        'email': user['email'].toString(),
-                                      };
-                                    }).toList(),
-                                    initialDecripValue:
-                                        get["defect_description"],
-                                    hasDescription:
-                                        get["additional_field"] as String,
-                                    index: index + 1,
-                                    id: get['id'],
-                                    onValueChanged: (value) {
-                                      var qid = get['id'];
-                                      setState(() {
-                                        singleValues[qid] = value;
-                                        print(singleValues);
-                                      });
-                                    },
-                                    onInputValueChanged: (value) {
-                                      var qid = get['id'];
-                                      setState(() {
-                                        DescipTextValues[qid] = value;
-                                        print(DescipTextValues);
-                                      });
-                                    },
-                                    onValueChanged2: (value) {
-                                      var qid = get['id'];
-                                      setState(() {
-                                        traceableSignature[qid] = value;
-                                        print(traceableSignature);
-                                      });
-                                    },
-                                    initialRadioValue: answer_given != ''
-                                        ? answer_given
-                                        : null,
-                                    question: get['query_name'] as String);
-                              } else if (get["quiz_type"] == "others") {
-                                //others
-                                return Others(
-                                  id: get['id'],
-                                  options: get["options"],
-                                  onValueChanged: (value) {
-                                    var qid = get['id'];
-                                    setState(() {
-                                      singleDescipTextValues[qid] = value;
+                                    question: get["query_name"] as String,
+                                    // hasDescription: get["has_description"] as String,
+                                  );
+                                } else {
+                                  questionWidget = SizedBox.shrink();
+                                }
 
-                                      // print(singleDescipTextValues);
-                                    });
-                                  },
-                                  onValueChanged2: (value) {
-                                    var qid = get['id'];
-                                    setState(() {
-                                      traceableSignature[qid] = value;
-                                      // print(traceableSignature);
-                                    });
-                                  },
-                                  onRadioChanged: (value) {
-                                    var qid = questions[index]['id'];
-                                    setState(() {
-                                      singleDescripCategory[qid] = value;
-                                      // print(singleDescripCategory);
-                                    });
-                                  },
-                                  initialDecripValue:
-                                      answ != null ? answ["description"] : null,
-                                  initialRadioValue:
-                                      answer_given != '' ? answer_given : null,
-                                  question: get["query_name"] as String,
-                                  // hasDescription: get["has_description"] as String,
+                                return Card(
+                                  margin: EdgeInsets.only(bottom: 16),
+                                  child: Padding(
+                                    padding: EdgeInsets.all(10),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          "Question ${index + 1}",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        SizedBox(height: 8),
+                                        questionWidget,
+                                      ],
+                                    ),
+                                  ),
                                 );
-                              }
-                              return null;
-                            },
+                              },
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-            )),
+                        ],
+                      ),
+              ),
+            ),
             questions.isEmpty
                 ? Container()
                 : isButtonEnabled
                     ? Container(
-                        margin: const EdgeInsets.only(
-                            top: 10, bottom: 5, left: 10, right: 10),
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                  shape: const RoundedRectangleBorder(),
-                                  backgroundColor: mycolor,
-                                  foregroundColor: textWhite),
-                              onPressed: () async {
-                                if (_formKey.currentState!.validate()) {
-                                  questionValues
-                                      .clear(); // Clear the map before fetching new values
+                        margin: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              mycolor,
+                              mycolor.withOpacity(0.8),
+                            ],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: mycolor.withOpacity(0.3),
+                              blurRadius: 12,
+                              offset: Offset(0, 6),
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(16),
+                            onTap: () async {
+                              if (_formKey.currentState!.validate()) {
+                                questionValues
+                                    .clear(); // Clear the map before fetching new values
 
-                                  var answers = [];
+                                var answers = [];
 
-                                  for (var quest in questions) {
-                                    final int questionId = quest["id"];
+                                for (var quest in questions) {
+                                  final int questionId = quest["id"];
+                                  var answer = {
+                                    "vehicle_id": widget.vehicle_id,
+                                    "shop_id": widget.shop_id,
+                                    "shop_name": widget.shop_name,
+                                    "chassis_no": widget.chasis_no,
+                                    "quiz_id": Category['id'],
+                                    "item_id": quest['id'],
+                                    "item_name": quest['query_name'],
+                                    "quiz_type": quest["quiz_type"],
+                                    "checkanswered": quest["checkanswered"],
+                                    "options": quest["options"],
+                                    "total_options": quest["total_options"],
+                                    "correct_answers": quest["correct_answers"],
+                                    "haserror": quest['haserror'],
+                                    "can_sign": quest['can_sign'],
+                                    "answer_given": quest['answer_given'],
+                                    "answer": '',
+                                    "defect_description": '',
+                                    "defects": '',
+                                    "signature": traceableSignature[questionId],
+                                    "users": selectedUsers[questionId],
+                                  };
 
-                                    // var answer = {
-                                    //   "project_id": widget.shop_id,
-                                    //   "question_idd": question["id"],
-                                    //   "question_id": questionId,
-                                    //   "routing_category_id":
-                                    //       question["route_question_item_id"],
-                                    //   "stage_id": widget.vehicle_id,
-                                    //   "quiz_type": question["quiz_type"],
-                                    //   "defects":
-                                    //       null, // Default value if no defects are recorded
-                                    //   "answer":
-                                    //       null, // Default value if no specific answer is set
-                                    //   "description": null,
-                                    //   // Additional fields
-                                    //   "user_id": user["user"]["id"],
-                                    //   "ins": user["user"]["ins"],
-                                    // };
-                                    var answer = {
-                                      "vehicle_id": widget.vehicle_id,
-                                      "shop_id": widget.shop_id,
-                                      "shop_name": widget.shop_name,
-                                      "chassis_no": widget.chasis_no,
-                                      "quiz_id": Category['id'],
-                                      "item_id": quest['id'],
-                                      "item_name": quest['query_name'],
-                                      "quiz_type": quest["quiz_type"],
-                                      "checkanswered": quest["checkanswered"],
-                                      "options": quest["options"],
-                                      "total_options": quest["total_options"],
-                                      "correct_answers":
-                                          quest["correct_answers"],
-                                      "haserror": quest['haserror'],
-                                      "can_sign": quest['can_sign'],
-                                      "answer_given": quest['answer_given'],
-                                      "answer": '',
-                                      "defect_description": '',
-                                      "defects": '',
-                                      "signature":
-                                          traceableSignature[questionId],
-                                      "users": selectedUsers[questionId],
-                                    };
+                                  if (quest["quiz_type"] == "traceable") {
+                                    // Retrieve value from TraceableQuestion
+                                    String? value = traceableValues[questionId];
+                                    answer["answer"] = value;
+                                  } else if (quest["quiz_type"] == "multiple") {
+                                    // Retrieve values from MultipleQuestion
+                                    List<dynamic>? values =
+                                        multipleValues[questionId];
+                                    String? value = multipleValue[questionId];
 
-                                    if (quest["quiz_type"] == "traceable") {
-                                      // Retrieve value from TraceableQuestion
-                                      String? value =
-                                          traceableValues[questionId];
-                                      answer["answer"] = value;
-                                    } else if (quest["quiz_type"] ==
-                                        "multiple") {
-                                      // Retrieve values from MultipleQuestion
-                                      List<dynamic>? values =
-                                          multipleValues[questionId];
-                                      String? value = multipleValue[questionId];
+                                    answer["defects"] = values;
+                                    answer["answer"] = value;
+                                  } else if (quest["quiz_type"] == "single") {
+                                    // Retrieve values from SingleQuestion
+                                    String? value = singleValues[questionId];
+                                    answer["answer"] = value;
+                                    String? valueInput =
+                                        DescipTextValues[questionId];
 
-                                      answer["defects"] = values;
-                                      answer["answer"] = value;
-                                    } else if (quest["quiz_type"] == "single") {
-                                      // Retrieve values from SingleQuestion
-                                      String? value = singleValues[questionId];
-                                      answer["answer"] = value;
-                                      String? valueInput =
-                                          DescipTextValues[questionId];
-
-                                      answer["defect_description"] = valueInput;
-                                      // print(
-                                      //     "-->${DescipTextValues[questionId]}");
-                                    } else if (quest["quiz_type"] ==
-                                        "numeric") {
-                                      // Retrieve values from NumericQuestion
-                                      String? value = numericValues[questionId];
-                                      answer["answer"] = value;
-                                    } else if (quest["quiz_type"] == "others") {
-                                      // Retrieve values from NumericQuestion
-                                      String? value =
-                                          singleDescipTextValues[questionId];
-                                      String? values =
-                                          singleDescripCategory[questionId];
-                                      answer["answer"] = value;
-                                      answer["defects"] = values;
-                                    }
-                                    if (answer["answer"] != null) {
-                                      answers.add(answer);
-                                    }
+                                    answer["defect_description"] = valueInput;
+                                    // print(
+                                    //     "-->${DescipTextValues[questionId]}");
+                                  } else if (quest["quiz_type"] == "numeric") {
+                                    // Retrieve values from NumericQuestion
+                                    String? value = numericValues[questionId];
+                                    answer["answer"] = value;
+                                  } else if (quest["quiz_type"] == "others") {
+                                    // Retrieve values from NumericQuestion
+                                    String? value =
+                                        singleDescipTextValues[questionId];
+                                    String? values =
+                                        singleDescripCategory[questionId];
+                                    answer["answer"] = value;
+                                    answer["defects"] = values;
                                   }
-
-                                  if (answers.isNotEmpty) {
-                                    //For normal dialog
-                                    saveData(answers);
-                                  } else {
-                                    awesomeTopSnackbar(context,
-                                        "Please Answer at least one question",
-                                        iconWithDecoration: BoxDecoration(
-                                          borderRadius:
-                                              BorderRadius.circular(20),
-                                          border: Border.all(),
-                                          color: Colors.white,
-                                        ),
-                                        backgroundColor: Colors.red);
+                                  if (answer["answer"] != null) {
+                                    answers.add(answer);
                                   }
                                 }
-                              },
-                              child: const Text('SAVE')),
+
+                                if (answers.isNotEmpty) {
+                                  //For normal dialog
+                                  saveData(answers);
+                                } else {
+                                  awesomeTopSnackbar(context,
+                                      "Please Answer at least one question",
+                                      iconWithDecoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(),
+                                        color: Colors.white,
+                                      ),
+                                      backgroundColor: Colors.red);
+                                }
+                              }
+                            },
+                            child: Container(
+                              width: double.infinity,
+                              height: 56,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.save_rounded,
+                                    color: Colors.white,
+                                    size: 24,
+                                  ),
+                                  SizedBox(width: 12),
+                                  Text(
+                                    'SAVE ANSWERS',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
                       )
-                    : Container()
+                    : Container(
+                        padding: EdgeInsets.all(16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(mycolor),
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            Text(
+                              'Saving...',
+                              style: TextStyle(
+                                color: mycolor,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
           ],
         ),
       ),
@@ -547,7 +648,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
     setState(() => isButtonEnabled = false);
     ProgressDialog pr = ProgressDialog(context);
     pr.style(message: 'Saving answers...');
-    await pr.show();
+    // await pr.show();
 
     try {
       String url = Api.api_url + "answerquery2";

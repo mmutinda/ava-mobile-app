@@ -1,32 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
-import 'package:isuze_pqcs/HomePage.dart';
 import 'package:isuze_pqcs/common/constants.dart';
-import 'package:isuze_pqcs/pages/login/login.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:isuze_pqcs/pages/splash/splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  var userdata = prefs.getString('userdata');
-  runApp(
-    MyApp(
-      userdata: userdata,
-    ),
-  );
+  runApp(const MyApp());
   configLoading();
 }
 
 class MyApp extends StatelessWidget {
-  final userdata;
-  const MyApp({super.key, this.userdata});
+  const MyApp({super.key});
 
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'PQCS SYSTEM',
+      title: 'InfoPlus SYSTEM',
       builder: EasyLoading.init(), // ✅ Initialize EasyLoading here
       theme: ThemeData(
         pageTransitionsTheme: PageTransitionsTheme(
@@ -47,7 +38,7 @@ class MyApp extends StatelessWidget {
         buttonTheme: ButtonThemeData(textTheme: ButtonTextTheme.primary),
         //
       ),
-      home: userdata == null ? Login() : HomeScrean(),
+      home: const SplashScreen(),
       // home: GCPCarListScreen(),
     );
   }
