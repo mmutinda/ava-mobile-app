@@ -8,7 +8,6 @@ import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/loader.dart';
-import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/pages/qfl3/qfl3_list.dart';
 
 class AuditChecklistItem {
@@ -27,6 +26,26 @@ class AuditChecklistItem {
     this.rating,
     this.comment,
   });
+
+  factory AuditChecklistItem.fromJson(Map<String, dynamic> json) {
+    return AuditChecklistItem(
+      sn: json['id']?.toString() ?? '',
+      group: json['category']?.toString() ?? '',
+      resp: json['responsible']?.toString() ?? '',
+      description: json['query_name']?.toString() ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'sn': sn,
+      'group': group,
+      'resp': resp,
+      'description': description,
+      'rating': rating,
+      'comment': comment,
+    };
+  }
 }
 
 class AuditChecklistPage extends StatefulWidget {
@@ -37,229 +56,9 @@ class AuditChecklistPage extends StatefulWidget {
 }
 
 class _AuditChecklistPageState extends State<AuditChecklistPage> {
-  List<AuditChecklistItem> auditItems = [
-    AuditChecklistItem(
-        sn: '1.1',
-        group: 'Man',
-        resp: 'Prodn',
-        description: 'Is the Operator Skill Level match the requirement'),
-    AuditChecklistItem(
-        sn: '1.2',
-        group: 'Man',
-        resp: 'Prodn',
-        description: 'Are the Self Check points known & confirmed by operator'),
-    AuditChecklistItem(
-        sn: '1.2',
-        group: 'Man',
-        resp: 'Prodn',
-        description: 'check station condition before & at the end of shift'),
-    AuditChecklistItem(
-        sn: '1.2',
-        group: 'Man',
-        resp: 'Prodn',
-        description:
-            'Is the operator aware of the torque parameter & torque tool set value'),
-    AuditChecklistItem(
-        sn: '1.2',
-        group: 'Man',
-        resp: 'Prodn',
-        description:
-            'Is the operator awares about the consequences of the keypoints in the operation'),
-    AuditChecklistItem(
-        sn: '1.2',
-        group: 'Man',
-        resp: 'Prodn',
-        description:
-            'Is the operator aware of the quality requirements/safety requirements'),
-    AuditChecklistItem(
-        sn: '1.2',
-        group: 'Man',
-        resp: 'Prodn',
-        description:
-            'Is the operator aware of the consequence of the failure.'),
-    AuditChecklistItem(
-        sn: '1.2',
-        group: 'Man',
-        resp: 'Prodn',
-        description: 'Are standard work instructions followed by the Operator'),
-    AuditChecklistItem(
-        sn: '2.1',
-        group: 'Machine',
-        resp: 'ME',
-        description: 'Are Specified Equipments / Tools used'),
-    AuditChecklistItem(
-        sn: '2.1',
-        group: 'Machine',
-        resp: 'ME',
-        description:
-            'Are they calibrated (in case of gauges) / Are they periodically checked (incase of Equip)'),
-    AuditChecklistItem(
-        sn: '2.1',
-        group: 'Machine',
-        resp: 'FM',
-        description:
-            'Are they calibrated (in case of gauges) / Are they periodically checked (incase of Equip)'),
-    AuditChecklistItem(
-        sn: '2.1',
-        group: 'Machine',
-        resp: 'QM',
-        description:
-            'Are they calibrated (in case of gauges) / Are they periodically checked (incase of Equip)'),
-    AuditChecklistItem(
-        sn: '2.1',
-        group: 'Machine',
-        resp: 'ME',
-        description: 'Is the tool use procedure adhered to requirement'),
-    AuditChecklistItem(
-        sn: '2.1',
-        group: 'Machine',
-        resp: 'ME',
-        description: ' Is the Poka yoke working'),
-    AuditChecklistItem(
-        sn: '2.1',
-        group: 'Machine',
-        resp: 'ME',
-        description: 'Is the boundary marking on each station visible'),
-    AuditChecklistItem(
-        sn: '2.1',
-        group: 'Machine',
-        resp: 'ME',
-        description: 'Is the tool parking available and is it being utilized?'),
-    AuditChecklistItem(
-        sn: '2.1',
-        group: 'Machine',
-        resp: 'ME',
-        description: 'Is the tool parking available and is it being utilized?'),
-    AuditChecklistItem(
-        sn: '2.1',
-        group: 'Method',
-        resp: 'Prodn',
-        description: 'Is the Process Flow update as on date available'),
-    AuditChecklistItem(
-        sn: '2.1',
-        group: 'Method',
-        resp: 'Prodn',
-        description:
-            'Are the SWI/JES/Assembly manual available in the station?'),
-    AuditChecklistItem(
-        sn: '2.1',
-        group: 'Method',
-        resp: 'Prodn',
-        description: 'Are the operations sequence defined'),
-    AuditChecklistItem(
-        sn: '2.1',
-        group: 'Method',
-        resp: 'Prodn',
-        description: 'Is the Assembly procedure being followed?'),
-    AuditChecklistItem(
-        sn: '2.1',
-        group: 'Method',
-        resp: 'Prodn',
-        description: 'Check station condition before & at the end of shift'),
-    AuditChecklistItem(
-        sn: '2.1',
-        group: 'Method',
-        resp: 'Prodn',
-        description: ' Is DS/DZ characteristic monitoring Process done?'),
-    AuditChecklistItem(
-        sn: '2.1',
-        group: 'Method',
-        resp: 'Prodn',
-        description: 'Are parts easily identified after shopping?'),
-    AuditChecklistItem(
-        sn: '2.1',
-        group: 'Method',
-        resp: 'Prodn',
-        description: 'Is there a safe ergonomics practiced in the station'),
-    AuditChecklistItem(
-        sn: '2.1',
-        group: 'Method',
-        resp: 'Prodn',
-        description:
-            'Is there 5S practice in the station during working hours?'),
-    AuditChecklistItem(
-        sn: '2.1',
-        group: 'Method',
-        resp: 'Prodn',
-        description:
-            ' Is the station organized during production? 5S in process?'),
-    AuditChecklistItem(
-        sn: '2.1',
-        group: 'Method',
-        resp: 'Prodn',
-        description:
-            ' Are defects properly tracked in History card / check  sheets'),
-    AuditChecklistItem(
-        sn: '2.1',
-        group: 'Method',
-        resp: 'Prodn',
-        description: '  Is the skill matrix available in the station?'),
-    AuditChecklistItem(
-        sn: '2.1',
-        group: 'Method',
-        resp: 'Prodn',
-        description:
-            '  Is the product quality standard known to the operators?'),
-    AuditChecklistItem(
-        sn: '2.1',
-        group: 'Method',
-        resp: 'Prodn',
-        description:
-            'Is there a process in place to capture the lessons learnt in the respective stations'),
-    AuditChecklistItem(
-        sn: '2.1',
-        group: 'Material',
-        resp: 'Logistic',
-        description: ' Is adequate traceability available for material'),
-    AuditChecklistItem(
-        sn: '2.1',
-        group: 'Material',
-        resp: 'Logistic',
-        description: ' Is adequate traceability available for material'),
-    AuditChecklistItem(
-        sn: '2.1',
-        group: 'Material',
-        resp: 'Logistic',
-        description: 'Are non-conformance parts handled as per procedure'),
-    AuditChecklistItem(
-        sn: '2.1',
-        group: 'Material',
-        resp: 'Logistic',
-        description:
-            'Is the work station is free of unwanted material to avoid wrong assembly'),
-    AuditChecklistItem(
-        sn: '5.1',
-        group: 'Milieu',
-        resp: 'Prodn',
-        description:
-            'Is the lighting appropriate with respect to the station requirement'),
-    AuditChecklistItem(
-        sn: '5.1',
-        group: 'Milieu',
-        resp: 'Prodn',
-        description: 'Is there an identified waste bin in the station?'),
-    AuditChecklistItem(
-        sn: '5.1',
-        group: 'Milieu',
-        resp: 'Prodn',
-        description: 'Are the safety equipments available to operator'),
-    AuditChecklistItem(
-        sn: '5.1',
-        group: 'Milieu',
-        resp: 'Prodn',
-        description: 'Is Control of Hazardous materials adhered to standards'),
-    AuditChecklistItem(
-        sn: '5.1',
-        group: 'Milieu',
-        resp: 'Logistic',
-        description: 'Is Control of Hazardous materials adhered to standards'),
-    AuditChecklistItem(
-        sn: '5.1',
-        group: 'Milieu',
-        resp: 'Prodn',
-        description:
-            'Is Safety instruction displayed in the workstation (PPE)?'),
-  ];
+  List<AuditChecklistItem> auditItems = [];
+  bool isLoadingAuditItems = true;
+  String auditItemsError = '';
 
   String? selectedResp = "Prodn";
   String? selectedGroup = "Man";
@@ -308,8 +107,6 @@ class _AuditChecklistPageState extends State<AuditChecklistPage> {
   final TextEditingController _auditDepartmentController =
       TextEditingController();
   final TextEditingController _auditSectionController = TextEditingController();
-  final TextEditingController _stationNumberController =
-      TextEditingController();
   final TextEditingController _periodDurationController =
       TextEditingController();
   final SingleValueDropDownController _shopController =
@@ -318,57 +115,136 @@ class _AuditChecklistPageState extends State<AuditChecklistPage> {
       IconData icon, String label, TextEditingController controller,
       {bool isDate = false}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: TextField(
-        controller: controller,
-        readOnly: isDate,
-        onTap: isDate
-            ? () async {
-                final date = await showDatePicker(
-                  context: context,
-                  firstDate: DateTime(2000),
-                  lastDate: DateTime(2100),
-                  initialDate: DateTime.now(),
-                );
-                if (date != null) {
-                  controller.text = date.toString().split(' ')[0];
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          // boxShadow: [
+          //   BoxShadow(
+          //     color: mycolor.withOpacity(0.1),
+          //     blurRadius: 4,
+          //     offset: Offset(0, 2),
+          //   ),
+          // ],
+        ),
+        child: TextField(
+          controller: controller,
+          readOnly: isDate,
+          onTap: isDate
+              ? () async {
+                  final date = await showDatePicker(
+                    context: context,
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2100),
+                    initialDate: DateTime.now(),
+                  );
+                  if (date != null) {
+                    controller.text = date.toString().split(' ')[0];
+                  }
                 }
-              }
-            : null,
-        decoration: InputDecoration(
-          labelText: label,
-          prefixIcon: Icon(icon),
-          border: const OutlineInputBorder(),
+              : null,
+          decoration: InputDecoration(
+            labelText: label,
+            // labelStyle: TextStyle(
+            //   color: mycolor,
+            //   fontWeight: FontWeight.w600,
+            // ),
+            prefixIcon: Container(
+              margin: EdgeInsets.all(8),
+              padding: EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: mycolor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: mycolor, size: 20),
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: mycolor, width: 2),
+            ),
+            filled: true,
+            fillColor: Colors.grey.shade50,
+            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            suffixIcon: isDate
+                ? Icon(Icons.calendar_today_rounded,
+                    color: mycolor.withOpacity(0.7))
+                : null,
+          ),
         ),
       ),
     );
   }
 
   Widget buildShopDropdown() {
-    return DropDownTextField(
-      controller: _shopController,
-      enableSearch: true,
-      clearOption: false,
-      dropDownIconProperty: IconProperty(color: Colors.blue, size: 28),
-      textFieldDecoration: InputDecoration(
-        labelText: 'Select Shop/Station',
-        labelStyle: const TextStyle(fontWeight: FontWeight.w600),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-        filled: true,
-        fillColor: Colors.grey.shade100,
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: mycolor.withOpacity(0.1),
+            blurRadius: 4,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
-      validator: (val) => val == null || val.isEmpty ? "*Required" : null,
-      dropDownList: shops
-          .map((shop) => DropDownValueModel(
-                name: shop['shop_name'] ?? 'Unknown',
-                value: shop['id'],
-              ))
-          .toList(),
-      onChanged: (value) {
-        setState(() {
-          // issues = [""];
-        });
-      },
+      child: DropDownTextField(
+        controller: _shopController,
+        enableSearch: true,
+        clearOption: false,
+        dropDownIconProperty: IconProperty(color: mycolor, size: 24),
+        textFieldDecoration: InputDecoration(
+          labelText: 'Select Shop/Station',
+          // labelStyle: TextStyle(
+          //   color: mycolor,
+          //   fontWeight: FontWeight.w600,
+          // ),
+          prefixIcon: Container(
+            margin: EdgeInsets.all(8),
+            padding: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: mycolor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(Icons.business_rounded, color: mycolor, size: 20),
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: mycolor, width: 2),
+          ),
+          filled: true,
+          fillColor: Colors.grey.shade50,
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        ),
+        validator: (val) => val == null || val.isEmpty ? "*Required" : null,
+        dropDownList: shops
+            .map((shop) => DropDownValueModel(
+                  name: shop['shop_name'] ?? 'Unknown',
+                  value: shop['id'],
+                ))
+            .toList(),
+        onChanged: (value) {
+          setState(() {
+            // issues = [""];
+          });
+        },
+      ),
     );
   }
 
@@ -377,6 +253,7 @@ class _AuditChecklistPageState extends State<AuditChecklistPage> {
   bool isLoading2 = false;
   List<dynamic> shops = [];
   bool isLoading = true;
+
   @override
   void initState() {
     super.initState();
@@ -385,7 +262,51 @@ class _AuditChecklistPageState extends State<AuditChecklistPage> {
         user = jsonDecode(value);
       });
       loadShops();
+      loadAuditItems();
     });
+  }
+
+  Future<void> loadAuditItems() async {
+    setState(() {
+      isLoadingAuditItems = true;
+      auditItemsError = '';
+    });
+
+    try {
+      final response = await fetchAuditItems();
+
+      if (response != null && response["success"] == true) {
+        final itemsData = response["data"] as List;
+        auditItems =
+            itemsData.map((item) => AuditChecklistItem.fromJson(item)).toList();
+
+        // Update filter values based on fetched data
+        if (auditItems.isNotEmpty) {
+          final uniqueResps = auditItems.map((e) => e.resp).toSet().toList();
+          final uniqueGroups = auditItems.map((e) => e.group).toSet().toList();
+
+          if (uniqueResps.isNotEmpty && !uniqueResps.contains(selectedResp)) {
+            selectedResp = uniqueResps.first;
+          }
+          if (uniqueGroups.isNotEmpty &&
+              !uniqueGroups.contains(selectedGroup)) {
+            selectedGroup = uniqueGroups.first;
+          }
+        }
+      } else {
+        auditItemsError = response?["message"] ?? "Failed to load audit items";
+      }
+    } catch (e) {
+      auditItemsError = "Error loading audit items: $e";
+      debugPrint("❌ Error loading audit items: $e");
+    } finally {
+      setState(() => isLoadingAuditItems = false);
+    }
+  }
+
+  Future<Map<String, dynamic>?> fetchAuditItems() async {
+    String url = Api.api_url + "load-mpa-settings";
+    return await httpget(url, user['data']['token'], context);
   }
 
   Future<void> loadShops() async {
@@ -410,353 +331,936 @@ class _AuditChecklistPageState extends State<AuditChecklistPage> {
 
   @override
   Widget build(BuildContext context) {
-    final uniqueResps = auditItems.map((e) => e.resp).toSet().toList();
-    final uniqueGroups = auditItems.map((e) => e.group).toSet().toList();
-
     return Scaffold(
       appBar: AppBar(
         title: Column(
           children: [
             const Text("Audit Checklist",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    shadows: [
+                      Shadow(
+                        offset: Offset(1, 1),
+                        blurRadius: 2,
+                        color: Colors.black26,
+                      ),
+                    ])),
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                Text("Responsible: ${selectedResp}",
-                    style:
-                        TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                Text("Group: ${selectedGroup}",
-                    style:
-                        TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text("Resp: ${selectedResp ?? 'All'}",
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white)),
+                ),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text("Group: ${selectedGroup ?? 'All'}",
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white)),
+                ),
               ],
             ),
           ],
         ),
         centerTitle: true,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+              // gradient: LinearGradient(
+              //   begin: Alignment.topLeft,
+              //   end: Alignment.bottomRight,
+              //   colors: [
+              //     mycolor,
+              //     mycolor.withOpacity(0.8),
+              //     mycolor.withOpacity(0.9),
+              //   ],
+              // ),
+              ),
+        ),
+        elevation: 8,
+        shadowColor: mycolor.withOpacity(0.3),
         actions: [
-          IconButton(
-            icon: Icon(
-              showFilters ? Icons.filter_alt_off : Icons.filter_alt,
-              color: Colors.white,
+          Container(
+            margin: EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
             ),
-            onPressed: () {
-              setState(() {
-                showFilters = !showFilters;
-              });
-            },
+            child: IconButton(
+              icon: Icon(
+                showFilters ? Icons.filter_alt_off : Icons.filter_alt,
+                color: Colors.white,
+                size: 24,
+              ),
+              onPressed: () {
+                setState(() {
+                  showFilters = !showFilters;
+                });
+              },
+            ),
           ),
         ],
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : errorText.isNotEmpty
-              ? ErrorMessageWidget(errorMessage: errorText, onRetry: loadShops)
-              : Column(
-                  children: [
-                    // Filters
-                    AnimatedCrossFade(
-                      crossFadeState: showFilters
-                          ? CrossFadeState.showFirst
-                          : CrossFadeState.showSecond,
-                      duration: showFilters
-                          ? const Duration(milliseconds: 500)
-                          : const Duration(milliseconds: 0),
-                      firstChild: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6),
-                        child: Card(
-                          color: Colors.white,
-                          elevation: 1,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 16),
+      body: Container(
+        decoration: BoxDecoration(
+            // gradient: LinearGradient(
+            //   begin: Alignment.topCenter,
+            //   end: Alignment.bottomCenter,
+            //   colors: [
+            //     mycolor.withOpacity(0.05),
+            //     Colors.white,
+            //     Colors.grey.shade50,
+            //   ],
+            // ),
+            ),
+        child: RefreshIndicator(
+          displacement: 40,
+          strokeWidth: 3,
+          color: mycolor,
+          backgroundColor: Colors.white,
+          onRefresh: _refreshData,
+          child: isLoading || isLoadingAuditItems
+              ? _buildLoadingState()
+              : errorText.isNotEmpty || auditItemsError.isNotEmpty
+                  ? _buildErrorState()
+                  : _buildMainContent(),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _refreshData() async {
+    await Future.wait([
+      loadShops(),
+      loadAuditItems(),
+    ]);
+  }
+
+  Widget _buildLoadingState() {
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        child: Center(
+          child: Container(
+            padding: EdgeInsets.all(32),
+            margin: EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              // boxShadow: [
+              //   BoxShadow(
+              //     color: mycolor.withOpacity(0.1),
+              //     blurRadius: 20,
+              //     offset: Offset(0, 10),
+              //   ),
+              // ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    // gradient: LinearGradient(
+                    //   colors: [
+                    //     mycolor.withOpacity(0.1),
+                    //     mycolor.withOpacity(0.05)
+                    //   ],
+                    // ),
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(mycolor),
+                    strokeWidth: 4,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Loading Audit Checklist',
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.grey.shade800,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Fetching audit items from server...',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: mycolor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: mycolor.withOpacity(0.2)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.cloud_download,
+                        size: 16,
+                        color: mycolor,
+                      ),
+                      SizedBox(width: 6),
+                      Text(
+                        'Please wait',
+                        style: TextStyle(
+                          color: mycolor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    final displayError =
+        auditItemsError.isNotEmpty ? auditItemsError : errorText;
+
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        child: Center(
+          child: Container(
+            padding: const EdgeInsets.all(32),
+            margin: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.red.withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.red.withOpacity(0.1),
+                        Colors.red.withOpacity(0.05)
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                  child: Icon(
+                    Icons.error_outline_rounded,
+                    size: 48,
+                    color: Colors.red,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Failed to Load Data',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey.shade800,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.red.withOpacity(0.2)),
+                  ),
+                  child: Text(
+                    displayError,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade700,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [mycolor, mycolor.withOpacity(0.8)],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: mycolor.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: ElevatedButton.icon(
+                    onPressed: _refreshData,
+                    icon:
+                        const Icon(Icons.refresh_rounded, color: Colors.white),
+                    label: const Text('Retry',
+                        style: TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.w600)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 14,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: mycolor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: mycolor.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.refresh,
+                        size: 16,
+                        color: mycolor,
+                      ),
+                      SizedBox(width: 6),
+                      Text(
+                        'Pull down to refresh',
+                        style: TextStyle(
+                          color: mycolor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMainContent() {
+    final uniqueResps = auditItems.map((e) => e.resp).toSet().toList();
+    final uniqueGroups = auditItems.map((e) => e.group).toSet().toList();
+
+    return Column(
+      children: [
+        // Filters
+        AnimatedCrossFade(
+          crossFadeState: showFilters
+              ? CrossFadeState.showFirst
+              : CrossFadeState.showSecond,
+          duration: showFilters
+              ? const Duration(milliseconds: 500)
+              : const Duration(milliseconds: 0),
+          firstChild: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Card(
+              color: Colors.white,
+              elevation: 2,
+              // shadowColor: mycolor.withOpacity(0.2),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+              child: Container(
+                decoration: BoxDecoration(
+                  // gradient: LinearGradient(
+                  //   begin: Alignment.topLeft,
+                  //   end: Alignment.bottomRight,
+                  //   colors: [
+                  //     Colors.white,
+                  //     mycolor.withOpacity(0.02),
+                  //   ],
+                  // ),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.filter_list_rounded,
+                              color: mycolor, size: 20),
+                          SizedBox(width: 8),
+                          Text(
+                            "Filter Options",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey.shade800,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          const Text("RESP",
-                                              style: TextStyle(fontSize: 14)),
-                                          const SizedBox(height: 6),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 12),
-                                            decoration: BoxDecoration(
-                                              border: Border.all(
-                                                  color: Colors.grey.shade300),
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                              color: Colors.grey.shade100,
-                                            ),
-                                            child: DropdownButton<String>(
-                                              isExpanded: true,
-                                              underline: const SizedBox(),
-                                              value: selectedResp,
-                                              hint: const Text("Select RESP"),
-                                              items: uniqueResps.map((resp) {
-                                                return DropdownMenuItem<String>(
-                                                  value: resp,
-                                                  child: Text(resp),
-                                                );
-                                              }).toList(),
-                                              onChanged: (value) => setState(
-                                                  () => selectedResp = value),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
+                                Text("Responsibility",
+                                    style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.grey.shade700)),
+                                const SizedBox(height: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        Colors.grey.shade50,
+                                        Colors.white
+                                      ],
                                     ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          const Text("Group",
-                                              style: TextStyle(fontSize: 14)),
-                                          const SizedBox(height: 6),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 12),
-                                            decoration: BoxDecoration(
-                                              border: Border.all(
-                                                  color: Colors.grey.shade300),
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                              color: Colors.grey.shade100,
-                                            ),
-                                            child: DropdownButton<String>(
-                                              isExpanded: true,
-                                              underline: const SizedBox(),
-                                              value: selectedGroup!.isNotEmpty
-                                                  ? selectedGroup
-                                                  : null,
-                                              hint: const Text("Select Group"),
-                                              items: uniqueGroups.map((group) {
-                                                return DropdownMenuItem<String>(
-                                                  value: group,
-                                                  child: Text(group),
-                                                );
-                                              }).toList(),
-                                              onChanged: (value) => setState(
-                                                  () => selectedGroup =
-                                                      value ?? ''),
-                                            ),
-                                          ),
-                                        ],
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                        color: mycolor.withOpacity(0.3)),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: mycolor.withOpacity(0.1),
+                                        blurRadius: 4,
+                                        offset: Offset(0, 2),
                                       ),
+                                    ],
+                                  ),
+                                  child: DropdownButton<String>(
+                                    isExpanded: true,
+                                    underline: const SizedBox(),
+                                    value: selectedResp,
+                                    hint: const Text("Select RESP"),
+                                    icon: Icon(Icons.arrow_drop_down_rounded,
+                                        color: mycolor),
+                                    items: uniqueResps.map((resp) {
+                                      return DropdownMenuItem<String>(
+                                        value: resp,
+                                        child: Text(resp,
+                                            style: TextStyle(
+                                                fontWeight: FontWeight.w500)),
+                                      );
+                                    }).toList(),
+                                    onChanged: (value) =>
+                                        setState(() => selectedResp = value),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("Category Group",
+                                    style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.grey.shade700)),
+                                const SizedBox(height: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        Colors.grey.shade50,
+                                        Colors.white
+                                      ],
                                     ),
-                                  ],
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                        color: mycolor.withOpacity(0.3)),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: mycolor.withOpacity(0.1),
+                                        blurRadius: 4,
+                                        offset: Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: DropdownButton<String>(
+                                    isExpanded: true,
+                                    underline: const SizedBox(),
+                                    value: selectedGroup!.isNotEmpty
+                                        ? selectedGroup
+                                        : null,
+                                    hint: const Text("Select Group"),
+                                    icon: Icon(Icons.arrow_drop_down_rounded,
+                                        color: mycolor),
+                                    items: uniqueGroups.map((group) {
+                                      return DropdownMenuItem<String>(
+                                        value: group,
+                                        child: Text(group,
+                                            style: TextStyle(
+                                                fontWeight: FontWeight.w500)),
+                                      );
+                                    }).toList(),
+                                    onChanged: (value) => setState(
+                                        () => selectedGroup = value ?? ''),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          secondChild: const SizedBox.shrink(),
+        ),
+
+        // Checklist
+        Expanded(
+          child: filteredItems.isEmpty
+              ? Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 32, vertical: 40),
+                    margin: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      // boxShadow: [
+                      //   BoxShadow(
+                      //     color: mycolor.withOpacity(0.1),
+                      //     blurRadius: 15,
+                      //     offset: Offset(0, 8),
+                      //   ),
+                      // ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            // gradient: LinearGradient(
+                            //   colors: [
+                            //     mycolor.withOpacity(0.1),
+                            //     mycolor.withOpacity(0.05)
+                            //   ],
+                            // ),
+                            borderRadius: BorderRadius.circular(50),
+                          ),
+                          child: Icon(Icons.inbox_outlined,
+                              size: 48, color: mycolor),
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          "No Items Found",
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey.shade800,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          "Try adjusting your filters to see audit items.",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade600,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          padding:
+                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: mycolor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: mycolor.withOpacity(0.2)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.tune_rounded,
+                                size: 16,
+                                color: mycolor,
+                              ),
+                              SizedBox(width: 6),
+                              Text(
+                                'Use filters above',
+                                style: TextStyle(
+                                  color: mycolor,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : ListView.builder(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  itemCount: filteredItems.length,
+                  itemBuilder: (context, index) {
+                    final item = filteredItems[index];
+                    return Container(
+                      margin: const EdgeInsets.symmetric(vertical: 8),
+                      child: Card(
+                        color: Colors.white,
+                        elevation: 2,
+                        // shadowColor: mycolor.withOpacity(0.2),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            // gradient: LinearGradient(
+                            //   begin: Alignment.topLeft,
+                            //   end: Alignment.bottomRight,
+                            //   colors: [
+                            //     Colors.white,
+                            //     mycolor.withOpacity(0.02),
+                            //   ],
+                            // ),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        mycolor.withOpacity(0.1),
+                                        mycolor.withOpacity(0.05)
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    "Question ${index + 1}",
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: mycolor,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  item.description,
+                                  style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black87,
+                                      height: 1.3),
+                                ),
+                                const SizedBox(height: 16),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: List.generate(4, (value) {
+                                    final isSelected = item.rating == value;
+                                    return Container(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(8),
+                                        boxShadow: isSelected
+                                            ? [
+                                                BoxShadow(
+                                                  color: getRatingColor(value)
+                                                      .withOpacity(0.3),
+                                                  blurRadius: 6,
+                                                  offset: Offset(0, 3),
+                                                ),
+                                              ]
+                                            : null,
+                                      ),
+                                      child: ChoiceChip(
+                                        label: Text(
+                                          getRatingLabel(value),
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: isSelected
+                                                ? Colors.white
+                                                : Colors.grey.shade700,
+                                          ),
+                                        ),
+                                        selected: isSelected,
+                                        selectedColor: getRatingColor(value),
+                                        backgroundColor: Colors.grey.shade100,
+                                        onSelected: (_) {
+                                          setState(() {
+                                            item.rating = value;
+                                          });
+                                        },
+                                      ),
+                                    );
+                                  }),
+                                ),
+                                const SizedBox(height: 16),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: mycolor.withOpacity(0.1),
+                                        blurRadius: 4,
+                                        offset: Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: TextFormField(
+                                    initialValue: item.comment,
+                                    decoration: InputDecoration(
+                                      hintText:
+                                          'Add your comments here (optional)',
+                                      hintStyle: TextStyle(
+                                          color: Colors.grey.shade500),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide(
+                                            color: mycolor.withOpacity(0.3)),
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide(
+                                            color: Colors.grey.shade300),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide(
+                                            color: mycolor, width: 2),
+                                      ),
+                                      filled: true,
+                                      fillColor: Colors.grey.shade50,
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                              horizontal: 16, vertical: 12),
+                                      prefixIcon: Icon(Icons.comment_outlined,
+                                          color: mycolor.withOpacity(0.7)),
+                                    ),
+                                    onChanged: (val) {
+                                      item.comment = val;
+                                    },
+                                    maxLines: 3,
+                                    minLines: 1,
+                                  ),
                                 ),
                               ],
                             ),
                           ),
                         ),
                       ),
-                      secondChild: const SizedBox.shrink(),
-                    ),
-
-                    // Checklist
-                    Expanded(
-                      child: filteredItems.isEmpty
-                          ? Center(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 20, vertical: 30),
-                                margin: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade100,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border:
-                                      Border.all(color: Colors.grey.shade300),
-                                ),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.inbox,
-                                        size: 48, color: Colors.grey.shade500),
-                                    const SizedBox(height: 12),
-                                    Text(
-                                      "No items found",
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        color: Colors.grey.shade700,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      "Try adjusting your filters or search.",
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey.shade500,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            )
-                          : ListView.builder(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 8),
-                              itemCount: filteredItems.length,
-                              itemBuilder: (context, index) {
-                                final item = filteredItems[index];
-                                return Card(
-                                  color: Colors.white,
-                                  elevation: 2,
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10)),
-                                  margin:
-                                      const EdgeInsets.symmetric(vertical: 6),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(12),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          "${index + 1}. ${item.description}",
-                                          style: const TextStyle(
-                                              fontWeight: FontWeight.bold),
-                                        ),
-                                        const SizedBox(height: 10),
-                                        Wrap(
-                                          spacing: 10,
-                                          children: List.generate(4, (value) {
-                                            final isSelected =
-                                                item.rating == value;
-                                            return ChoiceChip(
-                                              label: Text(
-                                                getRatingLabel(value),
-                                                style: TextStyle(
-                                                  fontSize: 14,
-                                                  color: isSelected
-                                                      ? Colors.white
-                                                      : Colors.black,
-                                                ),
-                                              ),
-                                              selected: isSelected,
-                                              selectedColor:
-                                                  getRatingColor(value),
-                                              onSelected: (_) {
-                                                setState(() {
-                                                  item.rating = value;
-                                                });
-                                              },
-                                            );
-                                          }),
-                                        ),
-                                        const SizedBox(height: 10),
-                                        TextFormField(
-                                          initialValue: item.comment,
-                                          decoration: InputDecoration(
-                                            hintText: 'Add comment (optional)',
-                                            border: OutlineInputBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            contentPadding:
-                                                const EdgeInsets.symmetric(
-                                                    horizontal: 12,
-                                                    vertical: 10),
-                                          ),
-                                          onChanged: (val) {
-                                            item.comment = val;
-                                          },
-                                          maxLines: 2,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                    ),
-                    // Submit Button
-                    filteredItems.isEmpty
-                        ? Container()
-                        : isLoading2
-                            ? CustomLoader()
-                            : SafeArea(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(12.0),
-                                  child: ElevatedButton.icon(
-                                    style: ElevatedButton.styleFrom(
-                                      minimumSize:
-                                          const Size(double.infinity, 50),
-                                      shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(8)),
-                                      backgroundColor: mycolor,
-                                      foregroundColor: Colors.white,
-                                    ),
-                                    icon: const Icon(Icons.send),
-                                    label: const Text("Submit"),
-                                    onPressed: () {
-                                      final answered = auditItems
-                                          .where((item) => item.rating != null)
-                                          .toList();
-                                      if (answered.isEmpty) {
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                                "Please answer at least one checklist item before submitting."),
-                                            backgroundColor: Colors.red,
-                                          ),
-                                        );
-                                        return;
-                                      }
-                                      _showDocumentDialog();
-                                    },
-
-                                    // onPressed: _showDocumentDialog,
-                                  ),
-                                ),
-                              )
-                  ],
+                    );
+                  },
                 ),
+        ),
+        // Submit Button
+        filteredItems.isEmpty
+            ? Container()
+            : isLoading2
+                ? Container(padding: EdgeInsets.all(20), child: CustomLoader())
+                : Container(
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: mycolor.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: Offset(0, -5),
+                        ),
+                      ],
+                    ),
+                    child: SafeArea(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [mycolor, mycolor.withOpacity(0.8)],
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: mycolor.withOpacity(0.4),
+                              blurRadius: 12,
+                              offset: Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: const Size(double.infinity, 56),
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16)),
+                          ),
+                          icon: Container(
+                            padding: EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(Icons.send_rounded,
+                                color: Colors.white, size: 20),
+                          ),
+                          label: const Text(
+                            "Submit Audit Checklist",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          onPressed: () {
+                            final answered = auditItems
+                                .where((item) => item.rating != null)
+                                .toList();
+                            if (answered.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Row(
+                                    children: [
+                                      Icon(Icons.warning_amber_rounded,
+                                          color: Colors.white),
+                                      SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                            "Please answer at least one checklist item before submitting.",
+                                            style: TextStyle(
+                                                fontWeight: FontWeight.w500)),
+                                      ),
+                                    ],
+                                  ),
+                                  backgroundColor: Colors.orange,
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              );
+                              return;
+                            }
+                            _showDocumentDialog();
+                          },
+                        ),
+                      ),
+                    ),
+                  )
+      ],
     );
   }
 
   void _showDocumentDialog() {
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
-            return AlertDialog(
-              contentPadding: EdgeInsets.zero,
+            return Dialog(
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              content: SingleChildScrollView(
-                child: Card(
-                  color: Colors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  elevation: 3,
-                  // margin: const EdgeInsets.all(16),
+                  borderRadius: BorderRadius.circular(20)),
+              elevation: 2,
+              backgroundColor: Colors.white,
+              child: Container(
+                constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(context).size.height * 0.8),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: SingleChildScrollView(
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(24),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          '📄 Document Information',
-                          style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Document Information',
+                                    style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.grey.shade800),
+                                  ),
+                                  Text(
+                                    'Complete the form details',
+                                    style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey.shade600),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 24),
                         buildShopDropdown(),
                         _buildHeaderField(Icons.article,
                             'Project Model & Variant', _sectionController),
@@ -764,62 +1268,117 @@ class _AuditChecklistPageState extends State<AuditChecklistPage> {
                             _auditDepartmentController),
                         _buildHeaderField(Icons.person, 'Audit section/ Line',
                             _auditSectionController),
-                        _buildHeaderField(Icons.person, 'Period/ Duration',
+                        _buildHeaderField(Icons.schedule, 'Period/ Duration',
                             _periodDurationController),
-                        const SizedBox(height: 20),
-                        Align(
-                          alignment: Alignment.center,
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: ElevatedButton(
+                        const SizedBox(height: 24),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  border:
+                                      Border.all(color: Colors.grey.shade300),
+                                ),
+                                child: ElevatedButton.icon(
                                   onPressed: () => Navigator.pop(context),
+                                  icon: Icon(Icons.close_rounded,
+                                      color: Colors.grey.shade700),
+                                  label: Text("Cancel",
+                                      style: TextStyle(
+                                          color: Colors.grey.shade700)),
                                   style: ElevatedButton.styleFrom(
                                     minimumSize: const Size(120, 50),
+                                    backgroundColor: Colors.grey.shade100,
+                                    shadowColor: Colors.transparent,
                                     shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8)),
-                                    backgroundColor: Colors.grey.shade300,
-                                    foregroundColor: Colors.black,
+                                        borderRadius:
+                                            BorderRadius.circular(12)),
                                   ),
-                                  child: const Text("Cancel"),
                                 ),
                               ),
-                              SizedBox(width: 12),
-                              Expanded(
-                                  child: ElevatedButton(
-                                onPressed: () {
-                                  if (_sectionController.text.trim().isEmpty ||
-                                      _auditDepartmentController.text
-                                          .trim()
-                                          .isEmpty ||
-                                      _auditSectionController.text
-                                          .trim()
-                                          .isEmpty ||
-                                      _periodDurationController.text
-                                          .trim()
-                                          .isEmpty ||
-                                      _shopController.dropDownValue == null) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                            "Please fill in all fields before submitting."),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                    return;
-                                  }
-                                  Navigator.pop(
-                                      context); // ✅ Close the dialog first
-
-                                  // ✅ Wait for dialog to close, then call submission outside using Future
-                                  Future.delayed(Duration.zero, () {
-                                    submitChecklistData(); // Call function in parent or parent context
-                                  });
-                                },
-                                child: const Text("Submit"),
-                              )),
-                            ],
-                          ),
+                            ),
+                            SizedBox(width: 16),
+                            Expanded(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [mycolor, mycolor.withOpacity(0.8)],
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                  // boxShadow: [
+                                  //   BoxShadow(
+                                  //     color: mycolor.withOpacity(0.3),
+                                  //     blurRadius: 8,
+                                  //     offset: Offset(0, 4),
+                                  //   ),
+                                  // ],
+                                ),
+                                child: ElevatedButton.icon(
+                                  onPressed: () {
+                                    if (_sectionController.text
+                                            .trim()
+                                            .isEmpty ||
+                                        _auditDepartmentController.text
+                                            .trim()
+                                            .isEmpty ||
+                                        _auditSectionController.text
+                                            .trim()
+                                            .isEmpty ||
+                                        _periodDurationController.text
+                                            .trim()
+                                            .isEmpty ||
+                                        _shopController.dropDownValue == null) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Row(
+                                            children: [
+                                              Icon(Icons.warning_amber_rounded,
+                                                  color: Colors.white),
+                                              SizedBox(width: 8),
+                                              Expanded(
+                                                child: Text(
+                                                    "Please fill in all fields before submitting.",
+                                                    style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.w500)),
+                                              ),
+                                            ],
+                                          ),
+                                          backgroundColor: Colors.orange,
+                                          behavior: SnackBarBehavior.floating,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                        ),
+                                      );
+                                      return;
+                                    }
+                                    Navigator.pop(context);
+                                    Future.delayed(Duration.zero, () {
+                                      submitChecklistData();
+                                    });
+                                  },
+                                  icon: Icon(Icons.send_rounded,
+                                      color: Colors.white),
+                                  label: Text("Submit",
+                                      style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold)),
+                                  style: ElevatedButton.styleFrom(
+                                    minimumSize: const Size(120, 50),
+                                    backgroundColor: Colors.transparent,
+                                    shadowColor: Colors.transparent,
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(12)),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         )
                       ],
                     ),
@@ -855,9 +1414,10 @@ class _AuditChecklistPageState extends State<AuditChecklistPage> {
     final answered = auditItems
         .where((item) => item.rating != null)
         .map((item) => {
-              'category': item.group,
-              'resp': item.resp,
-              'query_name': item.description,
+              // 'category': item.group,
+              // 'resp': item.resp,
+              // 'query_name': item.description,
+              'mpa_setting_id': item.sn,
               'rating': item.rating,
               'comment': item.comment ?? '',
             })
@@ -869,14 +1429,14 @@ class _AuditChecklistPageState extends State<AuditChecklistPage> {
       "audit_line": _auditSectionController.text,
       "station_number": _shopController.dropDownValue!.name.toString(),
       "period": _periodDurationController.text,
-      "document_ref": "AVA.QM.D.021",
-      "original_date": "19.03.2019",
-      "revision": "4",
+      // "document_ref": "AVA.QM.D.021",
+      // "original_date": "19.03.2019",
+      // "revision": "4",
       "items": answered,
     };
-
+    print(payload);
     try {
-      final url = Api.api_url + "qfl3";
+      final url = Api.api_url + "store-mpa";
       final response = await httppostwithtoken(
         url,
         "${user['data']['token']}",
@@ -885,7 +1445,7 @@ class _AuditChecklistPageState extends State<AuditChecklistPage> {
       );
 
       if (!mounted) return;
-
+      log(jsonEncode(response));
       if (response != null && response['success'] == true) {
         awesomeTopSnackbar(
           context,

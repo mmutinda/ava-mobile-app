@@ -652,10 +652,12 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
 
     try {
       String url = Api.api_url + "answerquery2";
+      // String url = "https://11e1f2fd047a.ngrok-free.app/api/user/answerquery2";
+      // String url = Api.api_url + "uploadReceivingImages";
       var request = http.MultipartRequest('POST', Uri.parse(url));
       request.headers.addAll({
         'Accept': 'application/json',
-        'Content-Type': 'application/json',
+        // 'Content-Type': 'application/json',s
         'Authorization': 'Bearer ${user['data']["token"]}',
       });
       request.fields['answers'] = jsonEncode(answers);
@@ -680,7 +682,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
       setState(() => isButtonEnabled = true);
 
       if (result["success"]) {
-        Navigator.pop(context);
+        // Navigator.pop(context);
         awesomeTopSnackbar(
             context, result["msg"] ?? "Answers Recorded Successfully",
             backgroundColor: Colors.green);

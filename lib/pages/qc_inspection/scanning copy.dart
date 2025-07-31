@@ -534,7 +534,8 @@ class _ScanningState extends State<Scanning> {
                                   ),
                                   child: ListTile(
                                     onTap: () {
-                                      showTapScanToast(context);
+                                      processSKU(vehicles[index].vin);
+                                      // showTapScanToast(context);
                                     },
                                     contentPadding: EdgeInsets.all(16),
                                     leading: Container(

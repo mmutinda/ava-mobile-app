@@ -75,39 +75,262 @@ class _NearMissListPageState extends State<NearMissListPage> {
   var user = {};
   List<NearMiss> _allRecords = [];
   List<NearMiss> _filteredRecords = [];
+  bool _isLoading = true;
+  String? _errorMessage;
   @override
   void initState() {
     super.initState();
     getuserdata().then((value) {
-      setState(() {
-        user = jsonDecode(value);
-      });
-      futureRecords = fetchNearMissRecords();
-      futureRecords.then((records) {
+      if (mounted) {
         setState(() {
-          _allRecords = records;
-          _filteredRecords = records; // Initially no filter, show all
+          user = jsonDecode(value);
         });
-      });
+        futureRecords = fetchNearMissRecords();
+        futureRecords.then((records) {
+          if (mounted) {
+            setState(() {
+              _allRecords = records;
+              _filteredRecords = records; // Initially no filter, show all
+              _isLoading = false;
+              _errorMessage = null;
+            });
+          }
+        }).catchError((error) {
+          print("Error loading near miss records: $error");
+          if (mounted) {
+            setState(() {
+              _allRecords = [];
+              _filteredRecords = [];
+              _isLoading = false;
+              _errorMessage = error.toString().replaceFirst('Exception: ', '');
+            });
+          }
+        });
+      }
+    }).catchError((error) {
+      print("Error getting user data: $error");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load user data. Please restart the app.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     });
   }
 
   Future<List<NearMiss>> fetchNearMissRecords() async {
-    print("object");
-    final response = await http.get(
-      headers: {
-        'Authorization': 'Bearer ${user['data']['token']}',
-        'Accept': 'application/json',
-      },
-      Uri.parse('${Api.api_url}loadnearmiss'),
-    );
+    try {
+      print("Fetching Near Miss records...");
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      final List<dynamic> records = data['data'];
-      return records.map((json) => NearMiss.fromJson(json)).toList();
-    } else {
-      throw Exception('Failed to load Near Miss records');
+      // Validate user authentication
+      if (user.isEmpty ||
+          user['data'] == null ||
+          user['data']['token'] == null) {
+        throw Exception(
+            'User authentication data is missing. Please login again.');
+      }
+
+      print("Making API request to: ${Api.api_url}loadnearmiss");
+
+      final response = await http.get(
+        Uri.parse('${Api.api_url}loadnearmiss'),
+        headers: {
+          'Authorization': 'Bearer ${user['data']['token']}',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(
+        Duration(seconds: 30),
+        onTimeout: () {
+          throw Exception(
+              'Request timed out. Please check your internet connection and try again.');
+        },
+      );
+
+      print("Response status code: ${response.statusCode}");
+      print("Response body: ${response.body}");
+
+      // Handle different HTTP status codes
+      if (response.statusCode == 200) {
+        try {
+          final data = jsonDecode(response.body);
+
+          // Validate response structure
+          if (data == null) {
+            throw Exception('Received empty response from server');
+          }
+
+          if (!data.containsKey('data')) {
+            // Check for error message in response
+            if (data.containsKey('message')) {
+              throw Exception(data['message'].toString());
+            }
+            throw Exception('Invalid response format: Missing data field');
+          }
+
+          final dynamic recordsData = data['data'];
+
+          // Handle case where data might be null
+          if (recordsData == null || recordsData.isEmpty) {
+            print("No near miss records found");
+            return [];
+          }
+
+          // Ensure data is a list
+          if (recordsData is! List) {
+            throw Exception(
+                'Invalid data format: Expected list but received ${recordsData.runtimeType}');
+          }
+
+          final List<dynamic> records = recordsData;
+          print("Successfully parsed ${records.length} records");
+
+          // Parse each record with error handling
+          List<NearMiss> nearMissRecords = [];
+          for (int i = 0; i < records.length; i++) {
+            try {
+              final record = NearMiss.fromJson(records[i]);
+              nearMissRecords.add(record);
+            } catch (e) {
+              print("Error parsing record at index $i: $e");
+              // Continue with other records instead of failing completely
+              continue;
+            }
+          }
+
+          print(
+              "Successfully processed ${nearMissRecords.length} near miss records");
+          return nearMissRecords;
+        } catch (e) {
+          if (e.toString().contains('FormatException') ||
+              e.toString().contains('format')) {
+            throw Exception(
+                'Server returned invalid data format. Please contact support.');
+          }
+          rethrow;
+        }
+      } else if (response.statusCode == 401) {
+        throw Exception('Authentication failed. Please login again.');
+      } else if (response.statusCode == 403) {
+        throw Exception(
+            'Access denied. You don\'t have permission to view near miss records.');
+      } else if (response.statusCode == 404) {
+        throw Exception('Near miss service not found. Please contact support.');
+      } else if (response.statusCode == 500) {
+        throw Exception('Server error occurred. Please try again later.');
+      } else if (response.statusCode >= 400 && response.statusCode < 500) {
+        // Try to extract error message from response
+        try {
+          final errorData = jsonDecode(response.body);
+          if (errorData.containsKey('message')) {
+            throw Exception(errorData['message'].toString());
+          }
+        } catch (_) {
+          // If parsing fails, use generic message
+        }
+        throw Exception(
+            'Client error (${response.statusCode}). Please check your request and try again.');
+      } else if (response.statusCode >= 500) {
+        throw Exception(
+            'Server error (${response.statusCode}). Please try again later.');
+      } else {
+        throw Exception(
+            'Unexpected response (${response.statusCode}). Please try again.');
+      }
+    } catch (e) {
+      print("Error in fetchNearMissRecords: $e");
+
+      // Handle specific error types
+      String errorMessage;
+      if (e.toString().contains('SocketException') ||
+          e.toString().contains('NetworkException') ||
+          e.toString().contains('Connection failed')) {
+        errorMessage =
+            'No internet connection. Please check your network and try again.';
+      } else if (e.toString().contains('TimeoutException') ||
+          e.toString().contains('timed out')) {
+        errorMessage = 'Request timed out. Please try again.';
+      } else if (e.toString().contains('FormatException') ||
+          e.toString().contains('Invalid data format')) {
+        errorMessage = 'Server returned invalid data. Please contact support.';
+      } else if (e.toString().contains('authentication') ||
+          e.toString().contains('login')) {
+        errorMessage = 'Authentication failed. Please login again.';
+      } else if (e.toString().contains('permission') ||
+          e.toString().contains('Access denied')) {
+        errorMessage =
+            'Access denied. You don\'t have permission to view this data.';
+      } else {
+        // Clean up the error message
+        errorMessage = e.toString().replaceFirst('Exception: ', '');
+        if (errorMessage.isEmpty) {
+          errorMessage = 'An unexpected error occurred. Please try again.';
+        }
+      }
+
+      // Show error to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.white, size: 20),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    errorMessage,
+                    style: TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            duration: Duration(seconds: 5),
+          ),
+        );
+      }
+
+      // Re-throw the exception with clean message
+      throw Exception(errorMessage);
+    }
+  }
+
+  // Manual refresh method
+  Future<void> _refreshRecords() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+
+      final records = await fetchNearMissRecords();
+
+      if (mounted) {
+        setState(() {
+          _allRecords = records;
+          // Apply current filter if any
+          if (_selectedDate != null) {
+            _filterByDate(_selectedDate);
+          } else {
+            _filteredRecords = records;
+          }
+          _isLoading = false;
+          _errorMessage = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = e.toString().replaceFirst('Exception: ', '');
+        });
+      }
     }
   }
 
@@ -180,20 +403,50 @@ class _NearMissListPageState extends State<NearMissListPage> {
               MaterialPageRoute(
                 builder: (_) => NearMissFormPage(),
               ),
-            ).then((result) {
+            ).then((result) async {
               // Reload all records again on add
-              futureRecords = fetchNearMissRecords();
-              futureRecords.then((records) {
-                setState(() {
-                  _allRecords = records;
-                  // Apply current filter if any
-                  if (_selectedDate != null) {
-                    _filterByDate(_selectedDate);
-                  } else {
-                    _filteredRecords = records;
+              try {
+                futureRecords = fetchNearMissRecords();
+                final records = await futureRecords;
+                if (mounted) {
+                  setState(() {
+                    _allRecords = records;
+                    // Apply current filter if any
+                    if (_selectedDate != null) {
+                      _filterByDate(_selectedDate);
+                    } else {
+                      _filteredRecords = records;
+                    }
+                  });
+
+                  // Show success message if new record was added
+                  if (result == true) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Row(
+                          children: [
+                            Icon(Icons.check_circle,
+                                color: Colors.white, size: 20),
+                            SizedBox(width: 8),
+                            Text(
+                              'Near miss record added successfully!',
+                              style: TextStyle(fontWeight: FontWeight.w500),
+                            ),
+                          ],
+                        ),
+                        backgroundColor: Colors.green,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    );
                   }
-                });
-              });
+                }
+              } catch (e) {
+                print("Error refreshing records: $e");
+                // Error is already handled in fetchNearMissRecords
+              }
             });
           },
           icon: const Icon(Icons.add_circle_outline, size: 20),
@@ -285,48 +538,186 @@ class _NearMissListPageState extends State<NearMissListPage> {
           ),
         ),
       ),
-      body: _allRecords.isEmpty
-          ? _buildLoadingState()
-          : _filteredRecords.isEmpty
-              ? _buildEmptyState()
-              : Column(
-                  children: [
-                    Expanded(
-                      child: ListView.builder(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        itemCount: _filteredRecords.length,
-                        itemBuilder: (context, index) {
-                          final record = _filteredRecords[index];
-                          return _buildRecordCard(context, record, index);
-                        },
+      body: RefreshIndicator(
+        onRefresh: _refreshRecords,
+        color: theme.primaryColor,
+        backgroundColor: Colors.white,
+        strokeWidth: 3,
+        displacement: 40.0,
+        child: _isLoading
+            ? _buildLoadingState()
+            : _errorMessage != null
+                ? _buildErrorState()
+                : _filteredRecords.isEmpty
+                    ? _buildEmptyState()
+                    : Column(
+                        children: [
+                          Expanded(
+                            child: ListView.builder(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
+                              itemCount: _filteredRecords.length,
+                              itemBuilder: (context, index) {
+                                final record = _filteredRecords[index];
+                                return _buildRecordCard(context, record, index);
+                              },
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
+      ),
     );
   }
 
   Widget _buildLoadingState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(
-            strokeWidth: 3,
-            valueColor: AlwaysStoppedAnimation<Color>(
-              Theme.of(context).primaryColor,
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 20,
+                      offset: Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    Theme.of(context).primaryColor,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Loading near miss records...',
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Pull down to refresh',
+                style: TextStyle(
+                  color: Colors.grey.shade500,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    final theme = Theme.of(context);
+
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.red.shade200),
+                  ),
+                  child: Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: Colors.red,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Unable to Load Records',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade800,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  _errorMessage ?? 'An unexpected error occurred',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: theme.primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border:
+                        Border.all(color: theme.primaryColor.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.refresh,
+                        size: 16,
+                        color: theme.primaryColor,
+                      ),
+                      SizedBox(width: 6),
+                      Text(
+                        'Pull down to refresh',
+                        style: TextStyle(
+                          color: theme.primaryColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: _refreshRecords,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Try Again'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 16),
-          Text(
-            'Loading near miss records...',
-            style: TextStyle(
-              color: Colors.grey.shade600,
-              fontSize: 16,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -334,67 +725,102 @@ class _NearMissListPageState extends State<NearMissListPage> {
   Widget _buildEmptyState() {
     final theme = Theme.of(context);
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: theme.primaryColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Icon(
-                Icons.search_off_rounded,
-                size: 48,
-                color: theme.primaryColor,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              _selectedDate != null
-                  ? 'No Records Found'
-                  : 'No Near Miss Records',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey.shade800,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              _selectedDate != null
-                  ? 'No near miss records found for the selected date.'
-                  : 'No near miss incidents have been reported yet.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
-                height: 1.4,
-              ),
-            ),
-            if (_selectedDate != null) ...[
-              const SizedBox(height: 20),
-              ElevatedButton.icon(
-                onPressed: _clearFilter,
-                icon: const Icon(Icons.clear_all),
-                label: const Text('Clear Filter'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.primaryColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: theme.primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                  child: Icon(
+                    Icons.search_off_rounded,
+                    size: 48,
+                    color: theme.primaryColor,
                   ),
                 ),
-              ),
-            ],
-          ],
+                const SizedBox(height: 24),
+                Text(
+                  _selectedDate != null
+                      ? 'No Records Found'
+                      : 'No Near Miss Records',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade800,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  _selectedDate != null
+                      ? 'No near miss records found for the selected date.'
+                      : 'No near miss incidents have been reported yet.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: theme.primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border:
+                        Border.all(color: theme.primaryColor.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.refresh,
+                        size: 16,
+                        color: theme.primaryColor,
+                      ),
+                      SizedBox(width: 6),
+                      Text(
+                        'Pull down to refresh',
+                        style: TextStyle(
+                          color: theme.primaryColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (_selectedDate != null) ...[
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    onPressed: _clearFilter,
+                    icon: const Icon(Icons.clear_all),
+                    label: const Text('Clear Filter'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -1175,19 +1601,6 @@ class NearMissDetailPage extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  Color _getRiskColor(String risk) {
-    switch (risk.toLowerCase()) {
-      case 'high':
-        return Colors.red;
-      case 'medium':
-        return Colors.orange;
-      case 'low':
-        return Colors.green;
-      default:
-        return Colors.grey;
-    }
   }
 
   IconData _getRiskIcon(String risk) {

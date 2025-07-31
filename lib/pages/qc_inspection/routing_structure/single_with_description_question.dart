@@ -135,16 +135,6 @@ class _SingleWithDescriptionQuestionState
           const SizedBox(
             height: 5,
           ),
-          // if (widget.initialDecripValue != null)
-          //   Container(
-          //     width: double.infinity,
-          //     padding: EdgeInsets.all(10),
-          //     decoration: BoxDecoration(color: mycolor.withOpacity(0.06)),
-          //     child: Text(
-          //       " ${widget.initialDecripValue}",
-          //       style: TextStyle(color: Colors.red[900]),
-          //     ),
-          //   ),
           okay == "nok" || widget.hasDescription == 'Yes'
               ? TextFormField(
                   maxLines: null,

@@ -616,19 +616,6 @@ class _HelpPageState extends State<HelpPage> with TickerProviderStateMixin {
             'Use the "Change Password" option to update your login credentials.'),
         _buildStepCard(5, 'Logout',
             'Use the "Logout" option to securely sign out of the system.'),
-        SizedBox(height: 20),
-        _buildSubSection('Password Security', FeatherIcons.lock),
-        _buildInfoCard(
-          'Password Requirements',
-          '• Use a strong password with at least 8 characters\n• Include uppercase and lowercase letters\n• Add numbers and special characters\n• Avoid using personal information\n• Change password regularly\n• Never share your credentials',
-          Colors.blue,
-        ),
-        SizedBox(height: 16),
-        _buildInfoCard(
-          'Account Security Tips',
-          '• Always logout when using shared devices\n• Report any suspicious account activity\n• Keep your profile information updated\n• Use secure networks for system access\n• Enable notifications for account changes',
-          Colors.green,
-        ),
       ],
     );
   }
@@ -654,19 +641,6 @@ class _HelpPageState extends State<HelpPage> with TickerProviderStateMixin {
         _buildTroubleshootingItem(
           'App Crashes',
           'Solutions:\n• Update the app\n• Restart the device\n• Clear app data\n• Reinstall if necessary',
-        ),
-        SizedBox(height: 20),
-        _buildSubSection('Getting Help', FeatherIcons.headphones),
-        _buildInfoCard(
-          'Support Contacts',
-          'For technical support:\n• IT Help Desk: ext. 1234\n• Quality Team: ext. 5678\n• System Admin: admin@company.com\n• Emergency Support: ext. 9999\n\nFor training and user guidance:\n• Training Team: training@company.com\n• User Manual: Available in system documents',
-          Colors.purple,
-        ),
-        SizedBox(height: 16),
-        _buildInfoCard(
-          'System Status',
-          'Check system status and maintenance schedules:\n• System Status Page: status.company.com\n• Maintenance Windows: Sundays 2-4 AM\n• Version Updates: Monthly\n• Backup Schedule: Daily at midnight',
-          Colors.blue,
         ),
       ],
     );

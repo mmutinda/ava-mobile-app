@@ -113,28 +113,6 @@ class _HomeScreanState extends State<HomeScrean> {
             ),
           ],
         ),
-        actions: [
-          Container(
-            margin: EdgeInsets.only(right: 16),
-            child: IconButton(
-              icon: Container(
-                padding: EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  FeatherIcons.bell,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-              onPressed: () {
-                // Add notification functionality
-              },
-            ),
-          ),
-        ],
       ),
       drawer: Container(
         decoration: BoxDecoration(
@@ -263,7 +241,7 @@ class _HomeScreanState extends State<HomeScrean> {
                                     color: Colors.white, size: 12),
                                 SizedBox(width: 4),
                                 Text(
-                                  "InfoPlus System",
+                                  "InfoPulse System",
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w600,
@@ -394,7 +372,7 @@ class _HomeScreanState extends State<HomeScrean> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Welcome to InfoPlus",
+                          "Welcome to InfoPulse",
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,

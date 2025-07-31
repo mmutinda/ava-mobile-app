@@ -17,7 +17,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'InfoPlus SYSTEM',
+      title: 'InfoPulse SYSTEM',
       builder: EasyLoading.init(), // ✅ Initialize EasyLoading here
       theme: ThemeData(
         pageTransitionsTheme: PageTransitionsTheme(

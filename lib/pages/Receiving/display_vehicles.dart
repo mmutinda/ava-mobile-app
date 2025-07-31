@@ -56,20 +56,31 @@ class _DisplayVehiclesState extends State<DisplayVehicles>
     ));
 
     getuserdata().then((value) {
-      setState(() {
-        user = jsonDecode(value);
-      });
-      fetchVehicles().then(
-        (value) {
-          if (vehicles.isEmpty) {
-            print(value);
-            setState(() {
-              loadingText = 'No Lots available at the moment';
-            });
+      if (mounted) {
+        setState(() {
+          user = jsonDecode(value);
+        });
+        fetchVehicles().then(
+          (value) {
+            if (mounted) {
+              _animationController.forward();
+            }
+          },
+        ).catchError((error) {
+          print("Initial fetchVehicles error: $error");
+          if (mounted) {
+            _animationController.forward();
           }
-          _animationController.forward();
-        },
-      );
+        });
+      }
+    }).catchError((error) {
+      print("Error getting user data: $error");
+      if (mounted) {
+        setState(() {
+          loadingText = 'Failed to load user data. Please restart the app.';
+        });
+        _animationController.forward();
+      }
     });
   }
 
@@ -313,37 +324,60 @@ class _DisplayVehiclesState extends State<DisplayVehicles>
                 color: theme.primaryColor,
                 backgroundColor: Colors.white,
                 strokeWidth: 3,
-                onRefresh: () {
-                  return Future.delayed(
-                    const Duration(seconds: 1),
-                    () {
-                      fetchVehicles().then(
-                        (value) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Row(
-                                children: [
-                                  Icon(FeatherIcons.refreshCw,
-                                      color: Colors.white, size: 20),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'Data refreshed successfully!',
-                                    style: GoogleFonts.poppins(
-                                        fontWeight: FontWeight.w500),
-                                  ),
-                                ],
+                onRefresh: () async {
+                  try {
+                    await fetchVehicles();
+                    // Only show success message if no error occurred
+                    if (mounted && loadingText.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Row(
+                            children: [
+                              Icon(FeatherIcons.refreshCw,
+                                  color: Colors.white, size: 20),
+                              SizedBox(width: 8),
+                              Text(
+                                'Data refreshed successfully!',
+                                style: GoogleFonts.poppins(
+                                    fontWeight: FontWeight.w500),
                               ),
-                              backgroundColor: Colors.green,
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                          );
-                        },
+                            ],
+                          ),
+                          backgroundColor: Colors.green,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
                       );
-                    },
-                  );
+                    }
+                  } catch (e) {
+                    // Error is already handled in fetchVehicles(), just log it
+                    print("Refresh error: $e");
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Row(
+                            children: [
+                              Icon(FeatherIcons.alertCircle,
+                                  color: Colors.white, size: 20),
+                              SizedBox(width: 8),
+                              Text(
+                                'Refresh failed. Please try again.',
+                                style: GoogleFonts.poppins(
+                                    fontWeight: FontWeight.w500),
+                              ),
+                            ],
+                          ),
+                          backgroundColor: Colors.red,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      );
+                    }
+                  }
                 },
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -389,17 +423,14 @@ class _DisplayVehiclesState extends State<DisplayVehicles>
                       return ReceivingForm();
                     },
                   )).then(
-                    (value) {
-                      fetchVehicles().then(
-                        (value) {
-                          if (vehicles.isEmpty) {
-                            print(value);
-                            setState(() {
-                              loadingText = 'No Lots available at the moment';
-                            });
-                          }
-                        },
-                      );
+                    (value) async {
+                      try {
+                        await fetchVehicles();
+                        // Success is handled in fetchVehicles
+                      } catch (e) {
+                        // Error handling is already done in fetchVehicles
+                        print("Navigation callback error: $e");
+                      }
                     },
                   );
                 },
@@ -485,16 +516,14 @@ class _DisplayVehiclesState extends State<DisplayVehicles>
           ),
           SizedBox(height: 20),
           ElevatedButton.icon(
-            onPressed: () {
-              fetchVehicles().then(
-                (value) {
-                  if (vehicles.isEmpty) {
-                    setState(() {
-                      loadingText = 'No any Lot available at the moment';
-                    });
-                  }
-                },
-              );
+            onPressed: () async {
+              try {
+                await fetchVehicles();
+                // Success message is handled in fetchVehicles if successful
+              } catch (e) {
+                // Error handling is already done in fetchVehicles
+                print("Retry button error: $e");
+              }
             },
             icon: Icon(FeatherIcons.refreshCw, size: 18),
             label: Text('Retry'),
@@ -575,8 +604,12 @@ class _DisplayVehiclesState extends State<DisplayVehicles>
                     LotNo: vehicles[index]['lot_number'],
                   ),
                 ),
-              ).then((value) {
-                fetchVehicles();
+              ).then((value) async {
+                try {
+                  await fetchVehicles();
+                } catch (e) {
+                  print("Navigation return callback error: $e");
+                }
               });
             }
           },
@@ -724,8 +757,12 @@ class _DisplayVehiclesState extends State<DisplayVehicles>
                                 LotNo: vehicles[index]['lot_number'],
                               ),
                             ),
-                          ).then((value) {
-                            fetchVehicles();
+                          ).then((value) async {
+                            try {
+                              await fetchVehicles();
+                            } catch (e) {
+                              print("Button navigation callback error: $e");
+                            }
                           });
                         }
                       },
@@ -1040,58 +1077,158 @@ class _DisplayVehiclesState extends State<DisplayVehicles>
   }
 
   Future fetchVehicles() async {
+    // Initialize loading state
     setState(() {
       loadingText = '';
       isLoading = vehicles.isEmpty ? true : false;
     });
-    String url = widget.isPlanning == 'Yes'
-        ? "${Api.api_url}loadSheduledLot"
-        : "${Api.api_url}loadVehicleReceivingLots";
-    print(url);
-    ProgressDialog pr = ProgressDialog(context,
-        type: ProgressDialogType.normal, isDismissible: true, showLogs: true);
-    pr.style(
-      message: 'Fetching vehicles...',
-      borderRadius: 8,
-      backgroundColor: Colors.white,
-      progressWidget: const SizedBox(
-          width: 20,
-          height: 20,
-          child: Center(child: CircularProgressIndicator())),
-      elevation: 10.0,
-      insetAnimCurve: Curves.easeInOut,
-    );
 
-    // pr.show();
-    var responsedata = await httpget(url, user['data']["token"], context);
-    // print(responsedata);
-    if (responsedata != null) {
-      pr.hide();
+    ProgressDialog? pr;
 
+    try {
+      // Validate user data
+      if (user.isEmpty ||
+          user['data'] == null ||
+          user['data']['token'] == null) {
+        throw Exception(
+            'User authentication data is missing. Please login again.');
+      }
+
+      // Construct URL
+      String url = widget.isPlanning == 'Yes'
+          ? "${Api.api_url}loadSheduledLot"
+          : "${Api.api_url}loadVehicleReceivingLots";
+      print("Fetching vehicles from URL: $url");
+
+      // Initialize progress dialog
+      pr = ProgressDialog(context,
+          type: ProgressDialogType.normal, isDismissible: true, showLogs: true);
+      pr.style(
+        message: 'Fetching vehicles...',
+        borderRadius: 8,
+        backgroundColor: Colors.white,
+        progressWidget: const SizedBox(
+            width: 20,
+            height: 20,
+            child: Center(child: CircularProgressIndicator())),
+        elevation: 10.0,
+        insetAnimCurve: Curves.easeInOut,
+      );
+
+      // Set up timeout for the request (handled internally by httpget function)
+      // Make API request
+      var responsedata = await httpget(url, user['data']["token"], context);
+
+      // Handle successful response
+      if (responsedata != null) {
+        // Hide progress dialog safely
+        if (pr.isShowing()) {
+          await pr.hide();
+        }
+
+        // Validate response structure
+        if (responsedata is Map<String, dynamic>) {
+          if (responsedata.containsKey("data")) {
+            // Check if data is a list
+            if (responsedata["data"] is List) {
+              List<dynamic> vehicleData = responsedata["data"] as List<dynamic>;
+
+              setState(() {
+                isLoading = false;
+                vehicles = vehicleData;
+                loadingText = vehicleData.isEmpty
+                    ? 'No vehicles available at the moment'
+                    : '';
+              });
+
+              print("Successfully loaded ${vehicleData.length} vehicles");
+            } else {
+              throw Exception(
+                  'Invalid data format: Expected list but received ${responsedata["data"].runtimeType}');
+            }
+          } else if (responsedata.containsKey("message")) {
+            // Handle API error with message
+            throw Exception(responsedata["message"].toString());
+          } else {
+            throw Exception(
+                'Invalid response format: Missing data or message field');
+          }
+        } else {
+          throw Exception(
+              'Invalid response format: Expected Map but received ${responsedata.runtimeType}');
+        }
+      } else {
+        // Handle null response
+        throw Exception(
+            'No response received from server. Please check your internet connection.');
+      }
+    } catch (e) {
+      print("Error in fetchVehicles: $e");
+
+      // Hide progress dialog safely if it exists
+      if (pr != null && pr.isShowing()) {
+        try {
+          await pr.hide();
+        } catch (hideError) {
+          print("Error hiding progress dialog: $hideError");
+        }
+      }
+
+      // Determine error message based on error type
+      String errorMessage;
+      if (e.toString().contains('SocketException') ||
+          e.toString().contains('NetworkImageLoadException') ||
+          e.toString().contains('Connection failed')) {
+        errorMessage =
+            'No internet connection. Please check your network and try again.';
+      } else if (e.toString().contains('TimeoutException') ||
+          e.toString().contains('timed out')) {
+        errorMessage = 'Request timed out. Please try again.';
+      } else if (e.toString().contains('FormatException') ||
+          e.toString().contains('Invalid data format')) {
+        errorMessage = 'Server returned invalid data. Please contact support.';
+      } else if (e.toString().contains('authentication') ||
+          e.toString().contains('401') ||
+          e.toString().contains('Unauthorized')) {
+        errorMessage = 'Authentication failed. Please login again.';
+      } else if (e.toString().contains('403') ||
+          e.toString().contains('Forbidden')) {
+        errorMessage =
+            'Access denied. You don\'t have permission to view this data.';
+      } else if (e.toString().contains('404') ||
+          e.toString().contains('Not Found')) {
+        errorMessage = 'Service not found. Please contact support.';
+      } else if (e.toString().contains('500') ||
+          e.toString().contains('Server Error')) {
+        errorMessage = 'Server error occurred. Please try again later.';
+      } else {
+        errorMessage = e.toString().replaceFirst('Exception: ', '');
+      }
+
+      // Update UI with error state
       setState(() {
         isLoading = false;
-        vehicles = (responsedata["data"] as List<dynamic>);
+        loadingText = errorMessage;
       });
-    } else {
-      pr.hide().whenComplete(() {
-        setState(() {
-          isLoading = false;
-          loadingText = responsedata["message"].toString();
-        });
-        toasty(context, "${responsedata["message"]}",
-            bgColor: Colors.red, textColor: textWhite);
-      });
-    }
-    Future.delayed(const Duration(seconds: dismissseconds), () {
-      if (pr.isShowing()) {
-        pr.hide();
-        setState(() {
-          isLoading = false;
-          loadingText = internetmessage;
-        });
-        // ScaffoldMessenger.of(context)
-        //     .showSnackBar(snackBar(internetmessage, snackred));
+
+      // Show error toast for network/auth errors
+      if (e.toString().contains('internet') ||
+          e.toString().contains('network') ||
+          e.toString().contains('authentication')) {
+        try {
+          toasty(context, errorMessage,
+              bgColor: Colors.red, textColor: Colors.white);
+        } catch (toastError) {
+          print("Error showing toast: $toastError");
+        }
       }
-    });
+    } finally {
+      // Ensure loading state is always reset
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
   }
 }

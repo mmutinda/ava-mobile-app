@@ -26,6 +26,34 @@ Future<Uint8List> generatedocumentPdf(Document document) async {
       pageFormat: PdfPageFormat.a4,
       margin: pw.EdgeInsets.all(20),
       build: (pw.Context context) {
+        var container = pw.Container(
+          padding: pw.EdgeInsets.all(8),
+          decoration: pw.BoxDecoration(
+            borderRadius: pw.BorderRadius.circular(5),
+            color: PdfColors.grey100,
+          ),
+          width: double.infinity,
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                'SCORING CRITERIA:',
+                style:
+                    pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+              ),
+              pw.Text(
+                '1 = Compliant | 0 = Non-Compliant',
+                style: pw.TextStyle(fontSize: 9),
+              ),
+              pw.SizedBox(height: 5),
+              pw.Text(
+                'NOTE: This document serves as evidence of 5S audit compliance and should be kept for quality management records.',
+                style:
+                    pw.TextStyle(fontSize: 9, fontStyle: pw.FontStyle.italic),
+              ),
+            ],
+          ),
+        );
         return [
           // Header Section
           pw.Row(
@@ -266,34 +294,7 @@ Future<Uint8List> generatedocumentPdf(Document document) async {
           pw.SizedBox(height: 10),
 
           // Footer Note
-          pw.Container(
-            padding: pw.EdgeInsets.all(8),
-            decoration: pw.BoxDecoration(
-              borderRadius: pw.BorderRadius.circular(5),
-              color: PdfColors.grey100,
-            ),
-            width: double.infinity,
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text(
-                  'SCORING CRITERIA:',
-                  style: pw.TextStyle(
-                      fontSize: 10, fontWeight: pw.FontWeight.bold),
-                ),
-                pw.Text(
-                  '5 = Excellent | 4 = Good | 3 = Satisfactory | 2 = Needs Improvement | 1 = Poor',
-                  style: pw.TextStyle(fontSize: 9),
-                ),
-                pw.SizedBox(height: 5),
-                pw.Text(
-                  'NOTE: This document serves as evidence of 5S audit compliance and should be kept for quality management records.',
-                  style:
-                      pw.TextStyle(fontSize: 9, fontStyle: pw.FontStyle.italic),
-                ),
-              ],
-            ),
-          ),
+          container,
         ];
       },
       footer: (context) {
@@ -427,8 +428,10 @@ double _calculateAverageScore(List<Item> items) {
   for (var item in items) {
     try {
       double score = double.parse(item.score.toString());
-      totalScore += score;
-      validScores++;
+      if (score == 0 || score == 1) {
+        totalScore += score;
+        validScores++;
+      }
     } catch (e) {
       // Skip invalid scores
     }
@@ -439,13 +442,13 @@ double _calculateAverageScore(List<Item> items) {
 
 // Helper function to get audit status based on average score
 String _getAuditStatus(double averageScore) {
-  if (averageScore >= 4.5) {
+  if (averageScore >= 0.8) {
     return 'EXCELLENT';
-  } else if (averageScore >= 4.0) {
+  } else if (averageScore >= 0.6) {
     return 'GOOD';
-  } else if (averageScore >= 3.0) {
+  } else if (averageScore >= 0.4) {
     return 'SATISFACTORY';
-  } else if (averageScore >= 2.0) {
+  } else if (averageScore >= 0.2) {
     return 'NEEDS IMPROVEMENT';
   } else {
     return 'POOR';
