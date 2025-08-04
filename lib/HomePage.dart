@@ -18,7 +18,7 @@ import 'package:isuze_pqcs/pages/login/login.dart';
 import 'package:isuze_pqcs/pages/planning/planningHome.dart';
 
 import 'package:isuze_pqcs/pages/profile_screen.dart';
-import 'package:isuze_pqcs/pages/qfl3/qfl3_list.dart';
+import 'package:isuze_pqcs/pages/mpa/mpa_list.dart';
 import 'package:isuze_pqcs/pages/tms/TMS_listUnits.dart';
 import 'package:nb_utils/nb_utils.dart';
 

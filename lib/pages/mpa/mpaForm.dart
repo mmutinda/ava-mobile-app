@@ -8,7 +8,7 @@ import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/loader.dart';
-import 'package:isuze_pqcs/pages/qfl3/qfl3_list.dart';
+import 'package:isuze_pqcs/pages/mpa/mpa_list.dart';
 
 class AuditChecklistItem {
   final String sn;

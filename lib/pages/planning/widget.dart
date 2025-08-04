@@ -199,8 +199,12 @@ class IssueDialog extends StatefulWidget {
 
 class _IssueDialogState extends State<IssueDialog>
     with SingleTickerProviderStateMixin {
+  final _processDescriptionController = TextEditingController();
   final _partNoController = TextEditingController();
+  final _issueDescriptionController = TextEditingController();
   final _categoryController = TextEditingController();
+  final _issueTypeController = TextEditingController();
+  final _reasonCodeController = TextEditingController();
   final _classificationController = TextEditingController();
   File? _imageFile;
   late AnimationController _animationController;
@@ -226,8 +230,12 @@ class _IssueDialogState extends State<IssueDialog>
   @override
   void dispose() {
     _animationController.dispose();
+    _processDescriptionController.dispose();
     _partNoController.dispose();
+    _issueDescriptionController.dispose();
     _categoryController.dispose();
+    _issueTypeController.dispose();
+    _reasonCodeController.dispose();
     _classificationController.dispose();
     super.dispose();
   }
@@ -326,6 +334,13 @@ class _IssueDialogState extends State<IssueDialog>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             _buildStyledTextField(
+                              controller: _processDescriptionController,
+                              label: 'Process Description',
+                              icon: FeatherIcons.clipboard,
+                              hint: 'Enter process description',
+                            ),
+                            SizedBox(height: 20),
+                            _buildStyledTextField(
                               controller: _partNoController,
                               label: 'Part Number',
                               icon: FeatherIcons.hash,
@@ -340,10 +355,32 @@ class _IssueDialogState extends State<IssueDialog>
                             ),
                             SizedBox(height: 20),
                             _buildStyledTextField(
+                              controller: _issueTypeController,
+                              label: 'Issue Type',
+                              icon: FeatherIcons.type,
+                              hint: 'Enter issue type',
+                            ),
+                            SizedBox(height: 20),
+                            _buildStyledTextField(
+                              controller: _reasonCodeController,
+                              label: 'Reason Code',
+                              icon: FeatherIcons.code,
+                              hint: 'Enter reason code',
+                            ),
+                            SizedBox(height: 20),
+                            _buildStyledTextField(
                               controller: _classificationController,
                               label: 'Defect Classification',
                               icon: FeatherIcons.list,
                               hint: 'Enter defect classification',
+                            ),
+                            SizedBox(height: 20),
+                            _buildStyledTextField(
+                              controller: _issueDescriptionController,
+                              label: 'Issue Description',
+                              icon: FeatherIcons.fileText,
+                              hint: 'Describe the issue in detail',
+                              maxLines: 3,
                             ),
                             SizedBox(height: 24),
                             _buildImageSection(),
@@ -401,6 +438,7 @@ class _IssueDialogState extends State<IssueDialog>
     required String label,
     required IconData icon,
     required String hint,
+    int maxLines = 1,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -436,6 +474,7 @@ class _IssueDialogState extends State<IssueDialog>
           ),
           child: TextField(
             controller: controller,
+            maxLines: maxLines,
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: TextStyle(color: Colors.grey[400]),
@@ -657,8 +696,12 @@ class _IssueDialogState extends State<IssueDialog>
   }
 
   void _submitIssue() {
-    if (_partNoController.text.trim().isEmpty ||
+    if (_processDescriptionController.text.trim().isEmpty ||
+        _partNoController.text.trim().isEmpty ||
+        _issueDescriptionController.text.trim().isEmpty ||
         _categoryController.text.trim().isEmpty ||
+        _issueTypeController.text.trim().isEmpty ||
+        _reasonCodeController.text.trim().isEmpty ||
         _classificationController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -679,8 +722,12 @@ class _IssueDialogState extends State<IssueDialog>
     }
 
     Navigator.pop(context, {
+      'processDescription': _processDescriptionController.text.trim(),
       'partNo': _partNoController.text.trim(),
+      'issueDescription': _issueDescriptionController.text.trim(),
       'category': _categoryController.text.trim(),
+      'issueType': _issueTypeController.text.trim(),
+      'reasonCode': _reasonCodeController.text.trim(),
       'classification': _classificationController.text.trim(),
       'image': _imageFile,
     });

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:dropdown_textfield/dropdown_textfield.dart';
@@ -8,7 +9,6 @@ import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/loader.dart';
 import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
-import 'dart:io';
 
 class ClaimForm extends StatefulWidget {
   @override
@@ -35,6 +35,17 @@ class _ClaimFormState extends State<ClaimForm> {
   bool _isLoadingModels = false;
   var selectedLotId;
   var modelId;
+
+  FocusNode customerTextFieldFocusNode = FocusNode();
+  FocusNode customerSearchFocusNode = FocusNode();
+  FocusNode carModelTextFieldFocusNode = FocusNode();
+  FocusNode carModelSearchFocusNode = FocusNode();
+  FocusNode searchFocusNode = FocusNode();
+  FocusNode textFieldFocusNode = FocusNode();
+  String errorModel = '';
+  late List<dynamic> partNOs = [];
+  var LotId;
+
   @override
   void initState() {
     super.initState();
@@ -45,7 +56,6 @@ class _ClaimFormState extends State<ClaimForm> {
 
     getuserdata().then((value) {
       user = jsonDecode(value);
-      // _fetchData();
     });
   }
 
@@ -59,38 +69,6 @@ class _ClaimFormState extends State<ClaimForm> {
     _partFieldFocus.dispose();
     super.dispose();
   }
-
-  FocusNode customerTextFieldFocusNode = FocusNode();
-  FocusNode customerSearchFocusNode = FocusNode();
-  FocusNode carModelTextFieldFocusNode = FocusNode();
-  FocusNode carModelSearchFocusNode = FocusNode();
-  FocusNode searchFocusNode = FocusNode();
-  FocusNode textFieldFocusNode = FocusNode();
-  String errorModel = '';
-  late List<dynamic> partNOs = [];
-  var LotId;
-  // Future<void> _fetchData() async {
-  //   setState(() {
-  //     isLoading = true;
-  //     errorText = '';
-  //   });
-  //   try {
-  //     final results = await Future.wait([fetchClients()]);
-  //     if (results.any((r) => r == null || r["data"] == null)) {
-  //       throw Exception("Invalid response from server.");
-  //     }
-  //     setState(() {
-  //       clients = results[0]["data"];
-  //       checklist = results[1]["data"];
-  //       isLoading = false;
-  //     });
-  //   } catch (e) {
-  //     setState(() {
-  //       errorText = e.toString();
-  //       isLoading = false;
-  //     });
-  //   }
-  // }
 
   void storeChecklist() {
     try {
@@ -155,10 +133,23 @@ class _ClaimFormState extends State<ClaimForm> {
       final res = jsonDecode(response.body);
       print(res);
       progress.hide();
-      // Add success message or navigation here
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Claim submitted successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pop(context, true);
     } catch (e) {
       progress.hide();
       print("Submission failed: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to submit claim. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -166,206 +157,322 @@ class _ClaimFormState extends State<ClaimForm> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Claim Form'),
+        title: const Text('New Claim'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        elevation: 0,
         centerTitle: true,
       ),
+      backgroundColor: Colors.grey.shade50,
       body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
-          child: Card(
-            elevation: 1,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (errorModel.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Text(
-                        errorText,
-                        style: TextStyle(color: Colors.red),
-                      ),
-                    ),
-                  TextFormField(
-                    controller: _lotNumberController,
-                    focusNode: customerTextFieldFocusNode,
-                    decoration: InputDecoration(
-                      labelText: 'Lot Number',
-                      floatingLabelBehavior: FloatingLabelBehavior.always,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8.0),
-                      ),
-                      filled: true,
-                      fillColor: Colors.grey.shade50,
-                      suffixIcon: IconButton(
-                        icon: Icon(Icons.search, color: mycolor),
-                        onPressed: () async {
-                          final value = _lotNumberController.text.trim();
-                          if (value.isEmpty) {
-                            // Optionally show an error or return
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                  content: Text("Please enter a Lot Number")),
-                            );
-                            return;
-                          }
-
-                          selectedLotId = value;
-                          setState(() {
-                            _isLoadingModels = true;
-                            errorModel = '';
-                          });
-
-                          try {
-                            final response = await fetchpartNO(selectedLotId);
-                            // print(response)
-                            print('FetchCarModel Response: $response');
-                            if (response != null) {
-                              if (response['data'] != null) {
-                                partNOs = response['data'];
-                              } else {
-                                partNOs = [];
-                                errorModel =
-                                    'Error: "data" not found or is not a List.';
-                              }
-                            } else {
-                              partNOs = [];
-                              errorModel = 'Response is not a valid Map.';
-                            }
-                          } on TimeoutException {
-                            errorModel = 'Fetching car models timed out.';
-                            partNOs = [];
-                          } on SocketException {
-                            errorModel = 'No internet connection.';
-                            partNOs = [];
-                          } catch (e) {
-                            errorModel = '$e';
-                            partNOs = [];
-                          } finally {
-                            setState(() {
-                              _isLoadingModels = false;
-                              _partDropdown.clearDropDown();
-                            });
-                          }
-                        },
-                      ),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return "*Required";
-                      }
-                      return null;
-                    },
-
-                    // onChanged: (value) async {
-                    //   selectedLotId = value; // Assign directly from user input
-                    //   setState(() {
-                    //     _isLoadingModels = true;
-                    //   });
-
-                    //   try {
-                    //     final response = await fetchpartNO(selectedLotId);
-                    //     print('FetchCarModel Response: $response');
-                    //     if (response != null &&
-                    //         response is Map<String, dynamic>) {
-                    //       if (response.containsKey('data') &&
-                    //           response['data'] is List) {
-                    //         partNOs = List<Map<String, dynamic>>.from(
-                    //             response['data']);
-                    //       } else {
-                    //         partNOs = [];
-                    //         errorModel =
-                    //             'Error: "data" not found or is not a List.';
-                    //       }
-                    //     } else {
-                    //       partNOs = [];
-                    //       errorModel = 'Response is not a valid Map.';
-                    //     }
-                    //   } on TimeoutException {
-                    //     errorModel = 'Fetching car models timed out.';
-                    //     partNOs = [];
-                    //   } on SocketException {
-                    //     errorModel = 'No internet connection.';
-                    //     partNOs = [];
-                    //   } catch (e) {
-                    //     errorModel = '$e';
-                    //     partNOs = [];
-                    //   } finally {
-                    //     setState(() {
-                    //       _isLoadingModels = false;
-                    //       _partDropdown.clearDropDown();
-                    //     });
-                    //   }
-                    // },
-                  ),
-                  const SizedBox(height: 8),
-                  // Text("${partNOs}"),
-                  _isLoadingModels
-                      ? Center(child: CircularProgressIndicator())
-                      : DropDownTextField(
-                          controller: _partDropdown,
-                          clearOption: false,
-                          dropDownIconProperty:
-                              IconProperty(color: mycolor, size: 30),
-                          textFieldFocusNode: textFieldFocusNode,
-                          textFieldDecoration: InputDecoration(
-                            labelText: 'Part Number',
-                            floatingLabelBehavior: FloatingLabelBehavior.always,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8.0),
-                            ),
-                            filled: true,
-                            fillColor: Colors.grey.shade50,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: mycolor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          searchFocusNode: searchFocusNode,
-                          dropDownItemCount: 10,
-                          enableSearch: true,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return "*Required";
-                            } else {
-                              return null;
-                            }
-                          },
-                          dropDownList: partNOs.map((partNo) {
-                            return DropDownValueModel(
-                              name: partNo,
-                              value: partNo,
-                            );
-                          }).toList(),
-                          onChanged: (val) {
-                            modelId = val.value;
-                          },
+                          child: Icon(
+                            Icons.assignment_outlined,
+                            color: mycolor,
+                            size: 24,
+                          ),
                         ),
-
-                  const SizedBox(height: 12),
-                  _buildTextField("Defect Code", _defectCodeController),
-                  const SizedBox(height: 12),
-                  _buildTextField(
-                    "Description",
-                    _descriptionController,
-                    minLines: 3,
-                    keyboardType: TextInputType.multiline,
-                  ),
-                  const SizedBox(height: 24),
-                  Center(
-                    child: ElevatedButton.icon(
-                      onPressed: _submitForm,
-                      icon: const Icon(Icons.save),
-                      label: const Text("Save"),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 12),
+                        const SizedBox(width: 16),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Create New Claim',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                'Fill in the details below',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Form Fields
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (errorModel.isNotEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.red.shade200),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.error_outline, color: Colors.red.shade600, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                errorModel,
+                                style: TextStyle(color: Colors.red.shade600, fontSize: 14),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    
+                    // Lot Number Field
+                    const Text(
+                      'Lot Number',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _lotNumberController,
+                      focusNode: customerTextFieldFocusNode,
+                      decoration: InputDecoration(
+                        hintText: 'Enter lot number',
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: mycolor, width: 2),
+                        ),
+                        suffixIcon: Container(
+                          margin: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: mycolor,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: IconButton(
+                            icon: const Icon(Icons.search, color: Colors.white),
+                            onPressed: () async {
+                              final value = _lotNumberController.text.trim();
+                              if (value.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("Please enter a Lot Number"),
+                                    backgroundColor: Colors.orange,
+                                  ),
+                                );
+                                return;
+                              }
+
+                              selectedLotId = value;
+                              setState(() {
+                                _isLoadingModels = true;
+                                errorModel = '';
+                              });
+
+                              try {
+                                final response = await fetchpartNO(selectedLotId);
+                                print('FetchCarModel Response: $response');
+                                if (response != null) {
+                                  if (response['data'] != null) {
+                                    partNOs = response['data'];
+                                  } else {
+                                    partNOs = [];
+                                    errorModel = 'Error: "data" not found or is not a List.';
+                                  }
+                                } else {
+                                  partNOs = [];
+                                  errorModel = 'Response is not a valid Map.';
+                                }
+                              } on TimeoutException {
+                                errorModel = 'Fetching car models timed out.';
+                                partNOs = [];
+                              } on SocketException {
+                                errorModel = 'No internet connection.';
+                                partNOs = [];
+                              } catch (e) {
+                                errorModel = '$e';
+                                partNOs = [];
+                              } finally {
+                                setState(() {
+                                  _isLoadingModels = false;
+                                  _partDropdown.clearDropDown();
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return "*Required";
+                        }
+                        return null;
+                      },
+                    ),
+                    
+                    const SizedBox(height: 20),
+                    
+                    // Part Number Field
+                    const Text(
+                      'Part Number',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _isLoadingModels
+                        ? Container(
+                            height: 56,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade50,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: const Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                          )
+                        : DropDownTextField(
+                            controller: _partDropdown,
+                            clearOption: false,
+                            dropDownIconProperty: IconProperty(color: mycolor, size: 30),
+                            textFieldFocusNode: textFieldFocusNode,
+                            textFieldDecoration: InputDecoration(
+                              hintText: 'Select part number',
+                              filled: true,
+                              fillColor: Colors.grey.shade50,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.grey.shade300),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.grey.shade300),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: mycolor, width: 2),
+                              ),
+                            ),
+                            searchFocusNode: searchFocusNode,
+                            dropDownItemCount: 10,
+                            enableSearch: true,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return "*Required";
+                              } else {
+                                return null;
+                              }
+                            },
+                            dropDownList: partNOs.map((partNo) {
+                              return DropDownValueModel(
+                                name: partNo,
+                                value: partNo,
+                              );
+                            }).toList(),
+                            onChanged: (val) {
+                              modelId = val.value;
+                            },
+                          ),
+
+                    const SizedBox(height: 20),
+                    _buildEnhancedTextField("Defect Code", _defectCodeController),
+                    const SizedBox(height: 20),
+                    _buildEnhancedTextField(
+                      "Description",
+                      _descriptionController,
+                      minLines: 4,
+                      keyboardType: TextInputType.multiline,
+                    ),
+                    const SizedBox(height: 32),
+                    
+                    // Submit Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: _submitForm,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: mycolor,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.save_outlined),
+                            SizedBox(width: 8),
+                            Text(
+                              'Submit Claim',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),
@@ -394,6 +501,60 @@ class _ClaimFormState extends State<ClaimForm> {
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
       ),
+    );
+  }
+
+  Widget _buildEnhancedTextField(
+    String label,
+    TextEditingController controller, {
+    int minLines = 1,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          minLines: minLines,
+          maxLines: minLines == 1 ? 1 : null,
+          validator: (value) => value == null || value.isEmpty ? '*Required' : null,
+          decoration: InputDecoration(
+            hintText: 'Enter ${label.toLowerCase()}',
+            filled: true,
+            fillColor: Colors.grey.shade50,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: mycolor, width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.red.shade400),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.red.shade400, width: 2),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

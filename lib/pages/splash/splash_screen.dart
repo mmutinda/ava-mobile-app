@@ -199,7 +199,7 @@ class _SplashScreenState extends State<SplashScreen>
                     child: Column(
                       children: [
                         Text(
-                          'InfoPlus',
+                          'InfoPulse',
                           style: TextStyle(
                             fontSize: isSmallScreen ? 28 : 36,
                             fontWeight: FontWeight.bold,

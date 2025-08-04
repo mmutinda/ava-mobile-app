@@ -887,6 +887,7 @@ class _ReceivingFormState extends State<ReceivingForm>
                   onSelected: () {
                     setState(() {
                       selectedValue = 'NO';
+                      issueData = null; // Clear issue data when NO is selected
                     });
                   },
                 ),
@@ -960,8 +961,14 @@ class _ReceivingFormState extends State<ReceivingForm>
             ],
           ),
           SizedBox(height: 12),
+          _buildSummaryItem(
+              "Process Description", issueData!['processDescription']),
           _buildSummaryItem("Part No", issueData!['partNo']),
+          _buildSummaryItem(
+              "Issue Description", issueData!['issueDescription']),
           _buildSummaryItem("Category", issueData!['category']),
+          _buildSummaryItem("Issue Type", issueData!['issueType']),
+          _buildSummaryItem("Reason Code", issueData!['reasonCode']),
           _buildSummaryItem("Classification", issueData!['classification']),
           if (issueData!['image'] != null) ...[
             SizedBox(height: 12),
@@ -1105,9 +1112,19 @@ class _ReceivingFormState extends State<ReceivingForm>
     request.fields['lot_number'] = _lotNo.text;
     request.fields['lot_qty'] = _lotQty.text;
     request.fields['packing_list_issue'] = selectedValue;
-    request.fields['part_number'] = issueData?['partNo'] ?? '';
-    request.fields['category'] = issueData?['category'] ?? '';
-    request.fields['classification'] = issueData?['classification'] ?? '';
+
+    // Add issue-related fields only if there's a packaging issue
+    if (selectedValue == 'YES' && issueData != null) {
+      request.fields['process_description'] =
+          issueData!['processDescription'] ?? '';
+      request.fields['part_number'] = issueData!['partNo'] ?? '';
+      request.fields['issue_description'] =
+          issueData!['issueDescription'] ?? '';
+      request.fields['category'] = issueData!['category'] ?? '';
+      request.fields['issue_type'] = issueData!['issueType'] ?? '';
+      request.fields['reason_code'] = issueData!['reasonCode'] ?? '';
+      request.fields['classification'] = issueData!['classification'] ?? '';
+    }
 
     // Add uploaded files
     if (parkingFile != null && parkingFile!.path.isNotEmpty) {
@@ -1123,7 +1140,12 @@ class _ReceivingFormState extends State<ReceivingForm>
         geologyFile!.path,
       ));
     }
-    if (issueData != null && issueData?['image']!.path.isNotEmpty) {
+
+    // Add issue image only if there's a packaging issue and image exists
+    if (selectedValue == 'YES' &&
+        issueData != null &&
+        issueData?['image'] != null &&
+        issueData!['image']!.path.isNotEmpty) {
       request.files.add(await http.MultipartFile.fromPath(
         'images',
         issueData!['image']!.path,

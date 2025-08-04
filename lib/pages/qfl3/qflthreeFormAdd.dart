@@ -7,7 +7,7 @@ import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/loader.dart';
-import 'package:isuze_pqcs/pages/qfl3/qfl3_list.dart';
+import 'package:isuze_pqcs/pages/mpa/mpa_list.dart';
 
 class AuditChecklistItem {
   final String sn;
@@ -99,7 +99,8 @@ class _AuditChecklistPageAddState extends State<AuditChecklistPageAdd> {
     return auditItems.where((item) {
       final matchResp = selectedResp == null || item.resp == selectedResp;
       final matchGroup = selectedGroup == null || item.group == selectedGroup;
-      return matchResp && matchGroup;
+      final notAlreadyFilled = !isItemPreviouslyAnswered(item);
+      return matchResp && matchGroup && notAlreadyFilled;
     }).toList();
   }
 
@@ -154,8 +155,38 @@ class _AuditChecklistPageAddState extends State<AuditChecklistPageAdd> {
     }
   }
 
+  // Check if there are new items that need to be saved
+  bool hasNewDataToSave() {
+    // Get all items that currently have ratings (answered items)
+    final currentAnsweredItems =
+        auditItems.where((item) => item.rating != null).toList();
+
+    if (currentAnsweredItems.isEmpty) {
+      return false; // No new data if nothing is answered
+    }
+
+    // Check if any answered item is different from previous data or is completely new
+    for (var item in currentAnsweredItems) {
+      final previousData = getPreviousItemData(item);
+
+      if (previousData == null) {
+        // This is a completely new item
+        return true;
+      }
+
+      // Check if rating or comment has changed from previous data
+      if (item.rating != previousData.rating ||
+          (item.comment ?? '') != (previousData.comment ?? '')) {
+        return true;
+      }
+    }
+
+    return false; // All answered items are identical to previous data
+  }
+
   // Pre-populate audit items with previous data
   void populateAuditItemsWithPreviousData() {
+    // ignore: unused_local_variable
     int populatedCount = 0;
     for (var auditItem in auditItems) {
       final previousData = getPreviousItemData(auditItem);
@@ -163,12 +194,8 @@ class _AuditChecklistPageAddState extends State<AuditChecklistPageAdd> {
         auditItem.rating = previousData.rating;
         auditItem.comment = previousData.comment;
         populatedCount++;
-        print(
-            '✅ Populated: ${auditItem.description} - Rating: ${previousData.rating}');
       }
     }
-    print(
-        '📊 Populated $populatedCount out of ${auditItems.length} audit items with previous data');
   }
 
   Future<void> loadAuditItems() async {
@@ -857,8 +884,8 @@ class _AuditChecklistPageAddState extends State<AuditChecklistPageAdd> {
                       margin: const EdgeInsets.symmetric(
                           vertical: 8, horizontal: 4),
                       child: Card(
-                        elevation: 6,
-                        shadowColor: mycolor.withOpacity(0.15),
+                        elevation: 2,
+                        color: Colors.white,
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16)),
                         child: Container(
@@ -1037,7 +1064,7 @@ class _AuditChecklistPageAddState extends State<AuditChecklistPageAdd> {
                           minimumSize: const Size(double.infinity, 56),
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16)),
-                          backgroundColor: Colors.transparent,
+                          backgroundColor: mycolor,
                           foregroundColor: Colors.white,
                           elevation: 0,
                         ),
@@ -1061,6 +1088,7 @@ class _AuditChecklistPageAddState extends State<AuditChecklistPageAdd> {
                           final answered = auditItems
                               .where((item) => item.rating != null)
                               .toList();
+
                           if (answered.isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
@@ -1071,6 +1099,18 @@ class _AuditChecklistPageAddState extends State<AuditChecklistPageAdd> {
                             );
                             return;
                           }
+
+                          if (!hasNewDataToSave()) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                    "No new data to save. All answered items are identical to previously submitted data."),
+                                backgroundColor: Colors.orange,
+                              ),
+                            );
+                            return;
+                          }
+
                           _showDocumentDialog();
                         },
                       ),
@@ -1260,32 +1300,46 @@ class _AuditChecklistPageAddState extends State<AuditChecklistPageAdd> {
       isLoading2 = true;
     });
 
-    // Build payload array from answered items
-    final answered = auditItems
-        .where((item) => item.rating != null)
+    // Build payload array from only new or changed items
+    final newOrChangedItems = auditItems
+        .where((item) {
+          // Only include items that have ratings AND are new or changed
+          if (item.rating == null) return false;
+
+          final previousData = getPreviousItemData(item);
+
+          // If no previous data exists, it's a new item
+          if (previousData == null) return true;
+
+          // If rating or comment has changed, include it
+          if (item.rating != previousData.rating ||
+              (item.comment ?? '') != (previousData.comment ?? '')) {
+            return true;
+          }
+
+          // Otherwise, skip it (no changes)
+          return false;
+        })
         .map((item) => {
-              'category': item.group,
-              'resp': item.resp,
-              'query_name': item.description,
+              'mpa_setting_id': item.sn,
               'rating': item.rating,
               'comment': item.comment ?? '',
             })
         .toList();
 
     print(
-        '📤 Submitting ${answered.length} answered items out of ${auditItems.length} total items');
-    for (var item in answered) {
-      print(
-          '   • ${item['category']} - ${item['query_name']}: Rating ${item['rating']}');
+        '📤 Submitting ${newOrChangedItems.length} new/changed items out of ${auditItems.where((item) => item.rating != null).length} total answered items');
+    for (var item in newOrChangedItems) {
+      print('   • Item ID ${item['mpa_setting_id']}: Rating ${item['rating']}');
     }
 
     var payload = {
-      "qfl3_id": widget.id,
-      "items": answered,
+      "mpa_id": widget.id,
+      "items": newOrChangedItems,
     };
 
     try {
-      String url = Api.api_url + "qfl3add";
+      String url = Api.api_url + "mpaadd";
       final response = await httppostwithtoken(
         url,
         "${user['data']['token']}",

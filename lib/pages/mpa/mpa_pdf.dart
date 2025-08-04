@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:isuze_pqcs/pages/qfl3/qfl3_deatils.dart';
+import 'package:isuze_pqcs/pages/mpa/mpa_deatils.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 

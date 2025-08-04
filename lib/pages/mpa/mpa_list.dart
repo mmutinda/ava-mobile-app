@@ -6,9 +6,9 @@ import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/loader.dart';
-import 'package:isuze_pqcs/pages/qfl3/qfl3_deatils.dart';
-import 'package:isuze_pqcs/pages/qfl3/qflthreeForm.dart';
-import 'package:isuze_pqcs/pages/qfl3/qflthreeFormAdd.dart';
+import 'package:isuze_pqcs/pages/mpa/mpa_deatils.dart';
+import 'package:isuze_pqcs/pages/mpa/mpaForm.dart';
+import 'package:isuze_pqcs/pages/mpa/mpaFormAdd.dart';
 import 'package:nb_utils/nb_utils.dart';
 
 class QflT {
