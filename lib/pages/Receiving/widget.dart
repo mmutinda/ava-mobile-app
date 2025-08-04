@@ -18,7 +18,7 @@ class ChecklistItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    bool isOK = checklistItem['query_answer'] == 'OK';
+    bool isOK = checklistItem['answer'] == 'OK';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -102,7 +102,7 @@ class ChecklistItemCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    checklistItem['query_name'] ?? 'Unknown Question',
+                    checklistItem['answer'] ?? 'Unknown Question',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -146,7 +146,7 @@ class ChecklistItemCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    checklistItem['query_answer'] ?? 'N/A',
+                    checklistItem['answer'] ?? 'N/A',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,

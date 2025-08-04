@@ -1,7 +1,5 @@
 // ignore_for_file: unused_import
-
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -160,30 +158,6 @@ class ListCard extends StatelessWidget {
                 ),
               ),
             ),
-
-            // Badge (customer name)
-            // if (vehicle.customer_name != null &&
-            //     vehicle.customer_name!.isNotEmpty)
-            //   Positioned(
-            //     right: 10,
-            //     top: 0,
-            //     child: Container(
-            //       padding:
-            //           const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            //       decoration: BoxDecoration(
-            //         color: Colors.amber[900],
-            //         borderRadius: BorderRadius.circular(12),
-            //       ),
-            //       child: Text(
-            //         vehicle.customer_name!,
-            //         style: const TextStyle(
-            //           color: Colors.white,
-            //           fontSize: 12,
-            //           fontWeight: FontWeight.bold,
-            //         ),
-            //       ),
-            //     ),
-            //   ),
           ],
         ),
         const SizedBox(height: 10),
@@ -210,6 +184,125 @@ class _IssueDialogState extends State<IssueDialog>
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
+
+  String? _selectedReasonCode;
+  String? _selectedIssueCategory;
+  String? _selectedIssueType;
+  String? _selectedDefectClassification;
+
+  final List<String> _reasonCodes = [
+    'WS-Wrong Shipment',
+    'SS-Short Shipment',
+    'NS-Not Supplied',
+    'LL-Line Loss',
+    'LD-Line Damage',
+    'Related/Child Part',
+    'ME-Manufacture Error',
+    'Incomplete Process',
+    'Jig Missing',
+    'Robbed',
+    'P/S Delay',
+    'Faulty Machine',
+    'Dent',
+    'Scratches',
+    'Debris',
+    'Part Misaligned',
+    'Dirt Marks',
+    'Incomplete documentation',
+    'Missing inspection mark',
+  ];
+
+  final List<String> _issueCategories = [
+    'Process Issues',
+    'Part Handling',
+    'Paint Issues',
+    'KDQR',
+    'MMO',
+  ];
+
+  final Map<String, List<String>> _issueCategoriesAndTypes = {
+    'Process Issues': [
+      'LOOSE PART',
+      'MISALIGNED PARTS',
+      'EXCESS/LESS WORKING FLUIDS',
+      'WRONG ROUTING',
+      'POORLY FITTED PART',
+      'MISSING INSPECTION MARKS',
+      'MISSING DOCUMENTS',
+      'INCOMPLETE PROCESS',
+      'LESS PRESSURE',
+      'TEMPORALY FITTED PART',
+      'ABS LIGHT ON',
+      'PART NOT FITTED',
+      'ALTERNATIVE PART',
+      'OVER TORQUE',
+      'INCOMPLETE WELDS',
+      'MISSING PART',
+      'DAMAGED PART',
+      'WARNING LIGHT',
+      'WRONG PART FITTED',
+      'LARGE GAPS',
+      'WELD SPOTS',
+      'WRONG DOCUMENTATION',
+      'POROSITY',
+      'UNDER TORQUE',
+      'WELD UNDERCUTS',
+      'POOR PUNCHING',
+      'Jig Missing',
+      'ROBBED',
+      'FAULTY MACHINE',
+    ],
+    'Part Handling': [
+      'SCRATCHES',
+      'DENTS',
+      'DIRT MARKS',
+      'STRAY MARKS',
+      'STAIN MARKS',
+    ],
+    'Paint Issues': [
+      'DEBRIS',
+      'OVERFLOW',
+      'PINHOLES',
+      'ORANGE PEELS',
+      'COLOUR MISMATCH',
+      'PAINT BLISS',
+      'LESS PAINT',
+      'PAINT BARE AREA',
+      'PVC PEEL OFF',
+      'PAINT OVERSPRAY',
+      'DRY PAINT',
+      'PAINT PEEL OFF',
+      'POORLY PAINTED',
+      'DAMAGED SEALER',
+      'DAMAGED PVC',
+      'PVC OVERSPRAY',
+      'WET PAINT',
+    ],
+    'KDQR': [
+      'PART QUALITY',
+      'WS-WRONG SHIPMENT',
+      'SS-SHORT SHIPMENT',
+      'PROGRAMMING/SERVER',
+      'FAULTY PART',
+      'SCRATCHES',
+      'DEBRIS',
+      'ME-MANUFACTURER ERROR',
+      'WRONG PART',
+      'NS-NOT SUPPLIED',
+    ],
+    'MMO': [
+      'LD-LINE DAMAGE',
+      'LL-LINE LOSS',
+      'RUST',
+    ],
+  };
+
+  final List<String> _defectClassifications = [
+    'A-Critical',
+    'B- Major',
+    'C-Minor',
+    'D-Cosmetic',
+  ];
 
   @override
   void initState() {
@@ -333,6 +426,15 @@ class _IssueDialogState extends State<IssueDialog>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            
+                            _buildStyledTextField(
+                              controller: _issueDescriptionController,
+                              label: 'Issue Description',
+                              icon: FeatherIcons.fileText,
+                              hint: 'Describe the issue in detail',
+                              maxLines: 3,
+                            ),
+                            SizedBox(height: 20),
                             _buildStyledTextField(
                               controller: _processDescriptionController,
                               label: 'Process Description',
@@ -347,41 +449,14 @@ class _IssueDialogState extends State<IssueDialog>
                               hint: 'Enter part number',
                             ),
                             SizedBox(height: 20),
-                            _buildStyledTextField(
-                              controller: _categoryController,
-                              label: 'Issue Category',
-                              icon: FeatherIcons.tag,
-                              hint: 'Enter issue category',
-                            ),
+                            _buildIssueCategoryDropdown(),
                             SizedBox(height: 20),
-                            _buildStyledTextField(
-                              controller: _issueTypeController,
-                              label: 'Issue Type',
-                              icon: FeatherIcons.type,
-                              hint: 'Enter issue type',
-                            ),
+                            _buildIssueTypeDropdown(),
                             SizedBox(height: 20),
-                            _buildStyledTextField(
-                              controller: _reasonCodeController,
-                              label: 'Reason Code',
-                              icon: FeatherIcons.code,
-                              hint: 'Enter reason code',
-                            ),
+                            _buildReasonCodeDropdown(),
                             SizedBox(height: 20),
-                            _buildStyledTextField(
-                              controller: _classificationController,
-                              label: 'Defect Classification',
-                              icon: FeatherIcons.list,
-                              hint: 'Enter defect classification',
-                            ),
-                            SizedBox(height: 20),
-                            _buildStyledTextField(
-                              controller: _issueDescriptionController,
-                              label: 'Issue Description',
-                              icon: FeatherIcons.fileText,
-                              hint: 'Describe the issue in detail',
-                              maxLines: 3,
-                            ),
+                            _buildDefectClassificationDropdown(),
+                            
                             SizedBox(height: 24),
                             _buildImageSection(),
                           ],
@@ -498,6 +573,358 @@ class _IssueDialogState extends State<IssueDialog>
               contentPadding:
                   EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildIssueCategoryDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.only(left: 4, bottom: 8),
+          child: Row(
+            children: [
+              Icon(FeatherIcons.tag, size: 16, color: Colors.grey[600]),
+              SizedBox(width: 8),
+              Text(
+                'Issue Category',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[700],
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 8,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: DropdownButtonFormField<String>(
+            value: _selectedIssueCategory,
+            menuMaxHeight: 600, // Limit dropdown height for scrolling
+            decoration: InputDecoration(
+              hintText: 'Select issue category',
+              hintStyle: TextStyle(color: Colors.grey[400]),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: Theme.of(context).primaryColor,
+                  width: 2,
+                ),
+              ),
+              filled: true,
+              fillColor: Colors.grey.shade50,
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            ),
+            items: _issueCategories.map((String category) {
+              return DropdownMenuItem<String>(
+                value: category,
+                child: Text(
+                  category,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[700],
+                  ),
+                ),
+              );
+            }).toList(),
+            onChanged: (String? newValue) {
+              setState(() {
+                _selectedIssueCategory = newValue;
+                _categoryController.text = newValue ?? '';
+                // Reset issue type when category changes
+                _selectedIssueType = null;
+                _issueTypeController.clear();
+              });
+            },
+            validator: (value) =>
+                value == null ? 'Please select an issue category' : null,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildIssueTypeDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.only(left: 4, bottom: 8),
+          child: Row(
+            children: [
+              Icon(FeatherIcons.type, size: 16, color: Colors.grey[600]),
+              SizedBox(width: 8),
+              Text(
+                'Issue Type',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[700],
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 8,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: DropdownButtonFormField<String>(
+            value: _selectedIssueType,
+            menuMaxHeight: 600, // Limit dropdown height for scrolling
+            decoration: InputDecoration(
+              hintText: _selectedIssueCategory == null
+                  ? 'Select category first'
+                  : 'Select issue type',
+              hintStyle: TextStyle(color: Colors.grey[400]),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: Theme.of(context).primaryColor,
+                  width: 2,
+                ),
+              ),
+              filled: true,
+              fillColor: _selectedIssueCategory == null
+                  ? Colors.grey.shade200
+                  : Colors.grey.shade50,
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            ),
+            items: _selectedIssueCategory == null
+                ? []
+                : _issueCategoriesAndTypes[_selectedIssueCategory]
+                    ?.map((String type) {
+                    return DropdownMenuItem<String>(
+                      value: type,
+                      child: Text(
+                        type,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+            onChanged: _selectedIssueCategory == null
+                ? null
+                : (String? newValue) {
+                    setState(() {
+                      _selectedIssueType = newValue;
+                      _issueTypeController.text = newValue ?? '';
+                    });
+                  },
+            validator: (value) =>
+                value == null ? 'Please select an issue type' : null,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReasonCodeDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.only(left: 4, bottom: 8),
+          child: Row(
+            children: [
+              Icon(FeatherIcons.code, size: 16, color: Colors.grey[600]),
+              SizedBox(width: 8),
+              Text(
+                'Reason Code',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[700],
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 8,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: DropdownButtonFormField<String>(
+            value: _selectedReasonCode,
+            menuMaxHeight: 600, // Limit dropdown height for scrolling
+            decoration: InputDecoration(
+              hintText: 'Select reason code',
+              hintStyle: TextStyle(color: Colors.grey[400]),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: Theme.of(context).primaryColor,
+                  width: 2,
+                ),
+              ),
+              filled: true,
+              fillColor: Colors.grey.shade50,
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            ),
+            items: _reasonCodes.map((String code) {
+              return DropdownMenuItem<String>(
+                value: code,
+                child: Text(
+                  code,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[700],
+                  ),
+                ),
+              );
+            }).toList(),
+            onChanged: (String? newValue) {
+              setState(() {
+                _selectedReasonCode = newValue;
+                _reasonCodeController.text = newValue ?? '';
+              });
+            },
+            validator: (value) =>
+                value == null ? 'Please select a reason code' : null,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDefectClassificationDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.only(left: 4, bottom: 8),
+          child: Row(
+            children: [
+              Icon(FeatherIcons.list, size: 16, color: Colors.grey[600]),
+              SizedBox(width: 8),
+              Text(
+                'Defect Classification',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[700],
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 8,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: DropdownButtonFormField<String>(
+            value: _selectedDefectClassification,
+            menuMaxHeight: 200, // Limit dropdown height for scrolling
+            decoration: InputDecoration(
+              hintText: 'Select defect classification',
+              hintStyle: TextStyle(color: Colors.grey[400]),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: Theme.of(context).primaryColor,
+                  width: 2,
+                ),
+              ),
+              filled: true,
+              fillColor: Colors.grey.shade50,
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            ),
+            items: _defectClassifications.map((String classification) {
+              return DropdownMenuItem<String>(
+                value: classification,
+                child: Text(
+                  classification,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[700],
+                  ),
+                ),
+              );
+            }).toList(),
+            onChanged: (String? newValue) {
+              setState(() {
+                _selectedDefectClassification = newValue;
+                _classificationController.text = newValue ?? '';
+              });
+            },
+            validator: (value) =>
+                value == null ? 'Please select a defect classification' : null,
           ),
         ),
       ],
@@ -696,40 +1123,252 @@ class _IssueDialogState extends State<IssueDialog>
   }
 
   void _submitIssue() {
-    if (_processDescriptionController.text.trim().isEmpty ||
-        _partNoController.text.trim().isEmpty ||
-        _issueDescriptionController.text.trim().isEmpty ||
-        _categoryController.text.trim().isEmpty ||
-        _issueTypeController.text.trim().isEmpty ||
-        _reasonCodeController.text.trim().isEmpty ||
-        _classificationController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(FeatherIcons.alertCircle, color: Colors.white),
-              SizedBox(width: 8),
-              Text('Please fill in all required fields'),
-            ],
-          ),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      );
+    List<String> missingFields = [];
+
+    if (_processDescriptionController.text.trim().isEmpty) {
+      missingFields.add('Process Description');
+    }
+    if (_partNoController.text.trim().isEmpty) {
+      missingFields.add('Part Number');
+    }
+    if (_issueDescriptionController.text.trim().isEmpty) {
+      missingFields.add('Issue Description');
+    }
+    if (_selectedIssueCategory == null) {
+      missingFields.add('Issue Category');
+    }
+    if (_selectedIssueType == null) {
+      missingFields.add('Issue Type');
+    }
+    if (_selectedReasonCode == null) {
+      missingFields.add('Reason Code');
+    }
+    if (_selectedDefectClassification == null) {
+      missingFields.add('Defect Classification');
+    }
+
+    if (missingFields.isNotEmpty) {
+      _showValidationErrorDialog(missingFields);
       return;
     }
+
+    // Use the selected reason code directly
+    String finalReasonCode = _selectedReasonCode!;
 
     Navigator.pop(context, {
       'processDescription': _processDescriptionController.text.trim(),
       'partNo': _partNoController.text.trim(),
       'issueDescription': _issueDescriptionController.text.trim(),
-      'category': _categoryController.text.trim(),
-      'issueType': _issueTypeController.text.trim(),
-      'reasonCode': _reasonCodeController.text.trim(),
-      'classification': _classificationController.text.trim(),
+      'category': _selectedIssueCategory!,
+      'issueType': _selectedIssueType!,
+      'reasonCode': finalReasonCode,
+      'classification': _selectedDefectClassification!,
       'image': _imageFile,
     });
+  }
+
+  void _showValidationErrorDialog(List<String> missingFields) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          contentPadding: EdgeInsets.zero,
+          content: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 15,
+                  offset: Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.red.shade500,
+                        Colors.red.shade600,
+                      ],
+                    ),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          FeatherIcons.alertTriangle,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Validation Error',
+                          style: GoogleFonts.poppins(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Content
+                Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Please fill in the following required fields:',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                      SizedBox(height: 16),
+                      Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.red.shade200,
+                            width: 1,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: missingFields.map((field) {
+                            return Padding(
+                              padding: EdgeInsets.symmetric(vertical: 4),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    FeatherIcons.x,
+                                    color: Colors.red.shade600,
+                                    size: 16,
+                                  ),
+                                  SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      field,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.red.shade700,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Action Button
+                Container(
+                  padding: EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(20),
+                      bottomRight: Radius.circular(20),
+                    ),
+                  ),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Colors.red.shade500,
+                            Colors.red.shade600,
+                          ],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.red.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(12),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () => Navigator.pop(context),
+                          child: Container(
+                            padding: EdgeInsets.symmetric(vertical: 14),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  FeatherIcons.check,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Got it',
+                                  style: GoogleFonts.poppins(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }

@@ -91,22 +91,34 @@ class _QCChecklistState extends State<QCChecklist>
   }
 
   // Capture an image using the camera
-  Future<void> _captureImage() async {
+  Future<void> _captureImage(int index) async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.camera);
-
     if (pickedFile != null) {
-      setState(() {});
+      setState(() {
+        checklist[index]['image'] = File(pickedFile.path);
+      });
     }
   }
 
   Future<void> _submitForm(BuildContext context) async {
     // Validate if all checklist items are checked
     bool allAnswered = true;
-    for (var query in checklist) {
+    List<String> missingDescriptions = [];
+
+    for (int i = 0; i < checklist.length; i++) {
+      var query = checklist[i];
       if (query['checked'] == null || query['checked'].isEmpty) {
         allAnswered = false;
         break;
+      }
+
+      // Check if NOK items have descriptions
+      if (query['checked'] == 'NOK') {
+        if (query['description'] == null ||
+            query['description'].toString().trim().isEmpty) {
+          missingDescriptions.add('Item ${i + 1}: ${query['query_name']}');
+        }
       }
     }
 
@@ -119,15 +131,37 @@ class _QCChecklistState extends State<QCChecklist>
       return;
     }
 
+    if (missingDescriptions.isNotEmpty) {
+      UIHelper.showErrorMessage(
+        context: context,
+        message:
+            'Please provide descriptions for NOK items:\n${missingDescriptions.join('\n')}',
+      );
+      return;
+    }
+
     if (!_formKey.currentState!.validate()) return;
 
     List<Map<String, dynamic>> checklistData = [];
-    for (var query in checklist) {
-      checklistData.add({
-        'question_id': query['id'],
-        'query_name': query['query_name'],
+    List<List<String>> imageData = []; // Store image data as [qnid, imagepath]
+
+    for (int i = 0; i < checklist.length; i++) {
+      var query = checklist[i];
+      Map<String, dynamic> item = {
+        'vehicle_receiving_checklist_id': query['id'],
         'answer': query['checked'],
-      });
+      };
+
+      // Add description for NOK items
+      if (query['checked'] == 'NOK') {
+        item['description'] = query['description'] ?? '';
+        // Store image data as [question_id, image_path] if image exists
+        if (query['image'] != null) {
+          imageData.add([query['id'].toString(), query['image'].path]);
+        }
+      }
+
+      checklistData.add(item);
     }
 
     final uri = Uri.parse('${Api.api_url}postVehicleReceivingChecklist');
@@ -139,6 +173,19 @@ class _QCChecklistState extends State<QCChecklist>
 
     request.fields['vehicle_receiving_id'] = widget.id.toString();
     request.fields['questions'] = jsonEncode(checklistData);
+    request.fields['images'] =
+        jsonEncode(imageData); // Send image data as JSON array
+
+    // Add image files to the request
+    for (int i = 0; i < imageData.length; i++) {
+      String imagePath = imageData[i][1];
+
+      var imageFile = await http.MultipartFile.fromPath(
+        'image_$i', // Use index as field name
+        imagePath,
+      );
+      request.files.add(imageFile);
+    }
 
     final progressDialog = ProgressDialog(context);
     progressDialog.style(
@@ -195,6 +242,97 @@ class _QCChecklistState extends State<QCChecklist>
     } finally {
       progressDialog.hide();
     }
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(60),
+              border: Border.all(
+                color: Colors.grey.shade300,
+                width: 2,
+              ),
+            ),
+            child: Icon(
+              Icons.assignment_outlined,
+              size: 60,
+              color: Colors.grey.shade400,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'No Checklist Available',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'There are no inspection items\navailable for this vehicle.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade500,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 32),
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: mycolor.withOpacity(0.3),
+                width: 1.5,
+              ),
+            ),
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: mycolor,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: _fetchData,
+              icon: const Icon(Icons.refresh, size: 20),
+              label: const Text(
+                'Refresh',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Go Back',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -270,44 +408,34 @@ class _QCChecklistState extends State<QCChecklist>
             )
           : Column(
               children: [
-                // Progress indicator header
+                // Progress indicator header - only show if checklist has data
                 if (checklist.isNotEmpty)
                   Container(
-                    margin: const EdgeInsets.all(16),
-                    padding: const EdgeInsets.all(20),
+                    margin: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          mycolor.withOpacity(0.1),
-                          mycolor.withOpacity(0.2)
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: mycolor.withOpacity(0.2),
+                        width: 1,
                       ),
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: mycolor.withOpacity(0.1),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
                     ),
                     child: Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
                             color: mycolor,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Icon(
                             Icons.assignment_turned_in,
                             color: Colors.white,
-                            size: 24,
+                            size: 20,
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -315,16 +443,16 @@ class _QCChecklistState extends State<QCChecklist>
                               Text(
                                 'Inspection Progress',
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: 13,
                                   color: Colors.grey.shade600,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              const SizedBox(height: 2),
                               Text(
                                 '${checklist.where((item) => item['checked'] != null && item['checked'].isNotEmpty).length}/${checklist.length}',
                                 style: TextStyle(
-                                  fontSize: 24,
+                                  fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                   color: mycolor,
                                 ),
@@ -343,7 +471,7 @@ class _QCChecklistState extends State<QCChecklist>
                                   checklist.length,
                           backgroundColor: mycolor.withOpacity(0.2),
                           valueColor: AlwaysStoppedAnimation<Color>(mycolor),
-                          strokeWidth: 6,
+                          strokeWidth: 4,
                         ),
                       ],
                     ),
@@ -351,444 +479,582 @@ class _QCChecklistState extends State<QCChecklist>
 
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: errorText.isNotEmpty
                         ? ErrorMessageWidget(
                             errorMessage: errorText, onRetry: _fetchData)
-                        : FadeTransition(
-                            opacity: _fadeAnimation,
-                            child: SingleChildScrollView(
-                              child: Form(
-                                key: _formKey,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const SizedBox(height: 8),
-                                    ...checklist.asMap().entries.map((entry) {
-                                      int index = entry.key;
-                                      var query = entry.value;
-                                      bool isAnswered =
-                                          query['checked'] != null &&
-                                              query['checked'].isNotEmpty;
-                                      bool isOK = query['checked'] == 'OK';
+                        : checklist.isEmpty
+                            ? _buildEmptyState()
+                            : FadeTransition(
+                                opacity: _fadeAnimation,
+                                child: SingleChildScrollView(
+                                  child: Form(
+                                    key: _formKey,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const SizedBox(height: 8),
+                                        ...checklist
+                                            .asMap()
+                                            .entries
+                                            .map((entry) {
+                                          int index = entry.key;
+                                          var query = entry.value;
+                                          bool isAnswered =
+                                              query['checked'] != null &&
+                                                  query['checked'].isNotEmpty;
+                                          bool isOK = query['checked'] == 'OK';
 
-                                      return AnimatedContainer(
-                                        duration: Duration(
-                                            milliseconds: 300 + (index * 100)),
-                                        margin:
-                                            const EdgeInsets.only(bottom: 16),
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            colors: isAnswered
-                                                ? (isOK
-                                                    ? [
-                                                        Colors.green.shade50,
-                                                        Colors.green.shade100
-                                                      ]
-                                                    : [
-                                                        Colors.red.shade50,
-                                                        Colors.red.shade100
-                                                      ])
-                                                : [
-                                                    Colors.white,
-                                                    Colors.grey.shade50
-                                                  ],
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
-                                          ),
-                                          borderRadius:
-                                              BorderRadius.circular(16),
-                                          border: Border.all(
-                                            color: isAnswered
-                                                ? (isOK
-                                                    ? Colors.green.shade300
-                                                    : Colors.red.shade300)
-                                                : Colors.grey.shade200,
-                                            width: 1.5,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
+                                          return Container(
+                                            margin: const EdgeInsets.only(
+                                                bottom: 12),
+                                            decoration: BoxDecoration(
                                               color: isAnswered
                                                   ? (isOK
-                                                      ? Colors.green
-                                                          .withOpacity(0.1)
-                                                      : Colors.red
-                                                          .withOpacity(0.1))
-                                                  : Colors.black
-                                                      .withOpacity(0.05),
-                                              blurRadius: 8,
-                                              offset: const Offset(0, 2),
-                                            ),
-                                          ],
-                                        ),
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(20),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Row(
-                                                children: [
-                                                  Container(
-                                                    width: 40,
-                                                    height: 40,
-                                                    decoration: BoxDecoration(
-                                                      gradient: LinearGradient(
-                                                        colors: isAnswered
-                                                            ? (isOK
-                                                                ? [
-                                                                    Colors.green
-                                                                        .shade400,
-                                                                    Colors.green
-                                                                        .shade600
-                                                                  ]
-                                                                : [
-                                                                    Colors.red
-                                                                        .shade400,
-                                                                    Colors.red
-                                                                        .shade600
-                                                                  ])
-                                                            : [
-                                                                Colors.grey
-                                                                    .shade300,
-                                                                Colors.grey
-                                                                    .shade400
-                                                              ],
-                                                        begin:
-                                                            Alignment.topLeft,
-                                                        end: Alignment
-                                                            .bottomRight,
-                                                      ),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              12),
-                                                    ),
-                                                    child: Center(
-                                                      child: Text(
-                                                        '${index + 1}',
-                                                        style: const TextStyle(
-                                                          color: Colors.white,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          fontSize: 16,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 16),
-                                                  Expanded(
-                                                    child: Text(
-                                                      query['query_name']
-                                                              ?.toString() ??
-                                                          'Unknown',
-                                                      style: TextStyle(
-                                                        fontSize: 16,
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                        color: Colors
-                                                            .grey.shade800,
-                                                        height: 1.4,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
+                                                      ? Colors.green.shade50
+                                                      : Colors.red.shade50)
+                                                  : Colors.white,
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              border: Border.all(
+                                                color: isAnswered
+                                                    ? (isOK
+                                                        ? Colors.green.shade300
+                                                        : Colors.red.shade300)
+                                                    : Colors.grey.shade200,
+                                                width: 1,
                                               ),
-                                              const SizedBox(height: 20),
-                                              Row(
+                                            ),
+                                            child: Padding(
+                                              padding: const EdgeInsets.all(16),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
                                                 children: [
-                                                  Expanded(
-                                                    child: GestureDetector(
-                                                      onTap: () {
-                                                        setState(() {
-                                                          query['checked'] =
-                                                              'OK';
-                                                        });
-                                                      },
-                                                      child: AnimatedContainer(
-                                                        duration:
-                                                            const Duration(
-                                                                milliseconds:
-                                                                    200),
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .symmetric(
-                                                                vertical: 12,
-                                                                horizontal: 20),
+                                                  Row(
+                                                    children: [
+                                                      Container(
+                                                        width: 32,
+                                                        height: 32,
                                                         decoration:
                                                             BoxDecoration(
-                                                          gradient: query[
-                                                                      'checked'] ==
-                                                                  'OK'
-                                                              ? LinearGradient(
-                                                                  colors: [
-                                                                    Colors.green
-                                                                        .shade400,
-                                                                    Colors.green
-                                                                        .shade600
-                                                                  ],
-                                                                  begin: Alignment
-                                                                      .topLeft,
-                                                                  end: Alignment
-                                                                      .bottomRight,
-                                                                )
-                                                              : null,
-                                                          color:
-                                                              query['checked'] ==
-                                                                      'OK'
-                                                                  ? null
-                                                                  : Colors.grey
-                                                                      .shade100,
+                                                          color: isAnswered
+                                                              ? (isOK
+                                                                  ? Colors.green
+                                                                      .shade500
+                                                                  : Colors.red
+                                                                      .shade500)
+                                                              : Colors.grey
+                                                                  .shade400,
                                                           borderRadius:
                                                               BorderRadius
-                                                                  .circular(12),
-                                                          border: Border.all(
-                                                            color: query[
-                                                                        'checked'] ==
-                                                                    'OK'
-                                                                ? Colors.green
-                                                                    .shade600
-                                                                : Colors.grey
-                                                                    .shade300,
-                                                            width: 2,
-                                                          ),
-                                                          boxShadow:
-                                                              query['checked'] ==
-                                                                      'OK'
-                                                                  ? [
-                                                                      BoxShadow(
-                                                                        color: Colors
-                                                                            .green
-                                                                            .withOpacity(0.3),
-                                                                        blurRadius:
-                                                                            8,
-                                                                        offset: const Offset(
-                                                                            0,
-                                                                            4),
-                                                                      ),
-                                                                    ]
-                                                                  : [],
+                                                                  .circular(8),
                                                         ),
-                                                        child: Row(
-                                                          mainAxisAlignment:
-                                                              MainAxisAlignment
-                                                                  .center,
-                                                          children: [
-                                                            Icon(
-                                                              Icons
-                                                                  .check_circle,
+                                                        child: Center(
+                                                          child: Text(
+                                                            '${index + 1}',
+                                                            style:
+                                                                const TextStyle(
+                                                              color:
+                                                                  Colors.white,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              fontSize: 14,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 12),
+                                                      Expanded(
+                                                        child: Text(
+                                                          query['query_name']
+                                                                  ?.toString() ??
+                                                              'Unknown',
+                                                          style: TextStyle(
+                                                            fontSize: 15,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                            color: Colors
+                                                                .grey.shade800,
+                                                            height: 1.3,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  const SizedBox(height: 16),
+                                                  Row(
+                                                    children: [
+                                                      Expanded(
+                                                        child: GestureDetector(
+                                                          onTap: () {
+                                                            setState(() {
+                                                              query['checked'] =
+                                                                  'OK';
+                                                            });
+                                                          },
+                                                          child: Container(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .symmetric(
+                                                                    vertical:
+                                                                        10,
+                                                                    horizontal:
+                                                                        16),
+                                                            decoration:
+                                                                BoxDecoration(
                                                               color: query[
                                                                           'checked'] ==
                                                                       'OK'
-                                                                  ? Colors.white
-                                                                  : Colors.green
-                                                                      .shade600,
-                                                              size: 20,
-                                                            ),
-                                                            const SizedBox(
-                                                                width: 8),
-                                                            Text(
-                                                              'OK',
-                                                              style: TextStyle(
+                                                                  ? Colors.green
+                                                                      .shade500
+                                                                  : Colors.grey
+                                                                      .shade100,
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          8),
+                                                              border:
+                                                                  Border.all(
                                                                 color: query[
                                                                             'checked'] ==
                                                                         'OK'
                                                                     ? Colors
-                                                                        .white
-                                                                    : Colors
                                                                         .green
-                                                                        .shade600,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold,
-                                                                fontSize: 16,
+                                                                        .shade500
+                                                                    : Colors
+                                                                        .grey
+                                                                        .shade300,
+                                                                width: 1,
                                                               ),
                                                             ),
-                                                          ],
+                                                            child: Row(
+                                                              mainAxisAlignment:
+                                                                  MainAxisAlignment
+                                                                      .center,
+                                                              children: [
+                                                                Icon(
+                                                                  Icons
+                                                                      .check_circle,
+                                                                  color: query[
+                                                                              'checked'] ==
+                                                                          'OK'
+                                                                      ? Colors
+                                                                          .white
+                                                                      : Colors
+                                                                          .green
+                                                                          .shade600,
+                                                                  size: 18,
+                                                                ),
+                                                                const SizedBox(
+                                                                    width: 6),
+                                                                Text(
+                                                                  'OK',
+                                                                  style:
+                                                                      TextStyle(
+                                                                    color: query['checked'] ==
+                                                                            'OK'
+                                                                        ? Colors
+                                                                            .white
+                                                                        : Colors
+                                                                            .green
+                                                                            .shade600,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w600,
+                                                                    fontSize:
+                                                                        14,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
                                                         ),
                                                       ),
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 16),
-                                                  Expanded(
-                                                    child: GestureDetector(
-                                                      onTap: () {
-                                                        setState(() {
-                                                          query['checked'] =
-                                                              'NOK';
-                                                        });
-                                                      },
-                                                      child: AnimatedContainer(
-                                                        duration:
-                                                            const Duration(
-                                                                milliseconds:
-                                                                    200),
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .symmetric(
-                                                                vertical: 12,
-                                                                horizontal: 20),
-                                                        decoration:
-                                                            BoxDecoration(
-                                                          gradient: query[
-                                                                      'checked'] ==
-                                                                  'NOK'
-                                                              ? LinearGradient(
-                                                                  colors: [
-                                                                    Colors.red
-                                                                        .shade400,
-                                                                    Colors.red
-                                                                        .shade600
-                                                                  ],
-                                                                  begin: Alignment
-                                                                      .topLeft,
-                                                                  end: Alignment
-                                                                      .bottomRight,
-                                                                )
-                                                              : null,
-                                                          color:
-                                                              query['checked'] ==
-                                                                      'NOK'
-                                                                  ? null
-                                                                  : Colors.grey
-                                                                      .shade100,
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(12),
-                                                          border: Border.all(
-                                                            color: query[
-                                                                        'checked'] ==
-                                                                    'NOK'
-                                                                ? Colors.red
-                                                                    .shade600
-                                                                : Colors.grey
-                                                                    .shade300,
-                                                            width: 2,
-                                                          ),
-                                                          boxShadow:
-                                                              query['checked'] ==
-                                                                      'NOK'
-                                                                  ? [
-                                                                      BoxShadow(
-                                                                        color: Colors
-                                                                            .red
-                                                                            .withOpacity(0.3),
-                                                                        blurRadius:
-                                                                            8,
-                                                                        offset: const Offset(
-                                                                            0,
-                                                                            4),
-                                                                      ),
-                                                                    ]
-                                                                  : [],
-                                                        ),
-                                                        child: Row(
-                                                          mainAxisAlignment:
-                                                              MainAxisAlignment
-                                                                  .center,
-                                                          children: [
-                                                            Icon(
-                                                              Icons.cancel,
+                                                      const SizedBox(width: 12),
+                                                      Expanded(
+                                                        child: GestureDetector(
+                                                          onTap: () {
+                                                            setState(() {
+                                                              query['checked'] =
+                                                                  'NOK';
+                                                            });
+                                                          },
+                                                          child: Container(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .symmetric(
+                                                                    vertical:
+                                                                        10,
+                                                                    horizontal:
+                                                                        16),
+                                                            decoration:
+                                                                BoxDecoration(
                                                               color: query[
                                                                           'checked'] ==
                                                                       'NOK'
-                                                                  ? Colors.white
-                                                                  : Colors.red
-                                                                      .shade600,
-                                                              size: 20,
-                                                            ),
-                                                            const SizedBox(
-                                                                width: 8),
-                                                            Text(
-                                                              'NOK',
-                                                              style: TextStyle(
+                                                                  ? Colors.red
+                                                                      .shade500
+                                                                  : Colors.grey
+                                                                      .shade100,
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          8),
+                                                              border:
+                                                                  Border.all(
                                                                 color: query[
                                                                             'checked'] ==
                                                                         'NOK'
-                                                                    ? Colors
-                                                                        .white
-                                                                    : Colors.red
-                                                                        .shade600,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold,
-                                                                fontSize: 16,
+                                                                    ? Colors.red
+                                                                        .shade500
+                                                                    : Colors
+                                                                        .grey
+                                                                        .shade300,
+                                                                width: 1,
+                                                              ),
+                                                            ),
+                                                            child: Row(
+                                                              mainAxisAlignment:
+                                                                  MainAxisAlignment
+                                                                      .center,
+                                                              children: [
+                                                                Icon(
+                                                                  Icons.cancel,
+                                                                  color: query[
+                                                                              'checked'] ==
+                                                                          'NOK'
+                                                                      ? Colors
+                                                                          .white
+                                                                      : Colors
+                                                                          .red
+                                                                          .shade600,
+                                                                  size: 18,
+                                                                ),
+                                                                const SizedBox(
+                                                                    width: 6),
+                                                                Text(
+                                                                  'NOK',
+                                                                  style:
+                                                                      TextStyle(
+                                                                    color: query['checked'] ==
+                                                                            'NOK'
+                                                                        ? Colors
+                                                                            .white
+                                                                        : Colors
+                                                                            .red
+                                                                            .shade600,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w600,
+                                                                    fontSize:
+                                                                        14,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  // Show description and image capture for NOK items
+                                                  if (query['checked'] ==
+                                                      'NOK') ...[
+                                                    const SizedBox(height: 16),
+                                                    Container(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                              14),
+                                                      decoration: BoxDecoration(
+                                                        color:
+                                                            Colors.red.shade50,
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(8),
+                                                        border: Border.all(
+                                                          color: Colors
+                                                              .red.shade200,
+                                                          width: 1,
+                                                        ),
+                                                      ),
+                                                      child: Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: [
+                                                          Text(
+                                                            'Issue Description',
+                                                            style: TextStyle(
+                                                              fontSize: 13,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              color: Colors
+                                                                  .red.shade700,
+                                                            ),
+                                                          ),
+                                                          const SizedBox(
+                                                              height: 6),
+                                                          TextFormField(
+                                                            initialValue: query[
+                                                                    'description'] ??
+                                                                '',
+                                                            onChanged: (value) {
+                                                              query['description'] =
+                                                                  value;
+                                                            },
+                                                            maxLines: null,
+                                                            decoration:
+                                                                InputDecoration(
+                                                              hintText:
+                                                                  'Describe the issue found...',
+                                                              hintStyle:
+                                                                  TextStyle(
+                                                                color: Colors
+                                                                    .grey
+                                                                    .shade500,
+                                                                fontSize: 14,
+                                                              ),
+                                                              border:
+                                                                  OutlineInputBorder(
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                            8),
+                                                                borderSide:
+                                                                    BorderSide(
+                                                                  color: Colors
+                                                                      .grey
+                                                                      .shade300,
+                                                                ),
+                                                              ),
+                                                              focusedBorder:
+                                                                  OutlineInputBorder(
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                            8),
+                                                                borderSide:
+                                                                    BorderSide(
+                                                                  color: Colors
+                                                                      .red
+                                                                      .shade400,
+                                                                  width: 2,
+                                                                ),
+                                                              ),
+                                                              filled: true,
+                                                              fillColor:
+                                                                  Colors.white,
+                                                              contentPadding:
+                                                                  const EdgeInsets
+                                                                      .all(12),
+                                                            ),
+                                                            validator: (value) {
+                                                              if (query['checked'] ==
+                                                                      'NOK' &&
+                                                                  (value ==
+                                                                          null ||
+                                                                      value
+                                                                          .trim()
+                                                                          .isEmpty)) {
+                                                                return 'Description is required for NOK items';
+                                                              }
+                                                              return null;
+                                                            },
+                                                          ),
+                                                          const SizedBox(
+                                                              height: 12),
+                                                          Row(
+                                                            children: [
+                                                              Text(
+                                                                'Capture Evidence',
+                                                                style:
+                                                                    TextStyle(
+                                                                  fontSize: 13,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w600,
+                                                                  color: Colors
+                                                                      .red
+                                                                      .shade700,
+                                                                ),
+                                                              ),
+                                                              const Spacer(),
+                                                              GestureDetector(
+                                                                onTap: () =>
+                                                                    _captureImage(
+                                                                        index),
+                                                                child:
+                                                                    Container(
+                                                                  padding:
+                                                                      const EdgeInsets
+                                                                          .all(
+                                                                          10),
+                                                                  decoration:
+                                                                      BoxDecoration(
+                                                                    color: query['image'] !=
+                                                                            null
+                                                                        ? Colors
+                                                                            .green
+                                                                            .shade100
+                                                                        : Colors
+                                                                            .grey
+                                                                            .shade100,
+                                                                    borderRadius:
+                                                                        BorderRadius
+                                                                            .circular(6),
+                                                                    border:
+                                                                        Border
+                                                                            .all(
+                                                                      color: query['image'] !=
+                                                                              null
+                                                                          ? Colors
+                                                                              .green
+                                                                              .shade300
+                                                                          : Colors
+                                                                              .grey
+                                                                              .shade300,
+                                                                      width: 1,
+                                                                    ),
+                                                                  ),
+                                                                  child: Row(
+                                                                    mainAxisSize:
+                                                                        MainAxisSize
+                                                                            .min,
+                                                                    children: [
+                                                                      Icon(
+                                                                        query['image'] !=
+                                                                                null
+                                                                            ? Icons.check_circle
+                                                                            : Icons.camera_alt,
+                                                                        color: query['image'] !=
+                                                                                null
+                                                                            ? Colors.green.shade600
+                                                                            : Colors.grey.shade600,
+                                                                        size:
+                                                                            18,
+                                                                      ),
+                                                                      const SizedBox(
+                                                                          width:
+                                                                              6),
+                                                                      Text(
+                                                                        query['image'] !=
+                                                                                null
+                                                                            ? 'Captured'
+                                                                            : 'Camera',
+                                                                        style:
+                                                                            TextStyle(
+                                                                          color: query['image'] != null
+                                                                              ? Colors.green.shade600
+                                                                              : Colors.grey.shade600,
+                                                                          fontSize:
+                                                                              13,
+                                                                          fontWeight:
+                                                                              FontWeight.w500,
+                                                                        ),
+                                                                      ),
+                                                                    ],
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                          if (query['image'] !=
+                                                              null) ...[
+                                                            const SizedBox(
+                                                                height: 10),
+                                                            Container(
+                                                              height: 80,
+                                                              width: double
+                                                                  .infinity,
+                                                              decoration:
+                                                                  BoxDecoration(
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                            6),
+                                                                border:
+                                                                    Border.all(
+                                                                  color: Colors
+                                                                      .grey
+                                                                      .shade300,
+                                                                ),
+                                                              ),
+                                                              child: ClipRRect(
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                            6),
+                                                                child:
+                                                                    Image.file(
+                                                                  query[
+                                                                      'image'],
+                                                                  fit: BoxFit
+                                                                      .cover,
+                                                                ),
                                                               ),
                                                             ),
                                                           ],
-                                                        ),
+                                                        ],
                                                       ),
                                                     ),
-                                                  ),
+                                                  ],
                                                 ],
                                               ),
-                                            ],
-                                          ),
-                                        ),
-                                      );
-                                    }),
-                                    const SizedBox(height: 32),
-                                    // Enhanced Save Button
-                                    Container(
-                                      width: double.infinity,
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          colors: [
-                                            mycolor.withOpacity(0.8),
-                                            mycolor
-                                          ],
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                        ),
-                                        borderRadius: BorderRadius.circular(16),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: mycolor.withOpacity(0.3),
-                                            blurRadius: 12,
-                                            offset: const Offset(0, 6),
-                                          ),
-                                        ],
-                                      ),
-                                      child: ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.transparent,
-                                          shadowColor: Colors.transparent,
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: 18),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(16),
-                                          ),
-                                        ),
-                                        onPressed: () => _submitForm(context),
-                                        child: const Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            Icon(
-                                              Icons.save_rounded,
-                                              color: Colors.white,
-                                              size: 22,
                                             ),
-                                            SizedBox(width: 12),
-                                            Text(
-                                              'SAVE INSPECTION',
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold,
-                                                letterSpacing: 0.5,
+                                          );
+                                        }),
+                                        const SizedBox(height: 24),
+                                        // Enhanced Save Button
+                                        Container(
+                                          width: double.infinity,
+                                          child: ElevatedButton(
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: mycolor,
+                                              foregroundColor: Colors.white,
+                                              elevation: 0,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      vertical: 14),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
                                               ),
                                             ),
-                                          ],
+                                            onPressed: () =>
+                                                _submitForm(context),
+                                            child: const Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                Icon(
+                                                  Icons.save_rounded,
+                                                  color: Colors.white,
+                                                  size: 20,
+                                                ),
+                                                SizedBox(width: 8),
+                                                Text(
+                                                  'SAVE INSPECTION',
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 15,
+                                                    fontWeight: FontWeight.w600,
+                                                    letterSpacing: 0.5,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
                                         ),
-                                      ),
+                                        const SizedBox(height: 24),
+                                      ],
                                     ),
-                                    const SizedBox(height: 32),
-                                  ],
+                                  ),
                                 ),
                               ),
-                            ),
-                          ),
                   ),
                 ),
               ],

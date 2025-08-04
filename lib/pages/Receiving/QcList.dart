@@ -300,7 +300,7 @@ class _QClistState extends State<QClist> with SingleTickerProviderStateMixin {
                                         vehicle['receiving_checklist_done']
                                                 ?.toString()
                                                 .toLowerCase() ==
-                                            'yes';
+                                            '1';
 
                                     if (searchText.isNotEmpty &&
                                         !(chassis_number.toLowerCase().contains(
@@ -340,8 +340,8 @@ class _QClistState extends State<QClist> with SingleTickerProviderStateMixin {
                                               children: [
                                                 // Vehicle number with gradient
                                                 Container(
-                                                  width: 60,
-                                                  height: 60,
+                                                  width: 40,
+                                                  height: 40,
                                                   decoration: BoxDecoration(
                                                     gradient: LinearGradient(
                                                       colors: isCompleted
@@ -415,11 +415,7 @@ class _QClistState extends State<QClist> with SingleTickerProviderStateMixin {
                                                           Container(
                                                             padding:
                                                                 const EdgeInsets
-                                                                    .symmetric(
-                                                                    horizontal:
-                                                                        8,
-                                                                    vertical:
-                                                                        4),
+                                                                    .all(8),
                                                             decoration:
                                                                 BoxDecoration(
                                                               color: isCompleted
@@ -481,88 +477,66 @@ class _QClistState extends State<QClist> with SingleTickerProviderStateMixin {
                                                 const SizedBox(width: 12),
 
                                                 // Action button
-                                                Container(
-                                                  decoration: BoxDecoration(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            12),
-                                                    gradient: LinearGradient(
-                                                      colors: isCompleted
-                                                          ? [
-                                                              Colors.blue
-                                                                  .shade400,
-                                                              Colors
-                                                                  .blue.shade600
-                                                            ]
-                                                          : [
-                                                              Colors.orange
-                                                                  .shade400,
-                                                              Colors.orange
-                                                                  .shade600
-                                                            ],
-                                                      begin: Alignment.topLeft,
-                                                      end:
-                                                          Alignment.bottomRight,
+                                                ElevatedButton(
+                                                  onPressed: () {
+                                                    if (isCompleted) {
+                                                      Navigator.push(
+                                                        context,
+                                                        MaterialPageRoute(
+                                                          builder: (_) =>
+                                                              QCView(
+                                                            chasis:
+                                                                chassis_number,
+                                                            Id: vehicle['id'],
+                                                          ),
+                                                        ),
+                                                      ).then((_) =>
+                                                          fetchVehicles());
+                                                    } else {
+                                                      Navigator.push(
+                                                        context,
+                                                        MaterialPageRoute(
+                                                          builder: (_) =>
+                                                              QCChecklist(
+                                                            id: vehicle['id'],
+                                                            title:
+                                                                chassis_number,
+                                                            sku: chassis_number,
+                                                          ),
+                                                        ),
+                                                      ).then((_) =>
+                                                          fetchVehicles());
+                                                    }
+                                                  },
+                                                  style:
+                                                      ElevatedButton.styleFrom(
+                                                    backgroundColor:
+                                                        Colors.white,
+                                                    side: BorderSide(
+                                                      color: isCompleted
+                                                          ? Colors.blue.shade600
+                                                          : Colors
+                                                              .orange.shade600,
+                                                    ),
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                        horizontal: 20,
+                                                        vertical: 12),
+                                                    shape:
+                                                        RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              12),
                                                     ),
                                                   ),
-                                                  child: ElevatedButton(
-                                                    onPressed: () {
-                                                      if (isCompleted) {
-                                                        Navigator.push(
-                                                          context,
-                                                          MaterialPageRoute(
-                                                            builder: (_) => QCView(
-                                                                chasis:
-                                                                    chassis_number,
-                                                                Id: vehicle[
-                                                                    'id']),
-                                                          ),
-                                                        ).then((_) =>
-                                                            fetchVehicles());
-                                                      } else {
-                                                        Navigator.push(
-                                                          context,
-                                                          MaterialPageRoute(
-                                                            builder: (_) =>
-                                                                QCChecklist(
-                                                              id: vehicle['id'],
-                                                              title:
-                                                                  chassis_number,
-                                                              sku:
-                                                                  chassis_number,
-                                                            ),
-                                                          ),
-                                                        ).then((_) =>
-                                                            fetchVehicles());
-                                                      }
-                                                    },
-                                                    style: ElevatedButton
-                                                        .styleFrom(
-                                                      backgroundColor:
-                                                          Colors.transparent,
-                                                      shadowColor:
-                                                          Colors.transparent,
-                                                      padding: const EdgeInsets
-                                                          .symmetric(
-                                                          horizontal: 20,
-                                                          vertical: 12),
-                                                      shape:
-                                                          RoundedRectangleBorder(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(12),
-                                                      ),
-                                                    ),
-                                                    child: Text(
-                                                      isCompleted
-                                                          ? "View"
-                                                          : "Start",
-                                                      style: const TextStyle(
-                                                        color: Colors.white,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        fontSize: 12,
-                                                      ),
+                                                  child: Text(
+                                                    isCompleted
+                                                        ? "View"
+                                                        : "Inspect",
+                                                    style: const TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 12,
                                                     ),
                                                   ),
                                                 ),

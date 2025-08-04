@@ -50,6 +50,10 @@ class _ReceivingFormState extends State<ReceivingForm>
       setState(() {
         issueData = result;
       });
+    } else {
+      setState(() {
+        selectedValue = 'NO';
+      });
     }
   }
 
