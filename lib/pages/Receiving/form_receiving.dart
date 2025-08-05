@@ -1193,11 +1193,14 @@ class _ReceivingFormState extends State<ReceivingForm>
       log(jsonDecode(responseData));
 
       if (response.statusCode == 200 || responseBody['success'] == true) {
+        progressDialog.hide();
         UIHelper.showSuccessMessage(
           context: context,
           message: "Submitted successfully",
         );
       } else {
+        progressDialog.hide();
+
         String errorMessage = responseBody['msg'] ??
             responseBody['message'] ??
             "An error occurred";
@@ -1209,26 +1212,36 @@ class _ReceivingFormState extends State<ReceivingForm>
           errorMessage += '\n$errorDetails';
         }
 
-        UIHelper.showErrorMessage(context: context, message: errorMessage);
+        // Add a small delay to ensure progress dialog is fully hidden
+        Future.delayed(Duration(milliseconds: 100), () {
+          UIHelper.showErrorMessage(context: context, message: errorMessage);
+        });
       }
     } on SocketException {
-      UIHelper.showErrorMessage(
-        context: context,
-        message: "No Internet connection.",
-      );
-    } on TimeoutException {
-      UIHelper.showErrorMessage(
-        context: context,
-        message: "Request timed out. Please try again",
-      );
-    } catch (e) {
-      print("Unexpected Error: $e");
-      UIHelper.showErrorMessage(
-        context: context,
-        message: 'Failed: ${e.toString()}',
-      );
-    } finally {
       progressDialog.hide();
+      Future.delayed(Duration(milliseconds: 100), () {
+        UIHelper.showErrorMessage(
+          context: context,
+          message: "No Internet connection.",
+        );
+      });
+    } on TimeoutException {
+      progressDialog.hide();
+      Future.delayed(Duration(milliseconds: 100), () {
+        UIHelper.showErrorMessage(
+          context: context,
+          message: "Request timed out. Please try again",
+        );
+      });
+    } catch (e) {
+      progressDialog.hide();
+      print("Unexpected Error: $e");
+      Future.delayed(Duration(milliseconds: 100), () {
+        UIHelper.showErrorMessage(
+          context: context,
+          message: 'Failed: ${e.toString()}',
+        );
+      });
     }
   }
 

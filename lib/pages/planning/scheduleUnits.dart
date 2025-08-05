@@ -586,35 +586,6 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
                                 ),
 
                                 // 🔷 Customer badge (top-right)
-                                if (vehicles[index].customer_name != null)
-                                  Positioned(
-                                    right: 12,
-                                    top: 12,
-                                    child: Container(
-                                      padding: EdgeInsets.symmetric(
-                                          horizontal: 10, vertical: 6),
-                                      decoration: BoxDecoration(
-                                        color: Colors.amber[900],
-                                        borderRadius: BorderRadius.circular(12),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.amber[900]!
-                                                .withOpacity(0.3),
-                                            blurRadius: 4,
-                                            offset: Offset(0, 2),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Text(
-                                        vehicles[index].customer_name ?? '',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
                               ]),
                             );
                           },

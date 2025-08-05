@@ -28,14 +28,29 @@ class UIHelper {
     required String message,
     Color color = Colors.red,
   }) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        margin: const EdgeInsets.all(50),
-        padding: const EdgeInsets.all(10),
-        behavior: SnackBarBehavior.floating,
-        content: Text(message),
-        backgroundColor: color,
-      ),
+    if (!context.mounted) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.error, color: Colors.red, size: 24),
+              SizedBox(width: 8),
+              Text('Error'),
+            ],
+          ),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('OK'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

@@ -3,10 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
-import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/pages/Receiving/widget.dart';
 import 'package:nb_utils/nb_utils.dart';
-import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
 
 class UnboxingList extends StatefulWidget {
   final Id;
@@ -23,7 +21,7 @@ class _UnboxingListState extends State<UnboxingList>
   var vehicles = [];
   // var vehicles;
   var loadingText = '';
-  bool isLoading = false;
+  bool isLoading = true;
   TextEditingController searchController = TextEditingController();
   String searchText = '';
   bool _isSearching = false;
@@ -69,16 +67,13 @@ class _UnboxingListState extends State<UnboxingList>
       });
       fetchVehicles().then(
         (value) {
-          if (vehicles.isEmpty) {
-            print(value);
-            setState(() {
-              loadingText = 'No vehicles available at the moment';
-            });
-          }
           _animationController.forward();
         },
       );
     });
+
+    // Start animation immediately to show loader
+    _animationController.forward();
   }
 
   @override
@@ -211,20 +206,12 @@ class _UnboxingListState extends State<UnboxingList>
   Widget _buildContent() {
     return RefreshIndicator(
       color: mycolor,
-      onRefresh: () {
-        return Future.delayed(
-          const Duration(seconds: 1),
-          () {
-            fetchVehicles().then(
-              (value) {
-                toasty(context, "Refreshed",
-                    bgColor: mycolor,
-                    textColor: textWhite,
-                    padding: const EdgeInsets.all(12));
-              },
-            );
-          },
-        );
+      onRefresh: () async {
+        await fetchVehicles();
+        toasty(context, "Refreshed",
+            bgColor: mycolor,
+            textColor: textWhite,
+            padding: const EdgeInsets.all(12));
       },
       child: Column(
         children: [
@@ -242,7 +229,10 @@ class _UnboxingListState extends State<UnboxingList>
           ),
 
           // Bottom action button
-          _buildActionButton(),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: _buildActionButton(),
+          ),
           const SizedBox(height: 5),
         ],
       ),
@@ -363,20 +353,73 @@ class _UnboxingListState extends State<UnboxingList>
 
   Widget _buildErrorState() {
     return Container(
-      padding: const EdgeInsets.all(16),
-      child: ErrorMessageWidget(
-        errorMessage: loadingText,
-        onRetry: () {
-          fetchVehicles().then(
-            (value) {
-              if (vehicles.isEmpty) {
-                setState(() {
-                  loadingText = 'No vehicles available at the moment';
-                });
-              }
-            },
-          );
-        },
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            loadingText.contains('No vehicles')
+                ? Icons.inventory_2_outlined
+                : Icons.error_outline,
+            size: 64,
+            color: loadingText.contains('No vehicles')
+                ? Colors.grey.shade400
+                : Colors.red.shade400,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            loadingText.contains('No vehicles')
+                ? 'No Units Available'
+                : 'Something went wrong',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            loadingText,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade600,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [mycolor.withOpacity(0.8), mycolor],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: ElevatedButton.icon(
+              onPressed: () {
+                fetchVehicles();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              icon: const Icon(Icons.refresh, color: Colors.white),
+              label: const Text(
+                'Try Again',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -443,7 +486,7 @@ class _UnboxingListState extends State<UnboxingList>
     Color categoryColor = colors[index % colors.length];
     var chassisNumber = vehicle['chassis_number'] ?? 'N/A';
     var engineNumber = vehicle['engine_number'] ?? 'N/A';
-    var isRacked = vehicle['unit_racked']?.toString().toLowerCase() == 'yes';
+    var isRacked = vehicle['unit_racked']?.toString().toLowerCase() == '1';
 
     return AnimatedContainer(
       duration: Duration(milliseconds: 300 + (index * 100)),
@@ -650,8 +693,9 @@ class _UnboxingListState extends State<UnboxingList>
     showDialog(
       context: context,
       builder: (BuildContext context) {
+        bool isSubmitting = false;
         return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
+          builder: (BuildContext context, StateSetter dialogSetState) {
             return AlertDialog(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
@@ -716,9 +760,11 @@ class _UnboxingListState extends State<UnboxingList>
               ),
               actions: [
                 TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
+                  onPressed: isSubmitting
+                      ? null
+                      : () {
+                          Navigator.pop(context);
+                        },
                   child: const Text(
                     'Cancel',
                     style: TextStyle(color: Colors.red),
@@ -735,28 +781,64 @@ class _UnboxingListState extends State<UnboxingList>
                       vertical: 14,
                     ),
                   ),
-                  onPressed: () async {
-                    final fields = {
-                      'vehicle_receiving_item_id': vehicle['id'],
-                    };
-                    print(fields);
-                    await submitForm(
-                      context: context,
-                      url: '${Api.api_url}pushRack',
-                      fields: fields,
-                      token: user['data']['token'],
-                    );
-                    // Navigator.pop(context);
-                    fetchVehicles();
-                  },
-                  child: const Text(
-                    'CONFIRM & RACK',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
+                  onPressed: isSubmitting
+                      ? null
+                      : () async {
+                          dialogSetState(() {
+                            isSubmitting = true;
+                          });
+
+                          try {
+                            final fields = {
+                              'vehicle_receiving_item_id': vehicle['id'],
+                            };
+                            print(fields);
+                            await submitForm(
+                              context: context,
+                              url: '${Api.api_url}pushRack',
+                              fields: fields,
+                              token: user['data']['token'],
+                            );
+
+                            // Close dialog immediately after successful API call
+                            // Navigator.of(context).pop();
+
+                            // Show loading state and refresh data
+                            setState(() {
+                              isLoading = true;
+                            });
+
+                            await fetchVehicles();
+
+                            // Show success message
+                            toasty(context, "Unit racked successfully!",
+                                bgColor: Colors.green, textColor: Colors.white);
+                          } catch (e) {
+                            toasty(context,
+                                "Failed to rack unit. Please try again.",
+                                bgColor: Colors.red, textColor: textWhite);
+                            dialogSetState(() {
+                              isSubmitting = false;
+                            });
+                          }
+                        },
+                  child: isSubmitting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          'CONFIRM & RACK',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
                 ),
               ],
             );
@@ -770,7 +852,7 @@ class _UnboxingListState extends State<UnboxingList>
     // Check if ALL vehicles are completed
     final allChecklistsDone = vehicles.isNotEmpty &&
         vehicles
-            .every((v) => v['unit_racked']?.toString().toLowerCase() == 'yes');
+            .every((v) => v['unit_racked']?.toString().toLowerCase() == '1');
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -861,55 +943,41 @@ class _UnboxingListState extends State<UnboxingList>
   Future fetchVehicles() async {
     setState(() {
       loadingText = '';
-      isLoading = vehicles.isEmpty ? true : false;
+      isLoading = true;
     });
+
     String url = "${Api.api_url}loadUnboxingItems/${widget.Id}";
     print(url);
-    ProgressDialog pr = ProgressDialog(context,
-        type: ProgressDialogType.normal, isDismissible: true, showLogs: true);
-    pr.style(
-      message: 'Fetching vehicles...',
-      borderRadius: 8,
-      backgroundColor: Colors.white,
-      progressWidget: const SizedBox(
-          width: 20,
-          height: 20,
-          child: Center(child: CircularProgressIndicator())),
-      elevation: 10.0,
-      insetAnimCurve: Curves.easeInOut,
-    );
 
-    // pr.show();
-    var responsedata = await httpget(url, user['data']["token"], context);
-    print("responsedata: $responsedata");
-    if (responsedata != null) {
-      pr.hide();
+    try {
+      var responsedata = await httpget(url, user['data']["token"], context);
 
+      if (responsedata != null && responsedata["success"] == true) {
+        setState(() {
+          isLoading = false;
+          vehicles = (responsedata["data"]['items'] as List<dynamic>);
+          if (vehicles.isEmpty) {
+            loadingText = 'No vehicles available at the moment';
+          }
+        });
+      } else {
+        setState(() {
+          isLoading = false;
+          loadingText =
+              responsedata?["message"]?.toString() ?? 'Failed to load vehicles';
+        });
+        toasty(
+            context, "${responsedata?["message"] ?? 'Failed to load vehicles'}",
+            bgColor: Colors.red, textColor: textWhite);
+      }
+    } catch (e) {
       setState(() {
         isLoading = false;
-        vehicles = (responsedata["data"]['items'] as List<dynamic>);
+        loadingText = 'Network error. Please check your connection.';
       });
-    } else {
-      pr.hide().whenComplete(() {
-        setState(() {
-          isLoading = false;
-          loadingText = responsedata["message"].toString();
-        });
-        toasty(context, "${responsedata["message"]}",
-            bgColor: Colors.red, textColor: textWhite);
-      });
+      toasty(context, "Network error occurred",
+          bgColor: Colors.red, textColor: textWhite);
     }
-    Future.delayed(const Duration(seconds: dismissseconds), () {
-      if (pr.isShowing()) {
-        pr.hide();
-        setState(() {
-          isLoading = false;
-          loadingText = internetmessage;
-        });
-        // ScaffoldMessenger.of(context)
-        //     .showSnackBar(snackBar(internetmessage, snackred));
-      }
-    });
   }
 }
 // for taking picture

@@ -608,7 +608,7 @@ class _QClistState extends State<QClist> with SingleTickerProviderStateMixin {
                         v['receiving_checklist_done']
                             ?.toString()
                             .toLowerCase() ==
-                        'yes');
+                        '1');
 
                 return Container(
                   width: double.infinity,

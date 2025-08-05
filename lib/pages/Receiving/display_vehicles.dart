@@ -616,7 +616,32 @@ class _DisplayVehiclesState extends State<DisplayVehicles>
           child: Padding(
             padding: EdgeInsets.all(20),
             child: Column(
+              // mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (vehicles[index]['customer'] != null)
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.amber[900],
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.amber.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      vehicles[index]['customer']?['name'] ?? '',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
                 Row(
                   children: [
                     Container(
@@ -693,33 +718,10 @@ class _DisplayVehiclesState extends State<DisplayVehicles>
                               ),
                             ],
                           ),
+                          SizedBox(height: 4),
                         ],
                       ),
                     ),
-                    if (vehicles[index]['customer'] != null)
-                      Container(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.amber[900],
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.amber.withOpacity(0.3),
-                              blurRadius: 8,
-                              offset: Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Text(
-                          vehicles[index]['customer']?['name'] ?? '',
-                          style: GoogleFonts.poppins(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
                   ],
                 ),
                 SizedBox(height: 16),
@@ -816,7 +818,13 @@ class _DisplayVehiclesState extends State<DisplayVehicles>
       'Bay 4': 'Bay 4',
       'Bus Bay': 'Bus Bay',
     };
-    final routeIds = {'Route 1': '1', 'Route 2': '2', 'Route 3': '3'};
+    final routeIds = {
+      'Route 1': '1',
+      'Route 2': '2',
+      'Route 3': '3',
+      'Route 4': '4',
+      'Route 5': '5'
+    };
 
     showDialog(
       context: context,
@@ -913,7 +921,13 @@ class _DisplayVehiclesState extends State<DisplayVehicles>
                           SizedBox(height: 20),
                           _buildStyledDropdown(
                             value: selectedRoute!,
-                            items: ['Route 1', 'Route 2', 'Route 3'],
+                            items: [
+                              'Route 1',
+                              'Route 2',
+                              'Route 3',
+                              'Route 4',
+                              'Route 5'
+                            ],
                             label: 'Select Route',
                             icon: FeatherIcons.navigation,
                             onChanged: (value) {
