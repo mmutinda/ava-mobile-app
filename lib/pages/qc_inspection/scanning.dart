@@ -63,7 +63,7 @@ class _ScanningState extends State<Scanning> {
       isLoading = true;
       message = '';
     });
-    var url = widget.shopId == "11"
+    var url = widget.shopId == "17"
         ? "${Api.api_url}loadUnitsInSubstation/${widget.subStationId}"
         : "${Api.api_url}unitsinshop/${widget.shopId}";
     print(url);
@@ -160,7 +160,7 @@ class _ScanningState extends State<Scanning> {
           );
           return;
         }
-        if (widget.shopId == '2046') {
+        if (widget.shopId == '16') {
           OffliningBayPage(
             ShopId: widget.shopId,
             res: res,
@@ -171,7 +171,7 @@ class _ScanningState extends State<Scanning> {
           );
           return;
         }
-        if (widget.shopId == '2047') {
+        if (widget.shopId == '18') {
           SummaryGCP(
             ageing: res['data']['vehicledata']['vin_no'].toString(),
             chassis: res['data']['vehicledata']['vin_no'].toString(),
@@ -183,7 +183,7 @@ class _ScanningState extends State<Scanning> {
           );
           return;
         }
-        if (widget.shopId == '11') {
+        if (widget.shopId == '17') {
           JobCardQuestionsTemplateEOL(
             chasis_no: res['data']['vehicledata']['vin_no'],
             shop_name: 'EOL station',
@@ -304,7 +304,7 @@ class _ScanningState extends State<Scanning> {
                 ) // Show message for success or failure
               : Column(
                   children: [
-                    if (widget.shopId == '2047')
+                    if (widget.shopId == '18')
                       Container(
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         decoration: BoxDecoration(
@@ -340,7 +340,7 @@ class _ScanningState extends State<Scanning> {
                           ],
                         ),
                       ),
-                    if (widget.shopId == '2047')
+                    if (widget.shopId == '18')
                       Expanded(
                         child: ListView.separated(
                           itemCount: vehicles.length,
@@ -416,7 +416,7 @@ class _ScanningState extends State<Scanning> {
                           },
                         ),
                       ),
-                    if (widget.shopId != '2047')
+                    if (widget.shopId != '18')
                       Expanded(
                         child: ListView.builder(
                           itemCount: vehicles.length,
@@ -532,7 +532,7 @@ class _ScanningState extends State<Scanning> {
                                                     color: Colors.red,
                                                   ),
                                                 )
-                                              : widget.shopId == '2046'
+                                              : widget.shopId == '16'
                                                   ? OffliningBayPage(
                                                       ShopId: widget.shopId,
                                                       res: res,
@@ -544,7 +544,7 @@ class _ScanningState extends State<Scanning> {
                                                           PageRouteAnimation
                                                               .Slide,
                                                     )
-                                                  : widget.shopId == '2047'
+                                                  : widget.shopId == '18'
                                                       ? SummaryGCP(
                                                           ageing: res['data'][
                                                                   'vehicledata']
@@ -565,7 +565,7 @@ class _ScanningState extends State<Scanning> {
                                                               PageRouteAnimation
                                                                   .Slide,
                                                         )
-                                                      : widget.shopId == '11'
+                                                      : widget.shopId == '17'
                                                           ? JobCardQuestionsTemplateEOL(
                                                               chasis_no: res[
                                                                           'data']

@@ -249,7 +249,8 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
                                                   ChooseComponent(
                                                     vehicle_id:
                                                         vehicles[index].id,
-                                                    job_no: vehicles[index].job,
+                                                    vehicle_line:
+                                                        vehicles[index].job,
                                                     route_id:
                                                         vehicles[index].route,
                                                   ),

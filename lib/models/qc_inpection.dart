@@ -7,6 +7,7 @@ class Vehicle {
   final String lot;
   final String created_at;
   final String job;
+  final String vehicle_line;
   final String route;
   final String component_moved;
   final String cabin_cockpit_moved;
@@ -22,6 +23,7 @@ class Vehicle {
     required this.lot,
     required this.created_at,
     required this.job,
+    required this.vehicle_line,
     required this.route,
     required this.component_moved,
     required this.cabin_cockpit_moved,
@@ -41,6 +43,7 @@ class Vehicle {
       lot: json['lot_no'].toString(),
       created_at: json['created_at'].toString(),
       job: json['job_no'].toString(),
+      vehicle_line: json['vehicle_line'] ?? '',
       route: json['route'].toString(),
       component_moved: json['component_moved'].toString(),
       cabin_cockpit_moved: json['cabin_cockpit_moved'].toString(),

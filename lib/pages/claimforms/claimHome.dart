@@ -129,10 +129,6 @@ class _ClaimHomeState extends State<ClaimHome> {
       ),
       appBar: AppBar(
         title: const Text('Claims Records'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 0,
-        centerTitle: true,
       ),
       backgroundColor: Colors.grey.shade50,
       body: FutureBuilder<List<NearMiss>>(

@@ -12,6 +12,7 @@ import 'package:isuze_pqcs/models/qc_inpection.dart';
 import 'package:isuze_pqcs/pages/planning/EOL/jobcard_questions_template_EOL.dart';
 import 'package:isuze_pqcs/pages/planning/offlining/GCP.dart';
 import 'package:isuze_pqcs/pages/planning/offlining/offliningbaypage.dart';
+import 'package:isuze_pqcs/pages/qc_inspection/jobcard_questions_template.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/qcCategoryQuestions.dart';
 import 'package:isuze_pqcs/scanning.dart';
 import 'package:nb_utils/nb_utils.dart';
@@ -62,7 +63,7 @@ class _ScanningState extends State<Scanning> {
       isLoading = true;
       message = '';
     });
-    var url = widget.shopId == "11"
+    var url = widget.shopId == "17"
         ? "${Api.api_url}loadUnitsInSubstation/${widget.subStationId}"
         : "${Api.api_url}unitsinshop/${widget.shopId}";
     print(url);
@@ -159,7 +160,7 @@ class _ScanningState extends State<Scanning> {
           );
           return;
         }
-        if (widget.shopId == '2046') {
+        if (widget.shopId == '16') {
           OffliningBayPage(
             ShopId: widget.shopId,
             res: res,
@@ -170,7 +171,7 @@ class _ScanningState extends State<Scanning> {
           );
           return;
         }
-        if (widget.shopId == '2047') {
+        if (widget.shopId == '18') {
           SummaryGCP(
             ageing: res['data']['vehicledata']['vin_no'].toString(),
             chassis: res['data']['vehicledata']['vin_no'].toString(),
@@ -182,8 +183,8 @@ class _ScanningState extends State<Scanning> {
           );
           return;
         }
-        if (widget.shopId == '11') {
-          JobCardQuestionsTemplateEOL(
+        if (widget.shopId == '17') {
+          JobCardQuestionsTemplate(
             chasis_no: res['data']['vehicledata']['vin_no'],
             shop_name: 'EOL station',
             station_id: widget.subStationId,
@@ -314,7 +315,7 @@ class _ScanningState extends State<Scanning> {
                   )
                 : Column(
                     children: [
-                      if (widget.shopId == '2047')
+                      if (widget.shopId == '18')
                         Container(
                           padding: const EdgeInsets.symmetric(
                               vertical: 12, horizontal: 15),
@@ -359,134 +360,168 @@ class _ScanningState extends State<Scanning> {
                             ],
                           ),
                         ),
-                      if (widget.shopId == '2047')
+                      if (widget.shopId == '18')
                         Expanded(
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 15),
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
                             child: ListView.separated(
                               itemCount: vehicles.length,
                               separatorBuilder: (_, __) =>
-                                  const SizedBox(height: 12),
+                                  const SizedBox(height: 8),
                               itemBuilder: (context, index) {
                                 final car = vehicles[index];
-                                return GestureDetector(
-                                  onTap: () {
-                                    processSKU(car.vin);
-                                  },
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(16),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: mycolor.withOpacity(0.1),
-                                          blurRadius: 8,
-                                          offset: Offset(0, 4),
-                                          spreadRadius: 1,
-                                        ),
-                                      ],
-                                      border: Border.all(
-                                        color: mycolor.withOpacity(0.2),
-                                        width: 1,
-                                      ),
+                                return Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: mycolor.withOpacity(0.2),
+                                      width: 1,
                                     ),
-                                    padding: const EdgeInsets.all(16),
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          width: 50,
-                                          height: 50,
-                                          decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              colors: [
-                                                mycolor,
-                                                Colors.amber.shade700
-                                              ],
-                                            ),
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                          ),
-                                          child: Icon(
-                                            Icons.directions_car,
-                                            color: Colors.white,
-                                            size: 28,
-                                          ),
-                                        ),
-                                        SizedBox(width: 16),
-                                        Expanded(
-                                          flex: 2,
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                vehicles[index].model,
-                                                style: TextStyle(
-                                                  color: mycolor,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 16,
-                                                ),
+                                  ),
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(16),
+                                      onTap: () {
+                                        processSKU(car.vin);
+                                      },
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(16),
+                                        child: Row(
+                                          children: [
+                                            // Car icon container
+                                            Container(
+                                              width: 50,
+                                              height: 50,
+                                              decoration: BoxDecoration(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
                                               ),
-                                              SizedBox(height: 4),
-                                              Container(
-                                                padding: EdgeInsets.symmetric(
-                                                  horizontal: 8,
-                                                  vertical: 4,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.grey.shade100,
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
-                                                ),
-                                                child: Text(
-                                                  car.vin,
-                                                  style: TextStyle(
-                                                    fontSize: 13,
-                                                    color: Colors.grey.shade700,
-                                                    fontFamily: 'monospace',
+                                              child: const Icon(
+                                                Icons.directions_car_rounded,
+                                                color: Colors.white,
+                                                size: 26,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            // Model and VIN info
+                                            Expanded(
+                                              flex: 2,
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    vehicles[index].model,
+                                                    style: TextStyle(
+                                                      color: mycolor,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 16,
+                                                    ),
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
                                                   ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        Expanded(
-                                          flex: 1,
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              vertical: 8,
-                                              horizontal: 16,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              gradient: LinearGradient(
-                                                colors: [
-                                                  mycolor,
-                                                  Colors.amber.shade700
+                                                  const SizedBox(height: 6),
+                                                  Container(
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4,
+                                                    ),
+                                                    decoration: BoxDecoration(
+                                                      color:
+                                                          Colors.grey.shade50,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              8),
+                                                      border: Border.all(
+                                                        color: Colors
+                                                            .grey.shade200,
+                                                        width: 1,
+                                                      ),
+                                                    ),
+                                                    child: Row(
+                                                      children: [
+                                                        Icon(
+                                                          Icons
+                                                              .confirmation_number_outlined,
+                                                          size: 12,
+                                                          color: Colors
+                                                              .grey.shade600,
+                                                        ),
+                                                        const SizedBox(
+                                                            width: 4),
+                                                        Expanded(
+                                                          child: Text(
+                                                            car.vin,
+                                                            style: TextStyle(
+                                                              fontSize: 17,
+                                                              color: Colors.grey
+                                                                  .shade700,
+                                                              fontFamily:
+                                                                  'monospace',
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w500,
+                                                            ),
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
                                                 ],
                                               ),
-                                              borderRadius:
-                                                  BorderRadius.circular(20),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color:
-                                                      mycolor.withOpacity(0.3),
-                                                  blurRadius: 4,
-                                                  offset: Offset(0, 2),
-                                                ),
-                                              ],
                                             ),
-                                            child: Text(
-                                              car.ageing,
-                                              textAlign: TextAlign.center,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white,
-                                                fontSize: 14,
+                                            const SizedBox(width: 10),
+                                            // Ageing badge
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                vertical: 8,
+                                                horizontal: 12,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: mycolor
+                                                        .withOpacity(0.25),
+                                                    blurRadius: 4,
+                                                    offset: const Offset(0, 2),
+                                                  ),
+                                                ],
+                                              ),
+                                              child: Column(
+                                                children: [
+                                                  const Icon(
+                                                    Icons.schedule,
+                                                    color: Colors.white,
+                                                    size: 14,
+                                                  ),
+                                                  const SizedBox(height: 2),
+                                                  Text(
+                                                    car.ageing,
+                                                    textAlign: TextAlign.center,
+                                                    style: const TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: Colors.white,
+                                                      fontSize: 12,
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
                                             ),
-                                          ),
+                                          ],
                                         ),
-                                      ],
+                                      ),
                                     ),
                                   ),
                                 );
@@ -494,36 +529,37 @@ class _ScanningState extends State<Scanning> {
                             ),
                           ),
                         ),
-                      if (widget.shopId != '2047')
+                      if (widget.shopId != '18')
                         Expanded(
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 15),
-                            child: ListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: ListView.separated(
                               itemCount: vehicles.length,
+                              separatorBuilder: (context, index) =>
+                                  const SizedBox(height: 8),
                               itemBuilder: (context, index) {
-                                // ignore: unused_local_variable
                                 Color categoryColor =
                                     colors[index % colors.length];
                                 var vin = vehicles[index].vin;
                                 var model = vehicles[index].model;
-                                // ignore: unused_local_variabl
+
                                 if (searchText.isNotEmpty &&
                                     !(vin.toLowerCase().contains(
                                             searchText.toLowerCase()) ||
                                         model.toLowerCase().contains(
                                             searchText.toLowerCase()))) {
-                                  return Container(); // Return an empty container if not matching
+                                  return const SizedBox.shrink();
                                 }
+
                                 return Container(
-                                  margin: EdgeInsets.only(bottom: 12),
                                   decoration: BoxDecoration(
                                     color: Colors.white,
                                     borderRadius: BorderRadius.circular(16),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: categoryColor.withOpacity(0.1),
+                                        color: categoryColor.withOpacity(0.12),
                                         blurRadius: 8,
-                                        offset: Offset(0, 4),
+                                        offset: const Offset(0, 3),
                                         spreadRadius: 1,
                                       ),
                                     ],
@@ -532,142 +568,210 @@ class _ScanningState extends State<Scanning> {
                                       width: 1,
                                     ),
                                   ),
-                                  child: ListTile(
-                                    onTap: () {
-                                      processSKU(vehicles[index].vin);
-                                      // showTapScanToast(context);
-                                    },
-                                    contentPadding: EdgeInsets.all(16),
-                                    leading: Container(
-                                      width: 50,
-                                      height: 50,
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          colors: [
-                                            categoryColor,
-                                            categoryColor.withOpacity(0.7)
-                                          ],
-                                        ),
-                                        borderRadius: BorderRadius.circular(12),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color:
-                                                categoryColor.withOpacity(0.3),
-                                            blurRadius: 4,
-                                            offset: Offset(0, 2),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Center(
-                                        child: Text(
-                                          "${index + 1}",
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 18,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    title: Row(
-                                      children: [
-                                        Icon(Icons.directions_car,
-                                            color: categoryColor, size: 20),
-                                        SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            vehicles[index].model,
-                                            style: TextStyle(
-                                              color: categoryColor,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    subtitle: Padding(
-                                      padding: const EdgeInsets.only(top: 8),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Container(
-                                            padding: EdgeInsets.symmetric(
-                                                horizontal: 8, vertical: 4),
-                                            decoration: BoxDecoration(
-                                              color: Colors.grey.shade100,
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            child: Text(
-                                              'VIN: ${vehicles[index].vin}',
-                                              style: TextStyle(
-                                                fontFamily: 'monospace',
-                                                fontSize: 13,
-                                                color: Colors.grey.shade700,
-                                              ),
-                                            ),
-                                          ),
-                                          SizedBox(height: 8),
-                                          Row(
-                                            children: [
-                                              Container(
-                                                padding: EdgeInsets.symmetric(
-                                                    horizontal: 8, vertical: 4),
-                                                decoration: BoxDecoration(
-                                                  color: categoryColor
-                                                      .withOpacity(0.1),
-                                                  borderRadius:
-                                                      BorderRadius.circular(12),
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(16),
+                                      onTap: () {
+                                        processSKU(vehicles[index].vin);
+                                      },
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(16),
+                                        child: Row(
+                                          children: [
+                                            // Leading number container
+                                            Container(
+                                              width: 48,
+                                              height: 48,
+                                              decoration: BoxDecoration(
+                                                gradient: LinearGradient(
+                                                  begin: Alignment.topLeft,
+                                                  end: Alignment.bottomRight,
+                                                  colors: [
+                                                    categoryColor,
+                                                    categoryColor
+                                                        .withOpacity(0.8)
+                                                  ],
                                                 ),
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: categoryColor
+                                                        .withOpacity(0.3),
+                                                    blurRadius: 6,
+                                                    offset: const Offset(0, 3),
+                                                  ),
+                                                ],
+                                              ),
+                                              child: Center(
                                                 child: Text(
-                                                  'LOT: ${vehicles[index].lot}',
-                                                  style: TextStyle(
-                                                    fontSize: 12,
-                                                    color: categoryColor,
-                                                    fontWeight: FontWeight.w600,
+                                                  "${index + 1}",
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 18,
                                                   ),
                                                 ),
                                               ),
-                                              if (vehicles[index].job !=
-                                                      'null' &&
-                                                  vehicles[index]
-                                                      .job
-                                                      .isNotEmpty) ...[
-                                                SizedBox(width: 8),
-                                                Container(
-                                                  padding: EdgeInsets.symmetric(
-                                                      horizontal: 8,
-                                                      vertical: 4),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.amber
-                                                        .withOpacity(0.1),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            12),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            // Content
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  // Model with icon
+                                                  Row(
+                                                    children: [
+                                                      Icon(
+                                                        Icons
+                                                            .directions_car_rounded,
+                                                        color: categoryColor,
+                                                        size: 20,
+                                                      ),
+                                                      const SizedBox(width: 6),
+                                                      Expanded(
+                                                        child: Text(
+                                                          vehicles[index].model,
+                                                          style: TextStyle(
+                                                            color:
+                                                                categoryColor,
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                            fontSize: 16,
+                                                          ),
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
-                                                  child: Text(
-                                                    'JOB: ${vehicles[index].job}',
-                                                    style: TextStyle(
-                                                      fontSize: 12,
+                                                  const SizedBox(height: 8),
+                                                  // VIN container
+                                                  Container(
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                        horizontal: 10,
+                                                        vertical: 4),
+                                                    decoration: BoxDecoration(
                                                       color:
-                                                          Colors.amber.shade800,
-                                                      fontWeight:
-                                                          FontWeight.w600,
+                                                          Colors.grey.shade50,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              8),
+                                                      border: Border.all(
+                                                        color: Colors
+                                                            .grey.shade200,
+                                                        width: 1,
+                                                      ),
+                                                    ),
+                                                    child: Row(
+                                                      children: [
+                                                        Icon(
+                                                          Icons
+                                                              .confirmation_number_outlined,
+                                                          size: 14,
+                                                          color: Colors
+                                                              .grey.shade600,
+                                                        ),
+                                                        const SizedBox(
+                                                            width: 4),
+                                                        Expanded(
+                                                          child: Text(
+                                                            'VIN: ${vehicles[index].vin}',
+                                                            style: TextStyle(
+                                                              fontFamily:
+                                                                  'monospace',
+                                                              fontSize: 12,
+                                                              color: Colors.grey
+                                                                  .shade700,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w500,
+                                                            ),
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
+                                                          ),
+                                                        ),
+                                                      ],
                                                     ),
                                                   ),
-                                                ),
-                                              ],
-                                            ],
-                                          ),
-                                        ],
+                                                  const SizedBox(height: 6),
+                                                  // LOT container
+                                                  Container(
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                        horizontal: 8,
+                                                        vertical: 3),
+                                                    decoration: BoxDecoration(
+                                                      gradient: LinearGradient(
+                                                        colors: [
+                                                          categoryColor
+                                                              .withOpacity(0.1),
+                                                          categoryColor
+                                                              .withOpacity(
+                                                                  0.05),
+                                                        ],
+                                                      ),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              6),
+                                                      border: Border.all(
+                                                        color: categoryColor
+                                                            .withOpacity(0.3),
+                                                        width: 1,
+                                                      ),
+                                                    ),
+                                                    child: Row(
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      children: [
+                                                        Icon(
+                                                          Icons
+                                                              .inventory_2_outlined,
+                                                          size: 12,
+                                                          color: categoryColor,
+                                                        ),
+                                                        const SizedBox(
+                                                            width: 3),
+                                                        Text(
+                                                          'LOT: ${vehicles[index].lot}',
+                                                          style: TextStyle(
+                                                            fontSize: 17,
+                                                            color:
+                                                                categoryColor,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            // Trailing QR icon
+                                            Container(
+                                              padding: const EdgeInsets.all(10),
+                                              decoration: BoxDecoration(
+                                                color: categoryColor
+                                                    .withOpacity(0.1),
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                              ),
+                                              child: Icon(
+                                                Icons.qr_code_scanner_rounded,
+                                                color: categoryColor,
+                                                size: 24,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                    trailing: Icon(
-                                      Icons.qr_code_scanner,
-                                      color: categoryColor,
-                                      size: 28,
                                     ),
                                   ),
                                 );
@@ -687,14 +791,6 @@ class _ScanningState extends State<Scanning> {
                               mycolor.withOpacity(0.8),
                             ],
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: mycolor.withOpacity(0.3),
-                              blurRadius: 12,
-                              offset: Offset(0, 6),
-                              spreadRadius: 2,
-                            ),
-                          ],
                         ),
                         child: Material(
                           color: Colors.transparent,
@@ -733,7 +829,7 @@ class _ScanningState extends State<Scanning> {
                                                     color: Colors.red,
                                                   ),
                                                 )
-                                              : widget.shopId == '2046'
+                                              : widget.shopId == '16'
                                                   ? OffliningBayPage(
                                                       ShopId: widget.shopId,
                                                       res: res,
@@ -745,7 +841,7 @@ class _ScanningState extends State<Scanning> {
                                                           PageRouteAnimation
                                                               .Slide,
                                                     )
-                                                  : widget.shopId == '2047'
+                                                  : widget.shopId == '18'
                                                       ? SummaryGCP(
                                                           ageing: res['data'][
                                                                   'vehicledata']
@@ -766,7 +862,7 @@ class _ScanningState extends State<Scanning> {
                                                               PageRouteAnimation
                                                                   .Slide,
                                                         )
-                                                      : widget.shopId == '11'
+                                                      : widget.shopId == '17'
                                                           ? JobCardQuestionsTemplateEOL(
                                                               chasis_no: res[
                                                                           'data']

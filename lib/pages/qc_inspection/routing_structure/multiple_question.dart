@@ -95,7 +95,7 @@ class _MultipleQuestionState extends State<MultipleQuestion>
     print(widget.intial_option);
     List<String> indexedNames = [];
     for (int index = 0; index < widget.options.length; index++) {
-      indexedNames.add("${widget.options[index]['option_value']}");
+      indexedNames.add("${widget.options[index]}");
     }
 
     super.build(context);

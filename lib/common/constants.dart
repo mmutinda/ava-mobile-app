@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 const textWhite = Colors.white;
 const textBlack = Colors.black;
 const mycolor = Color.fromARGB(255, 168, 88, 32);
+// const mycolor = Color(0xFF1976D2);
 const app_colorPrimary = Color(0xFFfc4a1a);
 const app_colorPrimaryDark = Color(0xFFf7b733);
 const app_colorAccent = Color(0xFFf7b733);

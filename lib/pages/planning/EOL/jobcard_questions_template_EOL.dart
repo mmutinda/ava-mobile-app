@@ -475,7 +475,6 @@ class _JobCardQuestionsTemplateEOLState
       var request = http.MultipartRequest('POST', Uri.parse(url));
       request.headers.addAll({
         'Accept': 'application/json',
-        'Content-Type': 'application/json',
         'Authorization': 'Bearer ${user['data']["token"]}',
       });
       print('Posting answers: ${jsonEncode(answers)}');

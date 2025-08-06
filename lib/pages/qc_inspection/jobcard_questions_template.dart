@@ -9,13 +9,13 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
+import 'package:isuze_pqcs/pages/planning/EOL/EOLScreen.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/routing_structure/multiple_question.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/routing_structure/numerical_question.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/routing_structure/others.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/routing_structure/single_question.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/routing_structure/traceable_question.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
 import 'package:http/http.dart' as http;
 
 class JobCardQuestionsTemplate extends StatefulWidget {
@@ -25,6 +25,7 @@ class JobCardQuestionsTemplate extends StatefulWidget {
   final categoryName;
   final shop_name;
   final chasis_no;
+  final station_id;
 
   const JobCardQuestionsTemplate(
       {super.key,
@@ -33,7 +34,8 @@ class JobCardQuestionsTemplate extends StatefulWidget {
       this.shop_id,
       this.categoryName,
       required this.shop_name,
-      required this.chasis_no});
+      required this.chasis_no,
+      this.station_id});
 
   @override
   State<JobCardQuestionsTemplate> createState() =>
@@ -65,6 +67,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
   late File signature;
   List vehicles = [];
   bool isButtonEnabled = true;
+  bool isInitloading = true;
   var jobCardId;
   @override
   void initState() {
@@ -155,27 +158,100 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: questions.isEmpty
+                child: questions.isEmpty && !isInitloading
                     ? Center(
-                        child: Text(
-                          'No questions available',
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 16,
-                          ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.quiz_outlined,
+                              size: 64,
+                              color: Colors.grey.shade400,
+                            ),
+                            SizedBox(height: 16),
+                            Text(
+                              'No questions available',
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Tap refresh to try again',
+                              style: TextStyle(
+                                color: Colors.grey.shade500,
+                                fontSize: 14,
+                              ),
+                            ),
+                            SizedBox(height: 24),
+                            Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    mycolor,
+                                    mycolor.withOpacity(0.8),
+                                  ],
+                                ),
+                              ),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(12),
+                                  onTap: () {
+                                    fetchQuestions();
+                                  },
+                                  child: Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 24,
+                                      vertical: 12,
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.refresh_rounded,
+                                          color: Colors.white,
+                                          size: 20,
+                                        ),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          'Refresh',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       )
                     : Column(
                         children: [
-                          if (Category['imageUri'].toString() !=
+                          if ((Category['imageUri'] ?? '').toString() !=
                                   '${Api.main_url}/upload/default.jpg' &&
-                              Category['imageUri'].toString() != 'null')
+                              (Category['imageUri'] ?? '').toString() !=
+                                  'null' &&
+                              (Category['imageUri'] ?? '')
+                                  .toString()
+                                  .isNotEmpty)
                             Container(
                               height: 180,
                               width: double.infinity,
                               margin: EdgeInsets.only(bottom: 16),
                               child: CachedNetworkImage(
-                                imageUrl: Category['imageUri'].toString(),
+                                imageUrl:
+                                    (Category['imageUri'] ?? '').toString(),
                                 fit: BoxFit.cover,
                                 placeholder: (context, url) => Center(
                                   child: CircularProgressIndicator(),
@@ -190,41 +266,16 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                               shrinkWrap: true,
                               itemCount: questions.length,
                               itemBuilder: (context, index) {
-                                var answ = questions[index];
                                 var get = questions[index];
-                                var can_sign = get['can_sign'];
-                                var checkanswered = get['checkanswered'];
-                                var answer_given = get['answer_given'];
+                                // var can_sign = get['can_sign'] ?? '';
+                                var answer_given = get['answer_given'] ?? '';
                                 // print(get);
-                                print(get['quiz_type']);
-                                haserror = get['haserror'].toString();
+                                print('Quiz type: ${get['quiz_type']}');
+                                haserror = (get['haserror'] ?? '').toString();
 
                                 Widget questionWidget;
 
-                                if (get["quiz_type"] == "traceable") {
-                                  //traceable
-                                  questionWidget = TraceableQuestion(
-                                    answer_given: answer_given,
-                                    can_sign: can_sign,
-                                    checkanswered: checkanswered,
-                                    id: get['id'],
-                                    onValueChanged: (value) {
-                                      var qid = get['id'];
-                                      setState(() {
-                                        traceableValues[qid] = value;
-                                        // print(traceableValues);
-                                      });
-                                    },
-                                    onValueChanged2: (value) {
-                                      var qid = get['id'];
-                                      setState(() {
-                                        traceableSignature[qid] = value;
-                                        // print(traceableSignature);
-                                      });
-                                    },
-                                    question: get["query_name"] as String,
-                                  );
-                                } else if (get["quiz_type"] == "multiple") {
+                                if (get["quiz_type"] == "multiple") {
                                   questionWidget = MultipleQuestion(
                                       intial_option: get["defect_names"],
                                       initialImage: (get["image_url"] == null ||
@@ -249,11 +300,14 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                           selectedUsers[qid] = value;
                                         });
                                       },
-                                      users: (get['emails'] as List<dynamic>)
+                                      users: (get['emails'] as List<dynamic>? ??
+                                              [])
                                           .map((user) {
                                         return {
-                                          'name': user['name'].toString(),
-                                          'email': user['email'].toString(),
+                                          'name': (user['name'] ?? 'Unknown')
+                                              .toString(),
+                                          'email':
+                                              (user['email'] ?? '').toString(),
                                         };
                                       }).toList(),
                                       index: index + 1,
@@ -289,29 +343,8 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                       initialRadioValue: answer_given != ''
                                           ? answer_given
                                           : null,
-                                      question: get["query_name"] as String);
-                                } else if (get["quiz_type"] == "numeric") {
-                                  //numeric
-                                  questionWidget = NumericQuestion(
-                                      initialDecripValue: answer_given != ''
-                                          ? answer_given
-                                          : null,
-                                      id: questions[index]['id'],
-                                      onValueChanged: (value) {
-                                        var qid = get['id'];
-                                        setState(() {
-                                          numericValues[qid] = value;
-                                          // print(numericValues);
-                                        });
-                                      },
-                                      onValueChanged2: (value) {
-                                        var qid = get['id'];
-                                        setState(() {
-                                          traceableSignature[qid] = value;
-                                          // print(traceableSignature);
-                                        });
-                                      },
-                                      question: get["query_name"] as String);
+                                      question: (get["query_name"] ??
+                                          'No question text') as String);
                                 } else if (get["quiz_type"] == "single") {
                                   //single
                                   questionWidget = SingleQuestion(
@@ -337,24 +370,21 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                           selectedUsers[qid] = value;
                                         });
                                       },
-                                      // users: [
-                                      //   {
-                                      //     'name': 'Mercy',
-                                      //     'email': 'mercy@ava.co.ke'
-                                      //   },
-                                      //   {'name': 'ICT', 'email': 'ict@technoguru.co.tz'}
-                                      // ],
-                                      users: (get['emails'] as List<dynamic>)
+                                      users: (get['emails'] as List<dynamic>? ??
+                                              [])
                                           .map((user) {
                                         return {
-                                          'name': user['name'].toString(),
-                                          'email': user['email'].toString(),
+                                          'name': (user['name'] ?? 'Unknown')
+                                              .toString(),
+                                          'email':
+                                              (user['email'] ?? '').toString(),
                                         };
                                       }).toList(),
                                       initialDecripValue:
                                           get["defect_description"],
                                       hasDescription:
-                                          get["additional_field"] as String,
+                                          (get["additional_field"] ?? 'false')
+                                              as String,
                                       index: index + 1,
                                       id: get['id'],
                                       onValueChanged: (value) {
@@ -381,51 +411,60 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                       initialRadioValue: answer_given != ''
                                           ? answer_given
                                           : null,
-                                      question: get['query_name'] as String);
-                                } else if (get["quiz_type"] == "others") {
-                                  //others
-                                  questionWidget = Others(
-                                    id: get['id'],
-                                    options: get["options"],
-                                    onValueChanged: (value) {
-                                      var qid = get['id'];
-                                      setState(() {
-                                        singleDescipTextValues[qid] = value;
-
-                                        // print(singleDescipTextValues);
-                                      });
-                                    },
-                                    onValueChanged2: (value) {
-                                      var qid = get['id'];
-                                      setState(() {
-                                        traceableSignature[qid] = value;
-                                        // print(traceableSignature);
-                                      });
-                                    },
-                                    onRadioChanged: (value) {
-                                      var qid = questions[index]['id'];
-                                      setState(() {
-                                        singleDescripCategory[qid] = value;
-                                        // print(singleDescripCategory);
-                                      });
-                                    },
-                                    initialDecripValue: answ != null
-                                        ? answ["description"]
-                                        : null,
-                                    initialRadioValue: answer_given != ''
-                                        ? answer_given
-                                        : null,
-                                    question: get["query_name"] as String,
-                                    // hasDescription: get["has_description"] as String,
-                                  );
+                                      question: (get['query_name'] ??
+                                          'No question text') as String);
                                 } else {
-                                  questionWidget = SizedBox.shrink();
+                                  // Handle unrecognized or missing quiz types
+                                  questionWidget = Container(
+                                    padding: EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: mycolor,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.warning_amber_rounded,
+                                          color: mycolor,
+                                          size: 24,
+                                        ),
+                                        SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                'Unsupported Question Type',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                              SizedBox(height: 4),
+                                              Text(
+                                                'Quiz type "${get["quiz_type"] ?? "unknown"}" is not supported',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: mycolor,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
                                 }
 
                                 return Card(
-                                  margin: EdgeInsets.only(bottom: 16),
+                                  color: Colors.white,
+                                  margin: EdgeInsets.only(bottom: 3),
                                   child: Padding(
-                                    padding: EdgeInsets.all(10),
+                                    padding: EdgeInsets.all(5),
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
@@ -437,7 +476,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                             fontSize: 16,
                                           ),
                                         ),
-                                        SizedBox(height: 8),
+                                        SizedBox(height: 1),
                                         questionWidget,
                                       ],
                                     ),
@@ -480,88 +519,412 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                             borderRadius: BorderRadius.circular(16),
                             onTap: () async {
                               if (_formKey.currentState!.validate()) {
-                                questionValues
-                                    .clear(); // Clear the map before fetching new values
+                                // For EOL checks (when station_id is not null), validate all questions are answered
+                                if (widget.station_id != null) {
+                                  bool allAnswered = true;
+                                  List<String> unansweredQuestions = [];
 
-                                var answers = [];
+                                  for (int i = 0; i < questions.length; i++) {
+                                    var quest = questions[i];
+                                    final int questionId = quest["id"];
+                                    bool hasAnswer = false;
 
-                                for (var quest in questions) {
-                                  final int questionId = quest["id"];
-                                  var answer = {
-                                    "vehicle_id": widget.vehicle_id,
-                                    "shop_id": widget.shop_id,
-                                    "shop_name": widget.shop_name,
-                                    "chassis_no": widget.chasis_no,
-                                    "quiz_id": Category['id'],
-                                    "item_id": quest['id'],
-                                    "item_name": quest['query_name'],
-                                    "quiz_type": quest["quiz_type"],
-                                    "checkanswered": quest["checkanswered"],
-                                    "options": quest["options"],
-                                    "total_options": quest["total_options"],
-                                    "correct_answers": quest["correct_answers"],
-                                    "haserror": quest['haserror'],
-                                    "can_sign": quest['can_sign'],
-                                    "answer_given": quest['answer_given'],
-                                    "answer": '',
-                                    "defect_description": '',
-                                    "defects": '',
-                                    "signature": traceableSignature[questionId],
-                                    "users": selectedUsers[questionId],
-                                  };
+                                    if (quest["quiz_type"] == "multiple") {
+                                      hasAnswer =
+                                          multipleValue[questionId] != null;
+                                    } else if (quest["quiz_type"] == "single") {
+                                      hasAnswer =
+                                          singleValues[questionId] != null;
+                                    }
 
-                                  if (quest["quiz_type"] == "traceable") {
-                                    // Retrieve value from TraceableQuestion
-                                    String? value = traceableValues[questionId];
-                                    answer["answer"] = value;
-                                  } else if (quest["quiz_type"] == "multiple") {
-                                    // Retrieve values from MultipleQuestion
-                                    List<dynamic>? values =
-                                        multipleValues[questionId];
-                                    String? value = multipleValue[questionId];
-
-                                    answer["defects"] = values;
-                                    answer["answer"] = value;
-                                  } else if (quest["quiz_type"] == "single") {
-                                    // Retrieve values from SingleQuestion
-                                    String? value = singleValues[questionId];
-                                    answer["answer"] = value;
-                                    String? valueInput =
-                                        DescipTextValues[questionId];
-
-                                    answer["defect_description"] = valueInput;
-                                    // print(
-                                    //     "-->${DescipTextValues[questionId]}");
-                                  } else if (quest["quiz_type"] == "numeric") {
-                                    // Retrieve values from NumericQuestion
-                                    String? value = numericValues[questionId];
-                                    answer["answer"] = value;
-                                  } else if (quest["quiz_type"] == "others") {
-                                    // Retrieve values from NumericQuestion
-                                    String? value =
-                                        singleDescipTextValues[questionId];
-                                    String? values =
-                                        singleDescripCategory[questionId];
-                                    answer["answer"] = value;
-                                    answer["defects"] = values;
+                                    if (!hasAnswer) {
+                                      allAnswered = false;
+                                      unansweredQuestions
+                                          .add("Question ${i + 1}");
+                                    }
                                   }
-                                  if (answer["answer"] != null) {
-                                    answers.add(answer);
+
+                                  if (!allAnswered) {
+                                    // Show error dialog for unanswered questions
+                                    await showDialog(
+                                      context: context,
+                                      builder: (BuildContext context) {
+                                        return Dialog(
+                                          backgroundColor: Colors.transparent,
+                                          child: Container(
+                                            padding: EdgeInsets.all(20),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
+                                            ),
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(
+                                                  Icons.warning_amber_rounded,
+                                                  color: Colors.orange,
+                                                  size: 48,
+                                                ),
+                                                SizedBox(height: 16),
+                                                Text(
+                                                  'Complete All Questions',
+                                                  style: TextStyle(
+                                                    fontSize: 18,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.grey[800],
+                                                  ),
+                                                ),
+                                                SizedBox(height: 8),
+                                                Text(
+                                                  'EOL checklist requires all questions to be answered. Please complete the following:',
+                                                  style: TextStyle(
+                                                    fontSize: 14,
+                                                    color: Colors.grey[600],
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                ),
+                                                SizedBox(height: 12),
+                                                Container(
+                                                  padding: EdgeInsets.all(12),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.red.shade50,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            8),
+                                                    border: Border.all(
+                                                        color: Colors
+                                                            .red.shade200),
+                                                  ),
+                                                  child: Text(
+                                                    unansweredQuestions
+                                                        .join(", "),
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      color:
+                                                          Colors.red.shade700,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                    ),
+                                                    textAlign: TextAlign.center,
+                                                  ),
+                                                ),
+                                                SizedBox(height: 20),
+                                                Container(
+                                                  width: double.infinity,
+                                                  decoration: BoxDecoration(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            8),
+                                                    color: mycolor,
+                                                  ),
+                                                  child: Material(
+                                                    color: Colors.transparent,
+                                                    child: InkWell(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              8),
+                                                      onTap: () {
+                                                        Navigator.of(context)
+                                                            .pop();
+                                                      },
+                                                      child: Container(
+                                                        padding: EdgeInsets
+                                                            .symmetric(
+                                                                vertical: 12),
+                                                        child: Text(
+                                                          'OK',
+                                                          style: TextStyle(
+                                                            color: Colors.white,
+                                                            fontSize: 16,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                          ),
+                                                          textAlign:
+                                                              TextAlign.center,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    );
+                                    return; // Don't proceed with save
                                   }
                                 }
 
-                                if (answers.isNotEmpty) {
-                                  //For normal dialog
-                                  saveData(answers);
-                                } else {
-                                  awesomeTopSnackbar(context,
-                                      "Please Answer at least one question",
-                                      iconWithDecoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(20),
-                                        border: Border.all(),
-                                        color: Colors.white,
+                                // Show confirmation dialog
+                                bool? confirmSave = await showDialog<bool>(
+                                  context: context,
+                                  barrierDismissible: false,
+                                  builder: (BuildContext context) {
+                                    return Dialog(
+                                      backgroundColor: Colors.transparent,
+                                      child: Container(
+                                        padding: EdgeInsets.all(20),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius:
+                                              BorderRadius.circular(16),
+                                        ),
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              widget.station_id != null
+                                                  ? Icons.checklist_rtl
+                                                  : Icons.save_outlined,
+                                              color: mycolor,
+                                              size: 48,
+                                            ),
+                                            SizedBox(height: 16),
+                                            Text(
+                                              widget.station_id != null
+                                                  ? 'Complete Checklist'
+                                                  : 'Confirm Save',
+                                              style: TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.grey[800],
+                                              ),
+                                            ),
+                                            SizedBox(height: 8),
+                                            Text(
+                                              widget.station_id != null
+                                                  ? 'Are you sure you want to complete the ${widget.categoryName} checklist? This will mark all checks as finished.'
+                                                  : 'Are you sure you want to save your answers? This action cannot be undone.',
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                color: Colors.grey[600],
+                                              ),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                            SizedBox(height: 20),
+                                            Row(
+                                              children: [
+                                                Expanded(
+                                                  child: Container(
+                                                    decoration: BoxDecoration(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              8),
+                                                      border: Border.all(
+                                                          color: Colors
+                                                              .grey[300]!),
+                                                    ),
+                                                    child: Material(
+                                                      color: Colors.transparent,
+                                                      child: InkWell(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(8),
+                                                        onTap: () {
+                                                          Navigator.of(context)
+                                                              .pop(false);
+                                                        },
+                                                        child: Container(
+                                                          padding: EdgeInsets
+                                                              .symmetric(
+                                                                  vertical: 12),
+                                                          child: Text(
+                                                            'Cancel',
+                                                            style: TextStyle(
+                                                              color: Colors
+                                                                  .grey[600],
+                                                              fontSize: 16,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                            ),
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                SizedBox(width: 12),
+                                                Expanded(
+                                                  child: Container(
+                                                    decoration: BoxDecoration(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              8),
+                                                      color: mycolor,
+                                                    ),
+                                                    child: Material(
+                                                      color: Colors.transparent,
+                                                      child: InkWell(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(8),
+                                                        onTap: () {
+                                                          Navigator.of(context)
+                                                              .pop(true);
+                                                        },
+                                                        child: Container(
+                                                          padding: EdgeInsets
+                                                              .symmetric(
+                                                                  vertical: 12),
+                                                          child: Text(
+                                                            widget.station_id !=
+                                                                    null
+                                                                ? 'Complete'
+                                                                : 'Save',
+                                                            style: TextStyle(
+                                                              color:
+                                                                  Colors.white,
+                                                              fontSize: 16,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                            ),
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                      backgroundColor: Colors.red);
+                                    );
+                                  },
+                                );
+
+                                // Only proceed if user confirmed
+                                if (confirmSave == true) {
+                                  // Show loading dialog
+                                  showDialog(
+                                    context: context,
+                                    barrierDismissible: false,
+                                    builder: (BuildContext context) {
+                                      return Dialog(
+                                        backgroundColor: Colors.transparent,
+                                        child: Container(
+                                          padding: EdgeInsets.all(20),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius:
+                                                BorderRadius.circular(16),
+                                          ),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              CircularProgressIndicator(
+                                                valueColor:
+                                                    AlwaysStoppedAnimation<
+                                                        Color>(mycolor),
+                                                strokeWidth: 3,
+                                              ),
+                                              SizedBox(height: 16),
+                                              Text(
+                                                'Saving Answers...',
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Colors.grey[800],
+                                                ),
+                                              ),
+                                              SizedBox(height: 8),
+                                              Text(
+                                                'Please wait while we save your responses',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey[600],
+                                                ),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  );
+
+                                  questionValues
+                                      .clear(); // Clear the map before fetching new values
+
+                                  var answers = [];
+
+                                  for (var quest in questions) {
+                                    final int questionId = quest["id"];
+                                    var answer = {
+                                      "vehicle_id": widget.vehicle_id,
+                                      "shop_id": widget.shop_id,
+                                      "shop_name": widget.shop_name,
+                                      "chassis_no": widget.chasis_no,
+                                      "quiz_id": Category['id'],
+                                      "item_id": quest['id'],
+                                      "item_name": quest['query_name'],
+                                      "quiz_type": quest["quiz_type"],
+                                      "checkanswered": quest["checkanswered"],
+                                      "options": quest["options"],
+                                      "total_options": quest["total_options"],
+                                      "correct_answers":
+                                          quest["correct_answers"],
+                                      "haserror": quest['haserror'],
+                                      "can_sign": quest['can_sign'],
+                                      "answer_given": quest['answer_given'],
+                                      "answer": '',
+                                      "defect_description": '',
+                                      "defects": '',
+                                      "signature":
+                                          traceableSignature[questionId],
+                                      "users": selectedUsers[questionId],
+                                    };
+
+                                    if (quest["quiz_type"] == "multiple") {
+                                      // Retrieve values from MultipleQuestion
+                                      List<dynamic>? values =
+                                          multipleValues[questionId];
+                                      String? value = multipleValue[questionId];
+
+                                      answer["defects"] = values;
+                                      answer["answer"] = value;
+                                    } else if (quest["quiz_type"] == "single") {
+                                      // Retrieve values from SingleQuestion
+                                      String? value = singleValues[questionId];
+                                      answer["answer"] = value;
+                                      String? valueInput =
+                                          DescipTextValues[questionId];
+
+                                      answer["defect_description"] = valueInput;
+                                      // print(
+                                      //     "-->${DescipTextValues[questionId]}");
+                                    }
+                                    if (answer["answer"] != null) {
+                                      answers.add(answer);
+                                    }
+                                  }
+
+                                  if (answers.isNotEmpty) {
+                                    //For normal dialog
+                                    await saveData(answers);
+                                    // Close loading dialog
+                                    Navigator.of(context).pop();
+                                  } else {
+                                    // Close loading dialog first
+                                    Navigator.of(context).pop();
+                                    awesomeTopSnackbar(context,
+                                        "Please Answer at least one question",
+                                        iconWithDecoration: BoxDecoration(
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                          border: Border.all(),
+                                          color: Colors.white,
+                                        ),
+                                        backgroundColor: Colors.red);
+                                  }
                                 }
                               }
                             },
@@ -572,13 +935,17 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(
-                                    Icons.save_rounded,
+                                    widget.station_id != null
+                                        ? Icons.checklist_rtl
+                                        : Icons.save_rounded,
                                     color: Colors.white,
                                     size: 24,
                                   ),
                                   SizedBox(width: 12),
                                   Text(
-                                    'SAVE ANSWERS',
+                                    widget.station_id != null
+                                        ? 'COMPLETE CHECKLIST'
+                                        : 'SAVE ANSWERS',
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 16,
@@ -592,49 +959,12 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                           ),
                         ),
                       )
-                    : Container(
-                        padding: EdgeInsets.all(16),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor:
-                                    AlwaysStoppedAnimation<Color>(mycolor),
-                              ),
-                            ),
-                            SizedBox(width: 12),
-                            Text(
-                              'Saving...',
-                              style: TextStyle(
-                                color: mycolor,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
+                    : Container()
           ],
         ),
       ),
     );
   }
-
-  // Future saveanswers(answers) async {
-  //   String url = Api.api_url + "answerquery2";
-  //   print(url);
-  //   // var payload = {"answers": jsonEncode(answers)};
-  //   var payload = answers;
-
-  //   var responsedata =
-  //       await httppostwithtoken(url, user['data']["token"], payload, context);
-  //   // log(jsonEncode(payload));
-  //   // log(jsonEncode(responsedata));
-  //   return responsedata;
-  // }
 
   Future<void> saveData(answers) async {
     if (!_formKey.currentState!.validate()) return;
@@ -646,14 +976,10 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
     }
 
     setState(() => isButtonEnabled = false);
-    ProgressDialog pr = ProgressDialog(context);
-    pr.style(message: 'Saving answers...');
-    // await pr.show();
+    // Removed ProgressDialog since we're using custom loading dialog
 
     try {
       String url = Api.api_url + "answerquery2";
-      // String url = "https://11e1f2fd047a.ngrok-free.app/api/user/answerquery2";
-      // String url = Api.api_url + "uploadReceivingImages";
       var request = http.MultipartRequest('POST', Uri.parse(url));
       request.headers.addAll({
         'Accept': 'application/json',
@@ -663,7 +989,8 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
       request.fields['answers'] = jsonEncode(answers);
       request.fields['vehicle_id'] = widget.vehicle_id.toString();
       // request.fields['answer_type'] = 'QFL3';
-      request.fields['sub_station_id'] = '';
+      request.fields['sub_station_id'] =
+          widget.station_id != null ? widget.station_id.toString() : '';
 
       for (var entry in images.entries) {
         request.files.add(await http.MultipartFile.fromPath(
@@ -672,26 +999,29 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
       }
 
       var response = await request.send();
-      print(response);
       var responseData = await response.stream.bytesToString();
       print("===>${responseData}");
       var result = jsonDecode(responseData);
       // print(result);
       log(jsonEncode(result));
-      await pr.hide();
       setState(() => isButtonEnabled = true);
 
       if (result["success"]) {
-        // Navigator.pop(context);
+        if (widget.station_id != null) {
+          // For EOL screens, navigate back to EOLScreenCategory
+          Navigator.pop(context);
+          Navigator.pop(context);
+        } else {
+          Navigator.pop(context);
+        }
         awesomeTopSnackbar(
             context, result["msg"] ?? "Answers Recorded Successfully",
             backgroundColor: Colors.green);
       } else {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(result["msg"] ?? "Error")));
+        awesomeTopSnackbar(context, result["msg"] ?? "Error",
+            backgroundColor: Colors.red);
       }
     } catch (e) {
-      await pr.hide();
       setState(() => isButtonEnabled = true);
       awesomeTopSnackbar(
           context, "Something went wrong. Check your internet connection.",
@@ -705,14 +1035,17 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
       maskType: EasyLoadingMaskType.black,
     );
 
-    final url =
-        "${Api.api_url}quiz/${widget.query_id}/${widget.vehicle_id}/${widget.shop_id}";
+    final url = widget.station_id != null
+        ? "${Api.api_url}lodsubstationquiz/${widget.station_id}/${widget.vehicle_id}/${widget.shop_id}"
+        : "${Api.api_url}quiz/${widget.query_id}/${widget.vehicle_id}/${widget.shop_id}";
     print(url);
     final responseData = await httpget(url, user['data']["token"], context);
     // final responseData = await httpget(url, Api.usr, context);
     print(responseData);
     EasyLoading.dismiss(); // Dismiss once, outside branching
-
+    setState(() {
+      isInitloading = false;
+    });
     if (responseData == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         snackBar("Failed to fetch data", Colors.red[500]),

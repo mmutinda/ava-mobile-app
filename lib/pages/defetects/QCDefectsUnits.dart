@@ -39,6 +39,7 @@ class _DefectsUnitState extends State<DefectsUnit> {
       isLoading = true;
     });
     var url = "${Api.api_url}unitswithdefects";
+    print(url);
 
     try {
       var response = await httpget(url, user['data']['token'], context);
@@ -92,38 +93,68 @@ class _DefectsUnitState extends State<DefectsUnit> {
           });
         },
         decoration: InputDecoration(
-            hintText: 'search...',
-            border: InputBorder.none,
-            hintStyle: TextStyle(color: Colors.white)),
+          hintText: 'Search by VIN or Model...',
+          border: InputBorder.none,
+          hintStyle: TextStyle(color: Colors.white70),
+        ),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: _isSearching ? _buildSearchField() : Text('Units With Defects'),
+        elevation: 0,
+        title: _isSearching
+            ? _buildSearchField()
+            : Text(
+                'Units With Defects',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 18,
+                ),
+              ),
         actions: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: IconButton(
-              icon: Icon(_isSearching ? Icons.close : Icons.search),
-              onPressed: () {
-                setState(() {
-                  _isSearching = !_isSearching;
-                  if (!_isSearching) {
-                    searchController.clear();
-                    searchText = '';
-                  }
-                });
-              },
-            ),
+          IconButton(
+            icon: Icon(_isSearching ? Icons.close : Icons.search),
+            onPressed: () {
+              setState(() {
+                _isSearching = !_isSearching;
+                if (!_isSearching) {
+                  searchController.clear();
+                  searchText = '';
+                }
+              });
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.refresh),
+            onPressed: () {
+              fetchData();
+            },
           ),
         ],
       ),
       body: isLoading
           ? Center(
               child: Container(
-                // width: double.infinity,
-                child: CustomLoader(),
+                padding: EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CustomLoader(),
+                    SizedBox(height: 16),
+                    Text(
+                      'Loading units...',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             )
           : message.isNotEmpty
@@ -133,19 +164,13 @@ class _DefectsUnitState extends State<DefectsUnit> {
                     fetchData();
                   },
                 )
-              : ListView.builder(
+              : ListView.separated(
+                  padding: EdgeInsets.all(16),
                   itemCount: vehicles.length,
+                  separatorBuilder: (context, index) => SizedBox(height: 12),
                   itemBuilder: (context, index) {
-                    Color categoryColor = colors[index % colors.length];
                     var vin = vehicles[index].vin;
                     var model = vehicles[index].model;
-                    // ignore: unused_local_variable
-                    var UnitRemaining = 'All';
-                    if (vehicles[index].cabin_cockpit_moved == '1') {
-                      UnitRemaining = 'Chassis';
-                    } else if (vehicles[index].chasis_moved == '1') {
-                      UnitRemaining = 'Cabin Or Cockpit';
-                    }
 
                     if (searchText.isNotEmpty &&
                         !(vin
@@ -156,66 +181,219 @@ class _DefectsUnitState extends State<DefectsUnit> {
                                 .contains(searchText.toLowerCase()))) {
                       return Container();
                     }
-                    return Column(
-                      children: [
-                        SizedBox(height: 5),
-                        Container(
-                          padding: EdgeInsets.all(12),
-                          decoration: boxDecoration(
-                            radius: 10,
-                            showShadow: true,
-                            bgColor: Colors.white,
-                          ),
-                          child: ListTile(
-                            contentPadding: EdgeInsets.all(0),
-                            leading: CircleAvatar(
-                              backgroundColor: Color.fromARGB(255, 168, 88, 32),
-                              foregroundColor: Colors.white,
-                              child: Text("${index + 1}"),
+
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.grey[200]!,
+                          width: 1,
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          Container(
+                            width: double.infinity,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
                             ),
-                            title: Text(
-                              vehicles[index].model,
-                              style: TextStyle(
-                                  color: Colors.amber[900],
-                                  fontWeight: FontWeight.bold),
+                            decoration: BoxDecoration(
+                              color: Colors.orange[50],
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(12),
+                                topRight: Radius.circular(12),
+                              ),
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: Colors.grey[200]!,
+                                  width: 1,
+                                ),
+                              ),
                             ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            child: Row(
                               children: [
-                                Text('VIN: ${vehicles[index].vin}'),
-                                Row(
-                                  children: [
-                                    Text('lOT: ${vehicles[index].lot}'),
-                                    width(),
-                                    Text('JOB: ${vehicles[index].job}'),
-                                  ],
+                                Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange[600],
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      "${index + 1}",
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    vehicles[index].model,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.grey[800],
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red[600],
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    'HAS DEFECTS',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
-                            trailing: Container(
-                                decoration: BoxDecoration(
-                                    border: Border.all(color: categoryColor),
-                                    borderRadius: BorderRadius.only(
-                                        topRight: Radius.circular(10))),
-                                child: TextButton(
-                                  onPressed: () {
-                                    DefectsPage(vehileId: vehicles[index].id)
-                                        .launch(context,
-                                            pageRouteAnimation:
-                                                PageRouteAnimation.Slide);
-                                  },
-                                  child: Text(
-                                    "VIEW",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
+                          ),
+                          Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Column(
+                              children: [
+                                Container(
+                                  width: double.infinity,
+                                  padding: EdgeInsets.all(12),
+                                  margin: EdgeInsets.only(bottom: 12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue[50],
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Colors.blue[200]!,
+                                      width: 1,
                                     ),
                                   ),
-                                )),
-                            onTap: () {},
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.confirmation_number,
+                                            size: 16,
+                                            color: Colors.blue[700],
+                                          ),
+                                          SizedBox(width: 6),
+                                          Text(
+                                            'VIN Number',
+                                            style: TextStyle(
+                                              color: Colors.blue[700],
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      SizedBox(height: 6),
+                                      Text(
+                                        vehicles[index].vin,
+                                        style: TextStyle(
+                                          color: Colors.grey[700],
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  width: double.infinity,
+                                  padding: EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green[50],
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Colors.green[200]!,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.label,
+                                            size: 16,
+                                            color: Colors.green[700],
+                                          ),
+                                          SizedBox(width: 6),
+                                          Text(
+                                            'LOT Number',
+                                            style: TextStyle(
+                                              color: Colors.green[700],
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      SizedBox(height: 6),
+                                      Text(
+                                        vehicles[index].lot,
+                                        style: TextStyle(
+                                          color: Colors.grey[700],
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                SizedBox(height: 12),
+                                Container(
+                                  width: double.infinity,
+                                  child: ElevatedButton.icon(
+                                    icon: Icon(Icons.visibility, size: 18),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.blue[600],
+                                      foregroundColor: Colors.white,
+                                      padding:
+                                          EdgeInsets.symmetric(vertical: 12),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      elevation: 0,
+                                    ),
+                                    onPressed: () {
+                                      DefectsPage(vehileId: vehicles[index].id)
+                                          .launch(context,
+                                              pageRouteAnimation:
+                                                  PageRouteAnimation.Slide);
+                                    },
+                                    label: Text(
+                                      'VIEW DEFECTS',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        SizedBox(height: 10),
-                      ],
+                        ],
+                      ),
                     );
                   },
                 ),

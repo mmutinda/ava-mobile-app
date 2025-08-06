@@ -524,28 +524,43 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
                                                 borderRadius:
                                                     BorderRadius.circular(8),
                                                 onTap: () {
-                                                  showInDialog(context,
-                                                          builder: (context) =>
-                                                              ChooseComponent(
-                                                                vehicle_id:
-                                                                    vehicles[
-                                                                            index]
-                                                                        .id,
-                                                                job_no: vehicles[
-                                                                        index]
-                                                                    .job,
-                                                                route_id:
-                                                                    vehicles[
-                                                                            index]
-                                                                        .route,
-                                                              ),
-                                                          dialogAnimation:
-                                                              DialogAnimation
-                                                                  .SCALE)
-                                                      .then((value) {
+                                                  showDialog(
+                                                    context: context,
+                                                    builder: (context) =>
+                                                        ChooseComponent(
+                                                      vehicle_id:
+                                                          vehicles[index].id,
+                                                      route_id:
+                                                          vehicles[index].route,
+                                                      vehicle_line:
+                                                          vehicles[index].vehicle_line,
+                                                    ),
+                                                  ).then((value) {
                                                     fetchData();
                                                     setState(() {});
                                                   });
+                                                  // showInDialog(context,
+                                                  //         builder: (context) =>
+                                                  //             ChooseComponent(
+                                                  //               vehicle_id:
+                                                  //                   vehicles[
+                                                  //                           index]
+                                                  //                       .id,
+                                                  //               job_no: vehicles[
+                                                  //                       index]
+                                                  //                   .job,
+                                                  //               route_id:
+                                                  //                   vehicles[
+                                                  //                           index]
+                                                  //                       .route,
+                                                  //             ),
+                                                  //         dialogAnimation:
+                                                  //             DialogAnimation
+                                                  //                 .SCALE)
+                                                  //     .then((value) {
+                                                  //   fetchData();
+                                                  //   setState(() {});
+                                                  // });
                                                 },
                                                 child: Container(
                                                   padding: EdgeInsets.symmetric(

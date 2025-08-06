@@ -9,9 +9,9 @@ import 'package:isuze_pqcs/common/confirmationDialog.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/loader.dart';
+import 'package:isuze_pqcs/pages/qc_inspection/scanning%20copy.dart';
 // import 'package:isuze_pqcs/pages/assembly/assembly_stations.dart';
-import 'package:isuze_pqcs/pages/planning/EOL/jobcard_questions_template_EOL.dart';
-import 'package:isuze_pqcs/pages/qc_inspection/scanning.dart';
+
 import 'package:nb_utils/nb_utils.dart';
 
 class EOL {
@@ -150,79 +150,6 @@ class _EOLScreenCategoryState extends State<EOLScreenCategory> {
     }
   }
 
-  // void Submit() {
-  //   // ✅ Add your START EOL logic here
-
-  //   CustomConfirmDialog.show(
-  //     context: context,
-  //     title: 'Confirm Action',
-  //     message: 'Do you want to push to EOL',
-  //     onConfirm: () async {
-  //       await saveData();
-  //     },
-  //   );
-  //   // Proceed with selectedOps
-  // }
-
-  // Future<void> saveData() async {
-  //   setState(() {
-  //     isLoading2 = true;
-  //   });
-  //   print(isLoading2);
-  //   String url = Api.api_url + "moveunitToEOL";
-
-  //   // ✅ Build the selected operations array
-
-  //   var payload = {
-  //     "shop_id": widget.ShopId,
-  //     "next_shop_id": 11,
-  //   };
-
-  //   print("Payload: $payload"); // Debug log
-
-  //   var response = await httppostwithtoken(
-  //     url,
-  //     "${user['data']['token']}",
-  //     payload,
-  //     context,
-  //   );
-
-  //   setState(() {
-  //     isLoading2 = false;
-  //   });
-  //   log(jsonEncode(response));
-  //   if (response['success'] != null) {
-  //     if (response['success']) {
-  //       Navigator.pushAndRemoveUntil(
-  //         context,
-  //         MaterialPageRoute(builder: (context) => AssemblyStations()),
-  //         (route) => route.isFirst,
-  //       );
-  //       awesomeTopSnackbar(
-  //         context,
-  //         "${response["msg"]}",
-  //         iconWithDecoration: BoxDecoration(
-  //           borderRadius: BorderRadius.circular(20),
-  //           border: Border.all(),
-  //           color: Colors.white,
-  //         ),
-  //         backgroundColor: Colors.green,
-  //       );
-  //     } else {
-  //       awesomeTopSnackbar(
-  //         context,
-  //         "${response["msg"]}",
-  //         iconWithDecoration: BoxDecoration(
-  //           borderRadius: BorderRadius.circular(20),
-  //           border: Border.all(),
-  //           color: Colors.white,
-  //         ),
-  //         backgroundColor: Colors.red,
-  //       );
-  //     }
-  //   }
-  // }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -275,7 +202,7 @@ class _EOLScreenCategoryState extends State<EOLScreenCategory> {
                                 return;
                               }
                               Scanning(
-                                shopId: "11",
+                                shopId: "17",
                                 shopName: station.name,
                                 subStationId: station.id,
                               ).launch(

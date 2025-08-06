@@ -359,7 +359,7 @@ class _AssemblyStationsState extends State<AssemblyStations> {
             if (station.number == "0") {
               showNoUnitsDialog(context, categoryColor);
             } else {
-              if (station.id == "11") {
+              if (station.id == "17") {
                 EOLScreenCategory(
                   ShopId: station.id,
                 ).launch(

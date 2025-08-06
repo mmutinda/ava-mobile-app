@@ -55,52 +55,43 @@ class _QcCategoriesState extends State<QcCategories> {
       widget.res['data']['vehicledata']['id'],
     );
     return Scaffold(
-      floatingActionButton: SpeedDial(
-        backgroundColor: mycolor,
-        foregroundColor: Colors.white,
-        overlayColor: Colors.black,
-        overlayOpacity: 0.4,
-        animatedIcon: AnimatedIcons.menu_close,
-        spacing: 15,
-        spaceBetweenChildren: 10,
-        elevation: 12,
-        buttonSize: Size(60, 60),
-        children: [
-          SpeedDialChild(
-            backgroundColor: Colors.green.shade600,
-            foregroundColor: Colors.white,
-            labelStyle: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-              fontSize: 14,
+      floatingActionButton: !defect_exist
+          ? null
+          : SpeedDial(
+              backgroundColor: Colors.deepOrange,
+              foregroundColor: Colors.white,
+              overlayColor: Colors.black,
+              overlayOpacity: 0.4,
+              animatedIcon: AnimatedIcons.menu_close,
+              spacing: 15,
+              spaceBetweenChildren: 10,
+              elevation: 12,
+              buttonSize: Size(60, 60),
+              children: [
+                SpeedDialChild(
+                  backgroundColor: Colors.green.shade600,
+                  foregroundColor: Colors.white,
+                  labelStyle: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                    fontSize: 14,
+                  ),
+                  labelBackgroundColor: Colors.white,
+                  child: Icon(Icons.check_circle_outline, size: 24),
+                  label: 'Correct Defects',
+                  onTap: () {
+                    QCDefectsPage(
+                      vehileId: widget.res['data']['vehicledata']['id'],
+                    )
+                        .launch(context,
+                            pageRouteAnimation: PageRouteAnimation.Slide)
+                        .then((val) {
+                      fetchCategories2(widget.ShopId);
+                    });
+                  },
+                ),
+              ],
             ),
-            labelBackgroundColor: Colors.white,
-            child: Icon(Icons.check_circle_outline, size: 24),
-            label: 'Correct Defects',
-            onTap: () {
-              QCDefectsPage(
-                vehileId: widget.res['data']['vehicledata']['id'],
-              ).launch(context, pageRouteAnimation: PageRouteAnimation.Slide);
-            },
-          ),
-          SpeedDialChild(
-            backgroundColor: Colors.red.shade600,
-            foregroundColor: Colors.white,
-            labelStyle: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-              fontSize: 14,
-            ),
-            labelBackgroundColor: Colors.white,
-            child: Icon(Icons.report_problem_outlined, size: 24),
-            label: 'Raise Claim',
-            onTap: () {
-              ClaimForm().launch(context,
-                  pageRouteAnimation: PageRouteAnimation.Slide);
-            },
-          ),
-        ],
-      ),
       appBar: AppBar(
         elevation: 0,
         flexibleSpace: Container(
@@ -195,7 +186,7 @@ class _QcCategoriesState extends State<QcCategories> {
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: isLoading
+                child: isLoading & categories.isEmpty
                     ? Center(
                         child: Container(
                           padding: EdgeInsets.all(24),
@@ -431,7 +422,10 @@ class _QcCategoriesState extends State<QcCategories> {
                             end: Alignment.bottomRight,
                             colors: datacheck == '0'
                                 ? [Colors.red.shade600, Colors.red.shade800]
-                                : [mycolor, Colors.amber.shade700],
+                                : [
+                                    mycolor,
+                                    mycolor,
+                                  ],
                           ),
                           boxShadow: [
                             BoxShadow(
@@ -449,53 +443,27 @@ class _QcCategoriesState extends State<QcCategories> {
                             borderRadius: BorderRadius.circular(16),
                             onTap: () async {
                               if (defect_exist) {
-                                if (widget.ShopId == '15' ||
-                                    widget.ShopId == '16' ||
-                                    widget.ShopId == '28') {
-                                  CustomConfirmDialog.show(
-                                    context: context,
-                                    title: 'Confirm Push',
-                                    message: 'Unit will hit DRR Score!!',
-                                    confirmText: 'Push',
-                                    cancelText: "Don't Push",
-                                    icon: Icons.warning_amber_rounded,
-                                    iconColor: Colors.orange,
-                                    confirmColor: Colors.deepOrange,
-                                    onConfirm: () async {
-                                      showDialog(
-                                        context: context,
-                                        barrierDismissible: false,
-                                        builder: (BuildContext context) =>
-                                            Center(child: CustomLoader()),
-                                      );
-                                      await saveData();
-                                      Navigator.of(context)
-                                          .pop(); // dismiss loader
-                                    },
-                                  );
-                                } else {
-                                  CustomConfirmDialog.show(
-                                    context: context,
-                                    title: 'Confirm Push',
-                                    message: "Unit has uncorrected defects!!",
-                                    confirmText: 'Push',
-                                    cancelText: "Don't Push",
-                                    icon: Icons.warning_amber_rounded,
-                                    iconColor: Colors.orange,
-                                    confirmColor: Colors.deepOrange,
-                                    onConfirm: () async {
-                                      showDialog(
-                                        context: context,
-                                        barrierDismissible: false,
-                                        builder: (BuildContext context) =>
-                                            Center(child: CustomLoader()),
-                                      );
-                                      await saveData();
-                                      Navigator.of(context)
-                                          .pop(); // dismiss loader
-                                    },
-                                  );
-                                }
+                                CustomConfirmDialog.show(
+                                  context: context,
+                                  title: 'Confirm Push',
+                                  message: "Unit has uncorrected defects!!",
+                                  confirmText: 'Push',
+                                  cancelText: "Don't Push",
+                                  icon: Icons.warning_amber_rounded,
+                                  iconColor: Colors.orange,
+                                  confirmColor: Colors.deepOrange,
+                                  onConfirm: () async {
+                                    // showDialog(
+                                    //   context: context,
+                                    //   barrierDismissible: false,
+                                    //   builder: (BuildContext context) =>
+                                    //       Center(child: CustomLoader()),
+                                    // );
+                                    await saveData();
+                                    // Navigator.of(context)
+                                    //     .pop(); // dismiss loader
+                                  },
+                                );
                               } else {
                                 CustomConfirmDialog.show(
                                   context: context,
@@ -561,7 +529,7 @@ class _QcCategoriesState extends State<QcCategories> {
       payload,
       context,
     );
-
+    log(jsonEncode(response));
     setState(() {
       isLoading2 = false;
     });
@@ -612,7 +580,7 @@ class _QcCategoriesState extends State<QcCategories> {
   bool isLoading2 = false;
   String message = '';
   String datacheck = '';
-  late bool defect_exist;
+  bool defect_exist = false;
   Future<void> fetchCategories(id) async {
     setState(() {
       message = '';
