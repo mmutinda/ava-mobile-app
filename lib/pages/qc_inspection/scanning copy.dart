@@ -9,7 +9,6 @@ import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/loader.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/models/qc_inpection.dart';
-import 'package:isuze_pqcs/pages/planning/EOL/jobcard_questions_template_EOL.dart';
 import 'package:isuze_pqcs/pages/planning/offlining/GCP.dart';
 import 'package:isuze_pqcs/pages/planning/offlining/offliningbaypage.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/jobcard_questions_template.dart';
@@ -191,6 +190,9 @@ class _ScanningState extends State<Scanning> {
             shop_id: widget.shopId,
             vehicle_id: res['data']['vehicledata']['id'],
             categoryName: widget.shopName,
+            vehicle_receiving_item: res['data']['vehicledata']
+                ['vehicle_receiving_item'],
+            
           ).launch(
             context,
             pageRouteAnimation: PageRouteAnimation.Slide,
@@ -551,23 +553,15 @@ class _ScanningState extends State<Scanning> {
                                   return const SizedBox.shrink();
                                 }
 
-                                return Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(16),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: categoryColor.withOpacity(0.12),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 3),
-                                        spreadRadius: 1,
-                                      ),
-                                    ],
-                                    border: Border.all(
-                                      color: categoryColor.withOpacity(0.2),
-                                      width: 1,
-                                    ),
-                                  ),
+                                return Card(
+                                  color: Colors.white,
+                                  // decoration: BoxDecoration(
+                                  //   color: Colors.white,
+                                  //   borderRadius: BorderRadius.circular(16),
+                                  //   // border: Border.all(
+                                  //   //   color: categoryColor.withOpacity(0.2),
+                                  //   // ),
+                                  // ),
                                   child: Material(
                                     color: Colors.transparent,
                                     borderRadius: BorderRadius.circular(16),
@@ -589,21 +583,20 @@ class _ScanningState extends State<Scanning> {
                                                   begin: Alignment.topLeft,
                                                   end: Alignment.bottomRight,
                                                   colors: [
-                                                    categoryColor,
-                                                    categoryColor
-                                                        .withOpacity(0.8)
+                                                    mycolor,
+                                                    mycolor.withOpacity(0.8)
                                                   ],
                                                 ),
                                                 borderRadius:
                                                     BorderRadius.circular(12),
-                                                boxShadow: [
-                                                  BoxShadow(
-                                                    color: categoryColor
-                                                        .withOpacity(0.3),
-                                                    blurRadius: 6,
-                                                    offset: const Offset(0, 3),
-                                                  ),
-                                                ],
+                                                // boxShadow: [
+                                                //   BoxShadow(
+                                                //     color: categoryColor
+                                                //         .withOpacity(0.3),
+                                                //     blurRadius: 6,
+                                                //     offset: const Offset(0, 3),
+                                                //   ),
+                                                // ],
                                               ),
                                               child: Center(
                                                 child: Text(
@@ -629,7 +622,7 @@ class _ScanningState extends State<Scanning> {
                                                       Icon(
                                                         Icons
                                                             .directions_car_rounded,
-                                                        color: categoryColor,
+                                                        color: mycolor,
                                                         size: 20,
                                                       ),
                                                       const SizedBox(width: 6),
@@ -637,8 +630,7 @@ class _ScanningState extends State<Scanning> {
                                                         child: Text(
                                                           vehicles[index].model,
                                                           style: TextStyle(
-                                                            color:
-                                                                categoryColor,
+                                                            color: mycolor,
                                                             fontWeight:
                                                                 FontWeight.bold,
                                                             fontSize: 16,
@@ -710,18 +702,17 @@ class _ScanningState extends State<Scanning> {
                                                     decoration: BoxDecoration(
                                                       gradient: LinearGradient(
                                                         colors: [
-                                                          categoryColor
+                                                          mycolor
                                                               .withOpacity(0.1),
-                                                          categoryColor
-                                                              .withOpacity(
-                                                                  0.05),
+                                                          mycolor.withOpacity(
+                                                              0.05),
                                                         ],
                                                       ),
                                                       borderRadius:
                                                           BorderRadius.circular(
                                                               6),
                                                       border: Border.all(
-                                                        color: categoryColor
+                                                        color: mycolor
                                                             .withOpacity(0.3),
                                                         width: 1,
                                                       ),
@@ -734,7 +725,7 @@ class _ScanningState extends State<Scanning> {
                                                           Icons
                                                               .inventory_2_outlined,
                                                           size: 12,
-                                                          color: categoryColor,
+                                                          color: mycolor,
                                                         ),
                                                         const SizedBox(
                                                             width: 3),
@@ -742,8 +733,7 @@ class _ScanningState extends State<Scanning> {
                                                           'LOT: ${vehicles[index].lot}',
                                                           style: TextStyle(
                                                             fontSize: 17,
-                                                            color:
-                                                                categoryColor,
+                                                            color: mycolor,
                                                             fontWeight:
                                                                 FontWeight.w600,
                                                           ),
@@ -758,14 +748,13 @@ class _ScanningState extends State<Scanning> {
                                             Container(
                                               padding: const EdgeInsets.all(10),
                                               decoration: BoxDecoration(
-                                                color: categoryColor
-                                                    .withOpacity(0.1),
+                                                color: mycolor.withOpacity(0.1),
                                                 borderRadius:
                                                     BorderRadius.circular(10),
                                               ),
                                               child: Icon(
                                                 Icons.qr_code_scanner_rounded,
-                                                color: categoryColor,
+                                                color: mycolor,
                                                 size: 24,
                                               ),
                                             ),
@@ -863,7 +852,7 @@ class _ScanningState extends State<Scanning> {
                                                                   .Slide,
                                                         )
                                                       : widget.shopId == '17'
-                                                          ? JobCardQuestionsTemplateEOL(
+                                                          ? JobCardQuestionsTemplate(
                                                               chasis_no: res[
                                                                           'data']
                                                                       [
@@ -883,6 +872,12 @@ class _ScanningState extends State<Scanning> {
                                                               categoryName:
                                                                   widget
                                                                       .shopName,
+                                                                        vehicle_receiving_item: res[
+                                                                          'data']
+                                                                      [
+                                                                      'vehicledata']
+                                                                  [
+                                                                  'vehicle_receiving_item'],
                                                             ).launch(
                                                               context,
                                                               pageRouteAnimation:

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -26,6 +27,7 @@ class _ClaimFormState extends State<ClaimForm> {
   late SingleValueDropDownController _partDropdown;
   late TextEditingController _defectCodeController;
   late TextEditingController _descriptionController;
+  late TextEditingController _processDescriptionController;
 
   List<dynamic> clients = [];
   List<dynamic> checklist = [];
@@ -178,6 +180,7 @@ class _ClaimFormState extends State<ClaimForm> {
     _partDropdown = SingleValueDropDownController();
     _defectCodeController = TextEditingController();
     _descriptionController = TextEditingController();
+    _processDescriptionController = TextEditingController();
 
     getuserdata().then((value) {
       user = jsonDecode(value);
@@ -190,6 +193,7 @@ class _ClaimFormState extends State<ClaimForm> {
     _partDropdown.dispose();
     _defectCodeController.dispose();
     _descriptionController.dispose();
+    _processDescriptionController.dispose();
     _vehicleFieldFocus.dispose();
     _partFieldFocus.dispose();
     super.dispose();
@@ -236,7 +240,7 @@ class _ClaimFormState extends State<ClaimForm> {
     progress.show();
 
     try {
-      String url = "${Api.api_url}postScheduledUnit";
+      String url = "${Api.api_url}postGeneralClaim";
       var request = http.MultipartRequest('POST', Uri.parse(url));
 
       request.headers.addAll({
@@ -248,11 +252,12 @@ class _ClaimFormState extends State<ClaimForm> {
       request.fields['lot_number'] = _lotNumberController.text.trim();
       request.fields['part_number'] = _partDropdown.dropDownValue?.value ?? '';
       request.fields['issue_description'] = _descriptionController.text.trim();
+      request.fields['process_description'] =
+          _processDescriptionController.text.trim();
       request.fields['category'] = _selectedIssueCategory ?? '';
       request.fields['issue_type'] = _selectedIssueType ?? '';
       request.fields['reason_code'] = _selectedReasonCode ?? '';
-      request.fields['classification'] =
-          _selectedDefectClassification ?? '';
+      request.fields['classification'] = _selectedDefectClassification ?? '';
 
       // Add image if selected
       if (_imageFile != null) {
@@ -266,7 +271,7 @@ class _ClaimFormState extends State<ClaimForm> {
       var response = await request.send();
       var response2 = await http.Response.fromStream(response);
       var responseData = jsonDecode(response2.body);
-
+      log(jsonEncode(responseData));
       progress.hide();
 
       if (responseData['success'] == true) {
@@ -287,6 +292,7 @@ class _ClaimFormState extends State<ClaimForm> {
       }
     } catch (e) {
       progress.hide();
+      print(e);
       print("Submission failed: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -698,6 +704,19 @@ class _ClaimFormState extends State<ClaimForm> {
                     ),
                     const SizedBox(height: 24),
 
+                    // Process Description Field
+                    _buildModernTextField(
+                      label: "Process Description",
+                      icon: Icons.engineering_outlined,
+                      controller: _processDescriptionController,
+                      hint: 'Enter process description',
+                      minLines: 2,
+                      keyboardType: TextInputType.multiline,
+                      validator: (value) =>
+                          value == null || value.isEmpty ? '*Required' : null,
+                    ),
+                    const SizedBox(height: 24),
+
                     // Description Field (moved to end)
                     _buildModernTextField(
                       label: "Description",
@@ -885,7 +904,6 @@ class _ClaimFormState extends State<ClaimForm> {
       ),
     );
   }
-
 
   Future fetchpartNO(id) async {
     String url = Api.api_url + "loadPartNumbers/${id}";

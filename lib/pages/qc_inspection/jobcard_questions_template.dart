@@ -9,12 +9,8 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
-import 'package:isuze_pqcs/pages/planning/EOL/EOLScreen.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/routing_structure/multiple_question.dart';
-import 'package:isuze_pqcs/pages/qc_inspection/routing_structure/numerical_question.dart';
-import 'package:isuze_pqcs/pages/qc_inspection/routing_structure/others.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/routing_structure/single_question.dart';
-import 'package:isuze_pqcs/pages/qc_inspection/routing_structure/traceable_question.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:http/http.dart' as http;
 
@@ -26,16 +22,19 @@ class JobCardQuestionsTemplate extends StatefulWidget {
   final shop_name;
   final chasis_no;
   final station_id;
+  final vehicle_receiving_item;
 
-  const JobCardQuestionsTemplate(
-      {super.key,
-      this.query_id,
-      this.vehicle_id,
-      this.shop_id,
-      this.categoryName,
-      required this.shop_name,
-      required this.chasis_no,
-      this.station_id});
+  const JobCardQuestionsTemplate({
+    super.key,
+    this.query_id,
+    this.vehicle_id,
+    this.shop_id,
+    this.categoryName,
+    required this.shop_name,
+    required this.chasis_no,
+    this.station_id,
+    required this.vehicle_receiving_item,
+  });
 
   @override
   State<JobCardQuestionsTemplate> createState() =>
@@ -54,6 +53,9 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
   Map<int, String> singleValues = {};
   Map<int, String> singleDescripValues = {};
   Map<int, String> singleDescripCategory = {};
+  Map<int, String> singleDefectCategory = {}; // Add defect category tracking
+  Map<int, String> multipleDefectCategory =
+      {}; // Add defect category tracking for multiple questions
   Map<int, String> multipleValue = {};
   Map<int, List<dynamic>> multipleValues = {};
   Map<int, List<String>> selectedUsers = {};
@@ -91,6 +93,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         elevation: 0,
         flexibleSpace: Container(
@@ -157,7 +160,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
             SizedBox(height: 8),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 5),
                 child: questions.isEmpty && !isInitloading
                     ? Center(
                         child: Column(
@@ -277,6 +280,31 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
 
                                 if (get["quiz_type"] == "multiple") {
                                   questionWidget = MultipleQuestion(
+                                      initialDefectCategory:
+                                          (get['defectcategory'] is String)
+                                              ? get['defectcategory']
+                                              : null,
+                                      onDefectCategoryChanged: (String value) {
+                                        var qid = get['id'];
+                                        setState(() {
+                                          multipleDefectCategory[qid] = value;
+                                          print(
+                                              'Multiple Question - Defect category selected: $value for question $qid');
+                                        });
+                                      },
+                                      onInputValueChanged: (value) {
+                                        var qid = get['id'];
+                                        setState(() {
+                                          DescipTextValues[qid] = value;
+                                        });
+                                      },
+                                      initialDecripValue:
+                                          get["defect_description"],
+                                      hasDescription:
+                                          (get["additional_field"] ?? 'false')
+                                              as String,
+                                      instruction:
+                                          (get["instruction"] ?? '') as String,
                                       intial_option: get["defect_names"],
                                       initialImage: (get["image_url"] == null ||
                                               get["image_url"]
@@ -310,7 +338,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                               (user['email'] ?? '').toString(),
                                         };
                                       }).toList(),
-                                      index: index + 1,
+                                      index: index,
                                       id: get['id'],
                                       options: get["options"],
                                       onRadioChanged: (value) {
@@ -348,10 +376,46 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                 } else if (get["quiz_type"] == "single") {
                                   //single
                                   questionWidget = SingleQuestion(
+                                      scandata: get['parts_to_scan'].toString().toLowerCase() ==
+                                              'engine'
+                                          ? widget.vehicle_receiving_item[
+                                              'engine_number']
+                                          : get['parts_to_scan'].toString().toLowerCase() ==
+                                                  'cabin'
+                                              ? widget.vehicle_receiving_item[
+                                                  'cabin']
+                                              : get['parts_to_scan']
+                                                          .toString()
+                                                          .toLowerCase() ==
+                                                      'gear_box'
+                                                  ? widget.vehicle_receiving_item[
+                                                      'gear_box']
+                                                  : get['parts_to_scan']
+                                                              .toString()
+                                                              .toLowerCase() ==
+                                                          'chassis'
+                                                      ? widget.vehicle_receiving_item[
+                                                          'chassis_number']
+                                                      : get,
+                                      parts_to_scan: (get['parts_to_scan'] is String)
+                                          ? get['parts_to_scan']
+                                          : null,
+                                      initialDefectCategory:
+                                          (get['defectCategoryGiven'] is String)
+                                              ? get['defectCategoryGiven']
+                                              : null,
+                                      onDefectCategoryChanged: (String value) {
+                                        var qid = get['id'];
+                                        setState(() {
+                                          singleDefectCategory[qid] = value;
+                                          print(
+                                              'Defect category selected: $value for question $qid');
+                                        });
+                                      },
+                                      instruction:
+                                          (get["instruction"] ?? '') as String,
                                       initialImage: (get["image_url"] == null ||
-                                              get["image_url"]
-                                                  .toString()
-                                                  .isEmpty)
+                                              get["image_url"].toString().isEmpty)
                                           ? null
                                           : get["image_url"],
                                       onImageChanged: (File? image) {
@@ -370,9 +434,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                           selectedUsers[qid] = value;
                                         });
                                       },
-                                      users: (get['emails'] as List<dynamic>? ??
-                                              [])
-                                          .map((user) {
+                                      users: (get['emails'] as List<dynamic>? ?? []).map((user) {
                                         return {
                                           'name': (user['name'] ?? 'Unknown')
                                               .toString(),
@@ -380,12 +442,9 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                               (user['email'] ?? '').toString(),
                                         };
                                       }).toList(),
-                                      initialDecripValue:
-                                          get["defect_description"],
-                                      hasDescription:
-                                          (get["additional_field"] ?? 'false')
-                                              as String,
-                                      index: index + 1,
+                                      initialDecripValue: get["defect_description"],
+                                      hasDescription: (get["additional_field"] ?? 'false') as String,
+                                      index: index,
                                       id: get['id'],
                                       onValueChanged: (value) {
                                         var qid = get['id'];
@@ -408,11 +467,8 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                           print(traceableSignature);
                                         });
                                       },
-                                      initialRadioValue: answer_given != ''
-                                          ? answer_given
-                                          : null,
-                                      question: (get['query_name'] ??
-                                          'No question text') as String);
+                                      initialRadioValue: answer_given != '' ? answer_given : null,
+                                      question: (get['query_name'] ?? 'No question text') as String);
                                 } else {
                                   // Handle unrecognized or missing quiz types
                                   questionWidget = Container(
@@ -459,29 +515,29 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                     ),
                                   );
                                 }
-
-                                return Card(
-                                  color: Colors.white,
-                                  margin: EdgeInsets.only(bottom: 3),
-                                  child: Padding(
-                                    padding: EdgeInsets.all(5),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          "Question ${index + 1}",
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16,
-                                          ),
-                                        ),
-                                        SizedBox(height: 1),
-                                        questionWidget,
-                                      ],
-                                    ),
-                                  ),
-                                );
+                                return questionWidget;
+                                // return Card(
+                                //   color: Colors.white,
+                                //   margin: EdgeInsets.only(bottom: 3),
+                                //   child: Padding(
+                                //     padding: EdgeInsets.all(5),
+                                //     child: Column(
+                                //       crossAxisAlignment:
+                                //           CrossAxisAlignment.start,
+                                //       children: [
+                                //         Text(
+                                //           "Question ${index + 1}",
+                                //           style: TextStyle(
+                                //             fontWeight: FontWeight.bold,
+                                //             fontSize: 16,
+                                //           ),
+                                //         ),
+                                //         SizedBox(height: 1),
+                                //         questionWidget,
+                                //       ],
+                                //     ),
+                                //   ),
+                                // );
                               },
                             ),
                           ),
@@ -877,6 +933,8 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                       "answer_given": quest['answer_given'],
                                       "answer": '',
                                       "defect_description": '',
+                                      "defect_category":
+                                          '', // Add defect category field
                                       "defects": '',
                                       "signature":
                                           traceableSignature[questionId],
@@ -888,17 +946,25 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                       List<dynamic>? values =
                                           multipleValues[questionId];
                                       String? value = multipleValue[questionId];
+                                      String? defectCategory =
+                                          multipleDefectCategory[questionId];
 
                                       answer["defects"] = values;
                                       answer["answer"] = value;
+                                      answer["defect_category"] =
+                                          defectCategory;
                                     } else if (quest["quiz_type"] == "single") {
                                       // Retrieve values from SingleQuestion
                                       String? value = singleValues[questionId];
                                       answer["answer"] = value;
                                       String? valueInput =
                                           DescipTextValues[questionId];
+                                      String? defectCategory =
+                                          singleDefectCategory[questionId];
 
                                       answer["defect_description"] = valueInput;
+                                      answer["defect_category"] =
+                                          defectCategory;
                                       // print(
                                       //     "-->${DescipTextValues[questionId]}");
                                     }
@@ -1066,38 +1132,4 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
       );
     }
   }
-
-  // Future fetchQuestions() async {
-  //   ProgressDialog pr = ProgressDialog(context,
-  //       type: ProgressDialogType.normal, showLogs: true, isDismissible: true);
-  //   pr.style(message: 'Fetching questions...');
-  //   EasyLoading.show(
-  //       status: "Loading Questions...", maskType: EasyLoadingMaskType.black);
-  //   String url =
-  //       "${Api.api_url}quiz/${widget.query_id}/${widget.vehicle_id}/${widget.shop_id}";
-  //   print(" fetching question url");
-  //   print(url);
-
-  //   var responseData = await httpget(url, user['data']["token"], context);
-
-  //   // log(jsonEncode(responseData['data']['query']));
-  //   // print(responseData['data']);
-
-  //   if (responseData != null) {
-  //     if (responseData["data"] != null) {
-  //       EasyLoading.dismiss().whenComplete(() {
-  //         setState(() {
-  //           // question = responseData["data"];
-  //           questions = responseData["data"]["query"];
-  //           Category = responseData["data"]["category"];
-  //         });
-  //       });
-  //     } else {
-  //       EasyLoading.dismiss().whenComplete(() {
-  //         ScaffoldMessenger.of(context)
-  //             .showSnackBar(snackBar(responseData["message"], Colors.red[500]));
-  //       });
-  //     }
-  //   }
-  // }
 }

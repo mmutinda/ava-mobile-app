@@ -240,6 +240,9 @@ class _QcCategoriesState extends State<QcCategories> {
                                     MaterialPageRoute(
                                       builder: (context) =>
                                           JobCardQuestionsTemplate(
+                                        vehicle_receiving_item:
+                                            widget.res['data']['vehicledata']
+                                                ['vehicle_receiving_item'],
                                         chasis_no: widget.res['data']
                                             ['vehicledata']['vin_no'],
                                         shop_name: widget.shop_name,
@@ -258,14 +261,6 @@ class _QcCategoriesState extends State<QcCategories> {
                                   decoration: BoxDecoration(
                                     color: Colors.white,
                                     borderRadius: BorderRadius.circular(16),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: mycolor.withOpacity(0.15),
-                                        blurRadius: 10,
-                                        offset: Offset(0, 4),
-                                        spreadRadius: 1,
-                                      ),
-                                    ],
                                     border: Border.all(
                                       color: mycolor.withOpacity(0.2),
                                       width: 1,

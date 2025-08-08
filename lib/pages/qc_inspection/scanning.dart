@@ -9,9 +9,9 @@ import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/loader.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/models/qc_inpection.dart';
-import 'package:isuze_pqcs/pages/planning/EOL/jobcard_questions_template_EOL.dart';
 import 'package:isuze_pqcs/pages/planning/offlining/GCP.dart';
 import 'package:isuze_pqcs/pages/planning/offlining/offliningbaypage.dart';
+import 'package:isuze_pqcs/pages/qc_inspection/jobcard_questions_template.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/qcCategoryQuestions.dart';
 import 'package:isuze_pqcs/pages/planning/scheduleUnits.dart';
 import 'package:isuze_pqcs/scanning.dart';
@@ -184,7 +184,9 @@ class _ScanningState extends State<Scanning> {
           return;
         }
         if (widget.shopId == '17') {
-          JobCardQuestionsTemplateEOL(
+          JobCardQuestionsTemplate(
+            vehicle_receiving_item: res['data']['vehicledata']
+                ['vehicle_receiving_item'],
             chasis_no: res['data']['vehicledata']['vin_no'],
             shop_name: 'EOL station',
             station_id: widget.subStationId,
@@ -566,7 +568,13 @@ class _ScanningState extends State<Scanning> {
                                                                   .Slide,
                                                         )
                                                       : widget.shopId == '17'
-                                                          ? JobCardQuestionsTemplateEOL(
+                                                          ? JobCardQuestionsTemplate(
+                                                              vehicle_receiving_item: res[
+                                                                          'data']
+                                                                      [
+                                                                      'vehicledata']
+                                                                  [
+                                                                  'vehicle_receiving_item'],
                                                               chasis_no: res[
                                                                           'data']
                                                                       [

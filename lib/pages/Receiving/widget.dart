@@ -104,7 +104,8 @@ class ChecklistItemCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    checklistItem['answer'] ?? 'Unknown Question',
+                    checklistItem['checklist']['query_name'] ??
+                        'Unknown Question',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,

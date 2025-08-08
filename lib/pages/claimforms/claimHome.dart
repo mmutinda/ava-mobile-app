@@ -7,62 +7,6 @@ import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/loader.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/pages/claimforms/RaiseClaim.dart';
-import 'package:isuze_pqcs/pages/claimforms/claimView.dart';
-
-class NearMiss {
-  final int id;
-  final String department;
-  final String pfNumber;
-  final String date;
-  final String location;
-  final String levelOfRisk;
-  final String category;
-  final String description;
-  final List<String>? files;
-  final CreatedBy createdBy;
-
-  NearMiss({
-    required this.id,
-    required this.department,
-    required this.pfNumber,
-    required this.date,
-    required this.location,
-    required this.levelOfRisk,
-    required this.category,
-    required this.description,
-    this.files,
-    required this.createdBy,
-  });
-
-  factory NearMiss.fromJson(Map<String, dynamic> json) {
-    return NearMiss(
-      id: json['id'],
-      department: json['department'],
-      pfNumber: json['pf_number'],
-      date: json['date'],
-      location: json['location'],
-      levelOfRisk: json['level_of_risk'],
-      category: json['category_of_near_miss'],
-      description: json['description'],
-      files: json['file'] != null ? List<String>.from(json['file']) : null,
-      createdBy: CreatedBy.fromJson(json['created_by']),
-    );
-  }
-}
-
-class CreatedBy {
-  final String name;
-  final String email;
-
-  CreatedBy({required this.name, required this.email});
-
-  factory CreatedBy.fromJson(Map<String, dynamic> json) {
-    return CreatedBy(
-      name: json['name'],
-      email: json['email'],
-    );
-  }
-}
 
 class ClaimHome extends StatefulWidget {
   const ClaimHome({super.key});
@@ -72,34 +16,49 @@ class ClaimHome extends StatefulWidget {
 }
 
 class _ClaimHomeState extends State<ClaimHome> {
-  late Future<List<NearMiss>> futureRecords;
   var user = {};
+  Future<List<dynamic>>? futureRecords;
+
   @override
   void initState() {
     super.initState();
     getuserdata().then((value) {
       setState(() {
         user = jsonDecode(value);
+        futureRecords = fetchRecords();
       });
-      futureRecords = fetchRecords();
     });
   }
 
-  Future<List<NearMiss>> fetchRecords() async {
+  fetchRecords() async {
     final response = await http.get(
       headers: {
         'Authorization': 'Bearer ${user['data']['token']}',
         'Accept': 'application/json',
       },
-      Uri.parse('${Api.api_url}loadlaim'),
+      Uri.parse('${Api.api_url}loadClaim/General_Calimaim'),
     );
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      final List<dynamic> records = data['datas'];
-      return records.map((json) => NearMiss.fromJson(json)).toList();
+      if (data['success'] == true) {
+        final List<dynamic> records = data['data'];
+        return records;
+      } else {
+        throw Exception(data['msg'] ?? 'Failed to load claims');
+      }
     } else {
       throw Exception('Failed to claim records');
+    }
+  }
+
+  String _formatDate(String? dateString) {
+    if (dateString == null) return 'N/A';
+    try {
+      final DateTime date = DateTime.parse(dateString);
+      return '${date.day}/${date.month}/${date.year}';
+    } catch (e) {
+      return 'N/A';
     }
   }
 
@@ -131,7 +90,7 @@ class _ClaimHomeState extends State<ClaimHome> {
         title: const Text('Claims Records'),
       ),
       backgroundColor: Colors.grey.shade50,
-      body: FutureBuilder<List<NearMiss>>(
+      body: FutureBuilder<List<dynamic>>(
         future: futureRecords,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -208,7 +167,7 @@ class _ClaimHomeState extends State<ClaimHome> {
                     ),
                   ),
                   title: Text(
-                    record.department,
+                    record['lot_number'] ?? 'N/A',
                     style: const TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 16,
@@ -222,11 +181,11 @@ class _ClaimHomeState extends State<ClaimHome> {
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.calendar_today_outlined,
+                            Icon(Icons.inventory_2_outlined,
                                 size: 14, color: Colors.grey.shade600),
                             const SizedBox(width: 4),
                             Text(
-                              record.date,
+                              record['part_number'] ?? 'N/A',
                               style: TextStyle(
                                 fontSize: 13,
                                 color: Colors.grey.shade600,
@@ -237,15 +196,46 @@ class _ClaimHomeState extends State<ClaimHome> {
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            Icon(Icons.warning_amber_outlined,
+                            Icon(Icons.category_outlined,
                                 size: 14, color: Colors.orange.shade600),
                             const SizedBox(width: 4),
                             Text(
-                              record.levelOfRisk,
+                              record['category'] ?? 'N/A',
                               style: TextStyle(
                                 fontSize: 13,
                                 color: Colors.orange.shade600,
                                 fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(Icons.class_outlined,
+                                size: 14, color: Colors.blue.shade600),
+                            const SizedBox(width: 4),
+                            Text(
+                              record['classification'] ?? 'N/A',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.blue.shade600,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(Icons.calendar_today_outlined,
+                                size: 14, color: Colors.grey.shade600),
+                            const SizedBox(width: 4),
+                            Text(
+                              _formatDate(record['created_at']),
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey.shade600,
                               ),
                             ),
                           ],
@@ -267,10 +257,11 @@ class _ClaimHomeState extends State<ClaimHome> {
                     ),
                   ),
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ClaimViewPage(claim: record),
+                    // TODO: Navigate to claim details when ClaimViewPage is available
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Claim details view coming soon!'),
+                        backgroundColor: Colors.blue,
                       ),
                     );
                   },

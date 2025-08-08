@@ -780,7 +780,7 @@ class DocumentDetailPage extends StatelessWidget {
             const SizedBox(height: 16),
 
             // Items Section
-            _buildItemsSection(),
+            // _buildItemsSection(),
           ],
         ),
       ),

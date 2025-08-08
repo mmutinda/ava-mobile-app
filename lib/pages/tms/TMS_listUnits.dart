@@ -16,11 +16,11 @@ class TMSUnits extends StatefulWidget {
 
 class _TMSUnitsState extends State<TMSUnits> with TickerProviderStateMixin {
   final List<Color> colors = [
-    Colors.amber.shade900,
+    // Colors.amber.shade900,
     Colors.indigo,
     Colors.teal,
     Colors.deepPurple,
-    Colors.orange,
+    // Colors.orange,
     Colors.green,
   ];
 
@@ -280,16 +280,17 @@ class _TMSUnitsState extends State<TMSUnits> with TickerProviderStateMixin {
                                       width: 45,
                                       height: 45,
                                       decoration: BoxDecoration(
-                                        gradient: cardGradient,
+                                        color: categoryColor,
+                                        // gradient: cardGradient,
                                         shape: BoxShape.circle,
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color:
-                                                categoryColor.withOpacity(0.2),
-                                            blurRadius: 4,
-                                            offset: Offset(0, 2),
-                                          ),
-                                        ],
+                                        // boxShadow: [
+                                        //   BoxShadow(
+                                        //     color:
+                                        //         categoryColor.withOpacity(0.2),
+                                        //     blurRadius: 4,
+                                        //     offset: Offset(0, 2),
+                                        //   ),
+                                        // ],
                                       ),
                                       child: Center(
                                         child: Text(
@@ -393,16 +394,12 @@ class _TMSUnitsState extends State<TMSUnits> with TickerProviderStateMixin {
                                     // Compact select button
                                     Container(
                                       decoration: BoxDecoration(
-                                        gradient: cardGradient,
+                                        // color: categoryColor,
                                         borderRadius: BorderRadius.circular(8),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color:
-                                                categoryColor.withOpacity(0.2),
-                                            blurRadius: 3,
-                                            offset: Offset(0, 1),
-                                          ),
-                                        ],
+                                        border: Border.all(
+                                          color: categoryColor,
+                                          // width: 1.5,
+                                        ),
                                       ),
                                       child: Material(
                                         color: Colors.transparent,
@@ -412,6 +409,8 @@ class _TMSUnitsState extends State<TMSUnits> with TickerProviderStateMixin {
                                           onTap: () {
                                             TorqueEntryPage(
                                               id: vehicles[index].id,
+
+                                              ModelId: vehicles[index].model_id,
                                             ).launch(context,
                                                 pageRouteAnimation:
                                                     PageRouteAnimation.Slide);
@@ -428,14 +427,13 @@ class _TMSUnitsState extends State<TMSUnits> with TickerProviderStateMixin {
                                                   "SELECT",
                                                   style: TextStyle(
                                                     fontWeight: FontWeight.bold,
-                                                    color: Colors.white,
+                                                    // color: Colors.white,
                                                     fontSize: 11,
                                                   ),
                                                 ),
                                                 SizedBox(width: 4),
                                                 Icon(
                                                   Icons.arrow_forward_ios,
-                                                  color: Colors.white,
                                                   size: 12,
                                                 ),
                                               ],

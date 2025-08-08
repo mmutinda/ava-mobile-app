@@ -121,7 +121,7 @@ class _display_UnboxingLotsState extends State<display_UnboxingLots>
             });
           },
           decoration: const InputDecoration(
-            hintText: 'Search by Chassis, RegNo, Customer...',
+            hintText: 'Search..',
             border: InputBorder.none,
             hintStyle: TextStyle(color: Colors.white70, fontSize: 14),
             contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -377,107 +377,107 @@ class _display_UnboxingLotsState extends State<display_UnboxingLots>
       );
     }
 
-    return Column(
-      children: [
-        // Stats header
-        Container(
-          margin: const EdgeInsets.all(16),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [mycolor.withOpacity(0.1), mycolor.withOpacity(0.2)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          // Stats header
+          Container(
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [mycolor.withOpacity(0.1), mycolor.withOpacity(0.2)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: mycolor.withOpacity(0.3), width: 1),
             ),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: mycolor.withOpacity(0.3), width: 1),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: mycolor,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.inventory_2,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Total Unboxing Lots',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${filteredVehicles.length} ${filteredVehicles.length == 1 ? 'Lot' : 'Lots'}',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: mycolor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (searchText.isNotEmpty)
+            child: Row(
+              children: [
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: mycolor.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
+                    color: mycolor,
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text(
-                    'Filtered',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: mycolor,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  child: const Icon(
+                    Icons.inventory_2,
+                    color: Colors.white,
+                    size: 20,
                   ),
                 ),
-            ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Total Unboxing Lots',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${filteredVehicles.length} ${filteredVehicles.length == 1 ? 'Lot' : 'Lots'}',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: mycolor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (searchText.isNotEmpty)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: mycolor.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'Filtered',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: mycolor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
-        ),
 
-        // Vehicle list
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          itemCount: filteredVehicles.length,
-          itemBuilder: (context, index) {
-            var vehicle = filteredVehicles[index];
-            return ScaleTransition(
-              scale: _slideAnimation,
-              child: _buildVehicleCard(vehicle, index),
-            );
-          },
-        ),
+          // Vehicle list
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: filteredVehicles.length,
+            itemBuilder: (context, index) {
+              var vehicle = filteredVehicles[index];
+              return ScaleTransition(
+                scale: _slideAnimation,
+                child: _buildVehicleCard(vehicle, index),
+              );
+            },
+          ),
 
-        const SizedBox(height: 80), // Bottom padding
-      ],
+          const SizedBox(height: 80), // Bottom padding
+        ],
+      ),
     );
   }
 
   Widget _buildVehicleCard(Map vehicle, int index) {
-    Color categoryColor = colors[index % colors.length];
     var lotNumber = vehicle['lot_number'] ?? 'N/A';
     var lotQty = vehicle['lot_qty'] ?? 'N/A';
     var modelName = vehicle['model']?['model_name'] ?? 'Unknown Model';
-    var customerName = vehicle['customer']?['name'] ?? '';
 
     return AnimatedContainer(
       duration: Duration(milliseconds: 300 + (index * 100)),
@@ -583,30 +583,6 @@ class _display_UnboxingLotsState extends State<display_UnboxingLots>
                     ),
 
                     // Customer badge
-                    if (customerName.isNotEmpty)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              categoryColor.withOpacity(0.8),
-                              categoryColor
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          customerName,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
                   ],
                 ),
 

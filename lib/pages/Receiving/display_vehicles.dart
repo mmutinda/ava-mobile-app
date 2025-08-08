@@ -619,29 +619,6 @@ class _DisplayVehiclesState extends State<DisplayVehicles>
               // mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (vehicles[index]['customer'] != null)
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.amber[900],
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.amber.withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Text(
-                      vehicles[index]['customer']?['name'] ?? '',
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
                 Row(
                   children: [
                     Container(
@@ -688,6 +665,21 @@ class _DisplayVehiclesState extends State<DisplayVehicles>
                             ),
                           ),
                           SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(FeatherIcons.info,
+                                  size: 14, color: Colors.grey[600]),
+                              SizedBox(width: 6),
+                              Text(
+                                vehicles[index]['customer']?['name'] ?? '',
+                                style: GoogleFonts.poppins(
+                                  // color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              )
+                            ],
+                          ),
                           Row(
                             children: [
                               Icon(FeatherIcons.hash,
@@ -835,177 +827,182 @@ class _DisplayVehiclesState extends State<DisplayVehicles>
             return AlertDialog(
               backgroundColor: Colors.transparent,
               contentPadding: EdgeInsets.zero,
-              content: Container(
-                width: MediaQuery.of(context).size.width * 0.9,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.15),
-                      blurRadius: 20,
-                      offset: Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Header
-                    Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            theme.primaryColor,
-                            theme.primaryColor.withOpacity(0.8),
+              content: SingleChildScrollView(
+                child: Container(
+                  width: MediaQuery.of(context).size.width * 0.9,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 20,
+                        offset: Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Header
+                      Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              theme.primaryColor,
+                              theme.primaryColor.withOpacity(0.8),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(20),
+                            topRight: Radius.circular(20),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(
+                                FeatherIcons.navigation,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                            ),
+                            SizedBox(width: 16),
+                            Expanded(
+                              child: Text(
+                                'Choose Bay & Route',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
                           ],
                         ),
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(20),
-                          topRight: Radius.circular(20),
-                        ),
                       ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Icon(
-                              FeatherIcons.navigation,
-                              color: Colors.white,
-                              size: 24,
-                            ),
-                          ),
-                          SizedBox(width: 16),
-                          Text(
-                            'Choose Bay and Route',
-                            style: GoogleFonts.poppins(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
 
-                    // Content
-                    Padding(
-                      padding: EdgeInsets.all(24),
-                      child: Column(
-                        children: [
-                          _buildStyledDropdown(
-                            value: selectedBay!,
-                            items: [
-                              'Bay 1',
-                              'Bay 2',
-                              'Bay 3',
-                              'Bay 4',
-                              'Bus Bay'
-                            ],
-                            label: 'Select Bay',
-                            icon: FeatherIcons.mapPin,
-                            onChanged: (value) {
-                              setState(() {
-                                selectedBay = value;
-                              });
-                            },
-                          ),
-                          SizedBox(height: 20),
-                          _buildStyledDropdown(
-                            value: selectedRoute!,
-                            items: [
-                              'Route 1',
-                              'Route 2',
-                              'Route 3',
-                              'Route 4',
-                              'Route 5'
-                            ],
-                            label: 'Select Route',
-                            icon: FeatherIcons.navigation,
-                            onChanged: (value) {
-                              setState(() {
-                                selectedRoute = value;
-                              });
-                            },
-                          ),
-                          SizedBox(height: 24),
-                          Container(
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  theme.primaryColor,
-                                  theme.primaryColor.withOpacity(0.8),
+                      // Content
+                      Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Column(
+                          children: [
+                            _buildStyledDropdown(
+                              value: selectedBay!,
+                              items: [
+                                'Bay 1',
+                                'Bay 2',
+                                'Bay 3',
+                                'Bay 4',
+                                'Bus Bay'
+                              ],
+                              label: 'Select Bay',
+                              icon: FeatherIcons.mapPin,
+                              onChanged: (value) {
+                                setState(() {
+                                  selectedBay = value;
+                                });
+                              },
+                            ),
+                            SizedBox(height: 20),
+                            _buildStyledDropdown(
+                              value: selectedRoute!,
+                              items: [
+                                'Route 1',
+                                'Route 2',
+                                'Route 3',
+                                'Route 4',
+                                'Route 5'
+                              ],
+                              label: 'Select Route',
+                              icon: FeatherIcons.navigation,
+                              onChanged: (value) {
+                                setState(() {
+                                  selectedRoute = value;
+                                });
+                              },
+                            ),
+                            SizedBox(height: 24),
+                            Container(
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    theme.primaryColor,
+                                    theme.primaryColor.withOpacity(0.8),
+                                  ],
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: theme.primaryColor.withOpacity(0.3),
+                                    blurRadius: 12,
+                                    offset: Offset(0, 6),
+                                  ),
                                 ],
                               ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: theme.primaryColor.withOpacity(0.3),
-                                  blurRadius: 12,
-                                  offset: Offset(0, 6),
-                                ),
-                              ],
-                            ),
-                            child: Material(
-                              color: Colors.transparent,
-                              borderRadius: BorderRadius.circular(12),
-                              child: InkWell(
+                              child: Material(
+                                color: Colors.transparent,
                                 borderRadius: BorderRadius.circular(12),
-                                onTap: () async {
-                                  final fields = {
-                                    'vehicle_receiving_id': vehicles[index]
-                                        ['id'],
-                                    'vehicle_bay': bayIds[selectedBay],
-                                    'vehicle_route': routeIds[selectedRoute],
-                                  };
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(12),
+                                  onTap: () async {
+                                    final fields = {
+                                      'vehicle_receiving_id': vehicles[index]
+                                          ['id'],
+                                      'vehicle_bay': bayIds[selectedBay],
+                                      'vehicle_route': routeIds[selectedRoute],
+                                    };
 
-                                  await submitForm(
-                                    context: context,
-                                    url: '${Api.api_url}pushBay',
-                                    fields: fields,
-                                    token: user['data']['token'],
-                                  );
-                                  print(fields);
-                                  Navigator.pop(context);
-                                },
-                                child: Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 16),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(FeatherIcons.send,
-                                          color: Colors.white, size: 18),
-                                      SizedBox(width: 8),
-                                      Text(
-                                        'PUSH TO $selectedBay',
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w700,
-                                          color: Colors.white,
-                                          letterSpacing: 0.5,
+                                    await submitForm(
+                                      context: context,
+                                      url: '${Api.api_url}pushBay',
+                                      fields: fields,
+                                      token: user['data']['token'],
+                                    );
+                                    print(fields);
+                                    Navigator.pop(context);
+                                  },
+                                  child: Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 16),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(FeatherIcons.send,
+                                            color: Colors.white, size: 18),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          'PUSH TO $selectedBay',
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.white,
+                                            letterSpacing: 0.5,
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             );
