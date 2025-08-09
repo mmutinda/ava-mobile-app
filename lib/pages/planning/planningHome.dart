@@ -4,6 +4,7 @@ import 'package:isuze_pqcs/pages/Receiving/display_vehicles.dart';
 import 'package:isuze_pqcs/pages/planning/Unboxing/chooseBay.dart';
 import 'package:isuze_pqcs/pages/planning/Unboxing/display_UnboxingLots.dart';
 import 'package:isuze_pqcs/pages/planning/scheduleUnits.dart';
+import 'package:isuze_pqcs/pages/planning/UnitsLocationPage.dart';
 import 'package:nb_utils/nb_utils.dart';
 
 class PlanningHome extends StatefulWidget {
@@ -41,32 +42,11 @@ class _PlanningHomeState extends State<PlanningHome>
       'gradient': [Colors.green.shade400, Colors.green.shade600],
     },
     {
-      'title': 'Weekly/Monthly Plan',
-      'subtitle': 'View comprehensive planning schedules',
-      'icon': FeatherIcons.barChart2,
-      'color': Colors.purple,
-      'gradient': [Colors.purple.shade400, Colors.purple.shade600],
-    },
-    {
-      'title': 'Units at Logistics',
-      'subtitle': 'Track units in logistics department',
-      'icon': FeatherIcons.truck,
-      'color': Colors.cyan,
-      'gradient': [Colors.cyan.shade400, Colors.cyan.shade600],
-    },
-    {
       'title': 'Units at Line',
       'subtitle': 'Monitor units on production line',
       'icon': FeatherIcons.activity,
       'color': Colors.indigo,
       'gradient': [Colors.indigo.shade400, Colors.indigo.shade600],
-    },
-    {
-      'title': 'Units at Rework',
-      'subtitle': 'Manage units requiring rework',
-      'icon': FeatherIcons.refreshCw,
-      'color': Colors.amber,
-      'gradient': [Colors.amber.shade400, Colors.amber.shade600],
     },
     {
       'title': 'Units at EOL',
@@ -152,28 +132,6 @@ class _PlanningHomeState extends State<PlanningHome>
             ),
           ],
         ),
-        actions: [
-          Container(
-            margin: EdgeInsets.only(right: 16),
-            child: IconButton(
-              icon: Container(
-                padding: EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  FeatherIcons.moreVertical,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-              onPressed: () {
-                // Add more options functionality
-              },
-            ),
-          ),
-        ],
       ),
       body: FadeTransition(
         opacity: _fadeAnimation,
@@ -468,10 +426,67 @@ class _PlanningHomeState extends State<PlanningHome>
       print(index);
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => SCheduleUnits()),
+        MaterialPageRoute(
+            builder: (context) => SCheduleUnits(
+                // locationId: "Line", // Shop ID for Line
+
+                // locationIcon: FeatherIcons.activity,
+                // locationColor: Colors.indigo,
+                )),
       );
       return;
     }
+
+    // Handle Units at different locations
+    if (index == 3) {
+      // Units at Line
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SCheduleUnits(
+            view: "yes",
+            // locationId: "Line", // Shop ID for Line
+            // locationName: "Line",
+            // locationIcon: FeatherIcons.activity,
+            // locationColor: Colors.indigo,
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (index == 4) {
+      // Units at EOL
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => UnitsLocationPage(
+            locationId: "17", // Shop ID for EOL
+            locationName: "EOL",
+            locationIcon: FeatherIcons.checkCircle,
+            locationColor: Colors.teal,
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (index == 5) {
+      // Units at GCP
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => UnitsLocationPage(
+            locationId: "18", // Shop ID for GCP
+            locationName: "GCP",
+            locationIcon: FeatherIcons.shield,
+            locationColor: Colors.red,
+          ),
+        ),
+      );
+      return;
+    }
+
     toasty(
       context,
       "Under Development",

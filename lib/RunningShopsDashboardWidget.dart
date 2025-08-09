@@ -5,8 +5,11 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/models/shops.dart';
+import 'package:isuze_pqcs/pages/planning/EOL/EOLScreen.dart';
+import 'package:isuze_pqcs/pages/qc_inspection/scanning%20copy.dart';
 import 'package:isuze_pqcs/services/sqlite_db_helper.dart';
 import 'package:isuze_pqcs/widgets/shops.dart';
+import 'package:nb_utils/nb_utils.dart';
 
 class RunningShopsDashboardWidget extends StatefulWidget {
   const RunningShopsDashboardWidget({super.key});
@@ -183,7 +186,28 @@ class _RunningShopsDashboardWidgetState
                 name: shop.name,
                 number: shop.number,
                 dividerColor: color,
-                onTap: () {},
+                onTap: () {
+                  if (shop.number == "0") {
+                    toast("No running units in this shop");
+                  } else {
+                    if (shop.id == "17") {
+                      EOLScreenCategory(
+                        ShopId: shop.id,
+                      ).launch(
+                        context,
+                        pageRouteAnimation: PageRouteAnimation.Slide,
+                      );
+                    } else {
+                      Scanning(
+                        shopId: shop.id,
+                        shopName: shop.name,
+                      ).launch(
+                        context,
+                        pageRouteAnimation: PageRouteAnimation.Slide,
+                      );
+                    }
+                  }
+                },
               );
             },
           ),

@@ -23,7 +23,7 @@ class AssemblyStations extends StatefulWidget {
 
 List<shops> shop = []; // List to hold vehicles fetched from API
 final List<Color> colors = [
-  Colors.amber.shade900,
+  // Colors.amber.shade900,
   Colors.indigo,
   Colors.teal,
 ];
@@ -120,6 +120,22 @@ class _AssemblyStationsState extends State<AssemblyStations> {
         }).toList();
 
         if (fetchedShops.isNotEmpty) {
+          // Sort shops: stations with units first, then empty stations
+          fetchedShops.sort((a, b) {
+            int aUnits = int.parse(a.number);
+            int bUnits = int.parse(b.number);
+
+            // If both have units or both are empty, maintain original order
+            if ((aUnits > 0 && bUnits > 0) || (aUnits == 0 && bUnits == 0)) {
+              return 0;
+            }
+            // Stations with units come first
+            if (aUnits > 0 && bUnits == 0) return -1;
+            if (aUnits == 0 && bUnits > 0) return 1;
+
+            return 0;
+          });
+
           setState(() {
             shop = fetchedShops;
             message = '';
@@ -154,30 +170,42 @@ class _AssemblyStationsState extends State<AssemblyStations> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
         elevation: 0,
         backgroundColor: mycolor,
         foregroundColor: Colors.white,
         title: Row(
           children: [
-            Icon(Icons.precision_manufacturing, size: 24),
-            SizedBox(width: 8),
+            Container(
+              padding: EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(Icons.precision_manufacturing, size: 20),
+            ),
+            SizedBox(width: 12),
             Text(
               "Assembly Stations",
               style: TextStyle(
-                fontSize: 20,
+                fontSize: 18,
                 fontWeight: FontWeight.w600,
               ),
             ),
           ],
         ),
         actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          Container(
+            margin: EdgeInsets.only(right: 16),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
             child: IconButton(
-              icon: Icon(Icons.refresh, size: 24),
+              icon: Icon(Icons.refresh, size: 20),
               onPressed: fetchData,
+              padding: EdgeInsets.all(8),
             ),
           ),
         ],
@@ -191,14 +219,8 @@ class _AssemblyStationsState extends State<AssemblyStations> {
               padding: EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
-                    blurRadius: 10,
-                    offset: Offset(0, 4),
-                  ),
-                ],
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey.shade200),
               ),
               child: Row(
                 children: [
@@ -206,45 +228,37 @@ class _AssemblyStationsState extends State<AssemblyStations> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Active Stations',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
+                        Row(
+                          children: [
+                            Container(
+                              padding: EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: mycolor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Icon(
+                                Icons.factory,
+                                color: mycolor,
+                                size: 16,
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              'Active Stations',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
-                        SizedBox(height: 4),
+                        SizedBox(height: 8),
                         Text(
                           '${shop.length}',
                           style: TextStyle(
                             color: mycolor,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Total Units',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          '${shop.fold(0, (sum, station) => sum + int.parse(station.number))}',
-                          style: TextStyle(
-                            color: Colors.green[700],
-                            fontSize: 24,
+                            fontSize: 28,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -252,15 +266,50 @@ class _AssemblyStationsState extends State<AssemblyStations> {
                     ),
                   ),
                   Container(
-                    padding: EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: mycolor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      Icons.factory,
-                      color: mycolor,
-                      size: 28,
+                    height: 50,
+                    width: 1,
+                    color: Colors.grey.shade200,
+                  ),
+                  SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.green.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Icon(
+                                Icons.inventory,
+                                color: Colors.green[700],
+                                size: 16,
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              'Total Units',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          '${shop.fold(0, (sum, station) => sum + int.parse(station.number))}',
+                          style: TextStyle(
+                            color: Colors.green[700],
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -269,7 +318,25 @@ class _AssemblyStationsState extends State<AssemblyStations> {
             // Content area
             Expanded(
               child: isLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(mycolor),
+                            strokeWidth: 3,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'Loading stations...',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
                   : message.isNotEmpty
                       ? ErrorMessageWidget(
                           errorMessage: message,
@@ -281,32 +348,41 @@ class _AssemblyStationsState extends State<AssemblyStations> {
                             await fetchData();
                             _isRefreshing = false;
                           },
-                          displacement: 40,
-                          edgeOffset: 0,
+                          color: mycolor,
+                          backgroundColor: Colors.white,
+                          displacement: 20,
                           child: shop.isEmpty
                               ? ListView(
                                   physics:
                                       const AlwaysScrollableScrollPhysics(),
                                   children: [
-                                    SizedBox(
-                                      height: 300,
+                                    Container(
+                                      height: 400,
                                       child: Center(
                                         child: Column(
                                           mainAxisAlignment:
                                               MainAxisAlignment.center,
                                           children: [
-                                            Icon(
-                                              Icons.factory_outlined,
-                                              size: 64,
-                                              color: Colors.grey[400],
+                                            Container(
+                                              padding: EdgeInsets.all(20),
+                                              decoration: BoxDecoration(
+                                                color: Colors.grey.shade100,
+                                                borderRadius:
+                                                    BorderRadius.circular(16),
+                                              ),
+                                              child: Icon(
+                                                Icons.factory_outlined,
+                                                size: 48,
+                                                color: Colors.grey[400],
+                                              ),
                                             ),
-                                            SizedBox(height: 16),
+                                            SizedBox(height: 24),
                                             Text(
                                               "No Stations Found",
                                               style: TextStyle(
                                                 fontSize: 18,
-                                                fontWeight: FontWeight.w500,
-                                                color: Colors.grey[600],
+                                                fontWeight: FontWeight.w600,
+                                                color: Colors.grey[700],
                                               ),
                                             ),
                                             SizedBox(height: 8),
@@ -326,7 +402,7 @@ class _AssemblyStationsState extends State<AssemblyStations> {
                               : ListView.builder(
                                   physics:
                                       const AlwaysScrollableScrollPhysics(),
-                                  padding: EdgeInsets.symmetric(horizontal: 16),
+                                  padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
                                   itemCount: shop.length,
                                   itemBuilder: (context, index) {
                                     Color categoryColor =
@@ -351,10 +427,21 @@ class _AssemblyStationsState extends State<AssemblyStations> {
 
     return Container(
       margin: EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color:
+              hasUnits ? categoryColor.withOpacity(0.3) : Colors.grey.shade200,
+          width: hasUnits ? 2 : 1,
+        ),
+      ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
+          splashColor: categoryColor.withOpacity(0.1),
+          highlightColor: categoryColor.withOpacity(0.05),
           onTap: () {
             if (station.number == "0") {
               showNoUnitsDialog(context, categoryColor);
@@ -377,67 +464,31 @@ class _AssemblyStationsState extends State<AssemblyStations> {
               }
             }
           },
-          child: Container(
+          child: Padding(
             padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: hasUnits
-                    ? categoryColor.withOpacity(0.2)
-                    : Colors.grey.withOpacity(0.1),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
-                  blurRadius: 8,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
             child: Row(
               children: [
-                // Station icon with gradient
+                // Station number circle
                 Container(
-                  width: 60,
-                  height: 60,
+                  width: 48,
+                  height: 48,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: hasUnits
-                          ? [
-                              categoryColor.withOpacity(0.8),
-                              categoryColor,
-                            ]
-                          : [
-                              Colors.grey[400]!,
-                              Colors.grey[500]!,
-                            ],
-                    ),
+                    color: hasUnits ? categoryColor : Colors.grey.shade300,
                     borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: (hasUnits ? categoryColor : Colors.grey[400]!)
-                            .withOpacity(0.3),
-                        blurRadius: 6,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
                   ),
                   child: Center(
                     child: Text(
                       "${index + 1}",
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 20,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                 ),
                 SizedBox(width: 16),
+
                 // Station info
                 Expanded(
                   child: Column(
@@ -446,27 +497,56 @@ class _AssemblyStationsState extends State<AssemblyStations> {
                       Text(
                         station.name,
                         style: TextStyle(
-                          color: hasUnits ? mycolor : Colors.grey[600],
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                          color: hasUnits
+                              ? Colors.grey.shade800
+                              : Colors.grey.shade500,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                         ),
+                      ),
+                      SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            hasUnits
+                                ? Icons.check_circle
+                                : Icons.radio_button_unchecked,
+                            size: 14,
+                            color:
+                                hasUnits ? Colors.green : Colors.grey.shade400,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            hasUnits ? 'Active' : 'Empty',
+                            style: TextStyle(
+                              color: hasUnits
+                                  ? Colors.green
+                                  : Colors.grey.shade500,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-                // Unit count badge
+
+                // Unit count and arrow
                 Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Container(
                       padding:
-                          EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: hasUnits
                             ? categoryColor.withOpacity(0.1)
-                            : Colors.grey[100],
+                            : Colors.grey.shade100,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: hasUnits ? categoryColor : Colors.grey[400]!,
+                          color:
+                              hasUnits ? categoryColor : Colors.grey.shade300,
                           width: 1,
                         ),
                       ),
@@ -474,19 +554,19 @@ class _AssemblyStationsState extends State<AssemblyStations> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            hasUnits
-                                ? Icons.inventory
-                                : Icons.inventory_2_outlined,
-                            size: 16,
-                            color: hasUnits ? categoryColor : Colors.grey[500],
+                            Icons.inventory_2,
+                            size: 14,
+                            color:
+                                hasUnits ? categoryColor : Colors.grey.shade500,
                           ),
                           SizedBox(width: 6),
                           Text(
                             '$unitCount',
                             style: TextStyle(
-                              color:
-                                  hasUnits ? categoryColor : Colors.grey[500],
-                              fontSize: 16,
+                              color: hasUnits
+                                  ? categoryColor
+                                  : Colors.grey.shade600,
+                              fontSize: 14,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -495,20 +575,21 @@ class _AssemblyStationsState extends State<AssemblyStations> {
                     ),
                     SizedBox(height: 4),
                     Text(
-                      hasUnits ? 'Units' : 'Empty',
+                      'Units',
                       style: TextStyle(
-                        color: Colors.grey[500],
-                        fontSize: 12,
+                        color: Colors.grey.shade500,
+                        fontSize: 11,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
                 ),
-                SizedBox(width: 8),
+                SizedBox(width: 12),
+
                 // Arrow icon
                 Icon(
-                  Icons.arrow_forward_ios,
-                  color: hasUnits ? categoryColor : Colors.grey[400],
+                  Icons.arrow_forward_ios_rounded,
+                  color: hasUnits ? categoryColor : Colors.grey.shade400,
                   size: 16,
                 ),
               ],
@@ -524,150 +605,102 @@ class _AssemblyStationsState extends State<AssemblyStations> {
       context: context,
       barrierDismissible: true,
       builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          elevation: 8,
+        return AlertDialog(
           backgroundColor: Colors.white,
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Colors.white,
-                  mycolor.withOpacity(0.02),
-                ],
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          contentPadding: EdgeInsets.all(24),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(32),
+                ),
+                child: Icon(
+                  Icons.inventory_2_outlined,
+                  color: Colors.grey.shade500,
+                  size: 32,
+                ),
               ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: categoryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(50),
-                  ),
-                  child: Icon(
-                    Icons.info_outline,
-                    color: mycolor,
-                    size: 48,
-                  ),
+              SizedBox(height: 16),
+              Text(
+                'Station Empty',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade800,
                 ),
-                const SizedBox(height: 20),
-                Text(
-                  "Station Empty",
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: mycolor,
-                  ),
+              ),
+              SizedBox(height: 8),
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade200),
                 ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[50],
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey[200]!),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.inventory_2_outlined,
-                            color: Colors.grey[600],
-                            size: 20,
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            "0 Units Available",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.grey[700],
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        "There are currently no units in this station.",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Row(
+                child: Column(
                   children: [
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              mycolor.withOpacity(0.8),
-                              mycolor,
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: categoryColor.withOpacity(0.3),
-                              blurRadius: 6,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.inventory_2_outlined,
+                          color: Colors.grey.shade600,
+                          size: 16,
                         ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(12),
-                            onTap: () {
-                              Navigator.of(context).pop();
-                            },
-                            child: Container(
-                              padding: EdgeInsets.symmetric(vertical: 14),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.refresh,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    "Refresh & Try Again",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                        SizedBox(width: 6),
+                        Text(
+                          "0 Units Available",
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey.shade700,
                           ),
                         ),
+                      ],
+                    ),
+                    SizedBox(height: 6),
+                    Text(
+                      "There are currently no units in this station.",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
                       ),
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+              SizedBox(height: 20),
+              Container(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: categoryColor,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(
+                    'Refresh & Try Again',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       },

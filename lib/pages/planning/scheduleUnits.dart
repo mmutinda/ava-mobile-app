@@ -11,6 +11,9 @@ import 'package:isuze_pqcs/pages/qc_inspection/chooseComponent.dart';
 import 'package:nb_utils/nb_utils.dart';
 
 class SCheduleUnits extends StatefulWidget {
+  final view;
+
+  const SCheduleUnits({super.key, this.view});
   @override
   _SCheduleUnitsState createState() => _SCheduleUnitsState();
 }
@@ -160,22 +163,22 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
       }
 
       return Container(
-        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         decoration: BoxDecoration(
           color: badgeColor.withOpacity(0.1),
           border: Border.all(color: badgeColor, width: 1),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(badgeIcon, size: 12, color: badgeColor),
-            SizedBox(width: 4),
+            Icon(badgeIcon, size: 10, color: badgeColor),
+            SizedBox(width: 3),
             Text(
               status.toUpperCase(),
               style: TextStyle(
                 color: badgeColor,
-                fontSize: 10,
+                fontSize: 9,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -191,20 +194,40 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
         foregroundColor: Colors.white,
         title: _isSearching
             ? _buildSearchField()
-            : Text(
-                'Scheduled Units',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                ),
+            : Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      widget.view != null ? Icons.factory : Icons.schedule,
+                      size: 20,
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Text(
+                    widget.view != null ? 'Units at Line' : 'Scheduled Units',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
         actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          Container(
+            margin: EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
             child: IconButton(
               icon: Icon(
                 _isSearching ? Icons.close : Icons.search,
-                size: 24,
+                size: 20,
               ),
               onPressed: () {
                 setState(() {
@@ -218,10 +241,14 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
             ),
           ),
           if (!_isSearching)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            Container(
+              margin: EdgeInsets.only(right: 16),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
               child: IconButton(
-                icon: Icon(Icons.refresh, size: 24),
+                icon: Icon(Icons.refresh, size: 20),
                 onPressed: fetchData,
               ),
             ),
@@ -242,18 +269,16 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
                     children: [
                       // Header with stats
                       Container(
-                        margin: EdgeInsets.all(16),
-                        padding: EdgeInsets.all(20),
+                        margin:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        padding: EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.06),
-                              blurRadius: 10,
-                              offset: Offset(0, 4),
-                            ),
-                          ],
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: Colors.grey.shade300,
+                            width: 1,
+                          ),
                         ),
                         child: Row(
                           children: [
@@ -265,16 +290,16 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
                                     'Total Units',
                                     style: TextStyle(
                                       color: Colors.grey[600],
-                                      fontSize: 14,
+                                      fontSize: 12,
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
-                                  SizedBox(height: 4),
+                                  SizedBox(height: 2),
                                   Text(
                                     '${vehicles.length}',
                                     style: TextStyle(
                                       color: mycolor,
-                                      fontSize: 24,
+                                      fontSize: 20,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -282,15 +307,19 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
                               ),
                             ),
                             Container(
-                              padding: EdgeInsets.all(12),
+                              padding: EdgeInsets.all(8),
                               decoration: BoxDecoration(
                                 color: mycolor.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: mycolor.withOpacity(0.3),
+                                  width: 1,
+                                ),
                               ),
                               child: Icon(
                                 Icons.directions_car,
                                 color: mycolor,
-                                size: 28,
+                                size: 20,
                               ),
                             ),
                           ],
@@ -299,7 +328,7 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
                       // List
                       Expanded(
                         child: ListView.builder(
-                          padding: EdgeInsets.symmetric(horizontal: 16),
+                          padding: EdgeInsets.symmetric(horizontal: 12),
                           itemCount: vehicles.length,
                           itemBuilder: (context, index) {
                             var vin = vehicles[index].vin;
@@ -321,55 +350,43 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
                               return Container(); // Return an empty container if not matching
                             }
                             return Container(
-                              margin: EdgeInsets.only(bottom: 12),
+                              margin: EdgeInsets.only(bottom: 8),
                               child: Stack(children: [
                                 Container(
-                                  padding: EdgeInsets.all(16),
-                                  decoration: boxDecoration(
-                                    radius: 12,
-                                    showShadow: true,
-                                    bgColor: Colors.white,
+                                  padding: EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                      color: Colors.grey.shade300,
+                                      width: 1,
+                                    ),
                                   ),
                                   child: Column(
                                     children: [
                                       Row(
                                         children: [
-                                          // Professional avatar with gradient
+                                          // Professional avatar
                                           Container(
-                                            width: 50,
-                                            height: 50,
+                                            width: 40,
+                                            height: 40,
                                             decoration: BoxDecoration(
-                                              gradient: LinearGradient(
-                                                begin: Alignment.topLeft,
-                                                end: Alignment.bottomRight,
-                                                colors: [
-                                                  mycolor.withOpacity(0.7),
-                                                  mycolor.withOpacity(0.9),
-                                                ],
-                                              ),
+                                              color: mycolor,
                                               borderRadius:
-                                                  BorderRadius.circular(12),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color:
-                                                      mycolor.withOpacity(0.3),
-                                                  blurRadius: 8,
-                                                  offset: Offset(0, 2),
-                                                ),
-                                              ],
+                                                  BorderRadius.circular(6),
                                             ),
                                             child: Center(
                                               child: Text(
                                                 "${index + 1}",
                                                 style: TextStyle(
                                                   color: Colors.white,
-                                                  fontSize: 18,
+                                                  fontSize: 14,
                                                   fontWeight: FontWeight.bold,
                                                 ),
                                               ),
                                             ),
                                           ),
-                                          SizedBox(width: 16),
+                                          SizedBox(width: 12),
                                           // Vehicle info
                                           Expanded(
                                             child: Column(
@@ -380,22 +397,22 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
                                                   vehicles[index].model,
                                                   style: TextStyle(
                                                     color: Colors.amber[900],
-                                                    fontSize: 18,
+                                                    fontSize: 16,
                                                     fontWeight: FontWeight.bold,
                                                   ),
                                                 ),
-                                                SizedBox(height: 8),
+                                                SizedBox(height: 6),
                                                 // Enhanced VIN display
                                                 Container(
                                                   padding: EdgeInsets.symmetric(
-                                                      horizontal: 10,
-                                                      vertical: 6),
+                                                      horizontal: 8,
+                                                      vertical: 4),
                                                   decoration: BoxDecoration(
                                                     color: mycolor
                                                         .withOpacity(0.08),
                                                     borderRadius:
                                                         BorderRadius.circular(
-                                                            8),
+                                                            6),
                                                     border: Border.all(
                                                       color: mycolor
                                                           .withOpacity(0.2),
@@ -408,50 +425,54 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
                                                     children: [
                                                       Icon(
                                                         Icons.qr_code_2,
-                                                        size: 16,
+                                                        size: 14,
                                                         color: mycolor,
                                                       ),
-                                                      SizedBox(width: 6),
+                                                      SizedBox(width: 4),
                                                       Text(
                                                         'VIN: ',
                                                         style: TextStyle(
                                                           color:
                                                               Colors.grey[600],
-                                                          fontSize: 12,
+                                                          fontSize: 10,
                                                           fontWeight:
                                                               FontWeight.w500,
                                                         ),
                                                       ),
-                                                      Text(
-                                                        '${vehicles[index].vin}',
-                                                        style: TextStyle(
-                                                          color: mycolor,
-                                                          fontSize: 14,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          letterSpacing: 1.2,
-                                                          fontFamily:
-                                                              'monospace',
+                                                      Flexible(
+                                                        child: Text(
+                                                          '${vehicles[index].vin}',
+                                                          style: TextStyle(
+                                                            color: mycolor,
+                                                            fontSize: 11,
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                            letterSpacing: 0.5,
+                                                            fontFamily:
+                                                                'monospace',
+                                                          ),
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
                                                         ),
                                                       ),
                                                     ],
                                                   ),
                                                 ),
-                                                SizedBox(height: 6),
+                                                SizedBox(height: 4),
                                                 Row(
                                                   children: [
                                                     Icon(
                                                       Icons
                                                           .inventory_2_outlined,
-                                                      size: 16,
+                                                      size: 14,
                                                       color: Colors.grey[600],
                                                     ),
-                                                    SizedBox(width: 6),
+                                                    SizedBox(width: 4),
                                                     Text(
-                                                      'LOT: ',
+                                                      'LOT #: ',
                                                       style: TextStyle(
                                                         color: Colors.grey[600],
-                                                        fontSize: 12,
+                                                        fontSize: 10,
                                                         fontWeight:
                                                             FontWeight.w500,
                                                       ),
@@ -460,7 +481,7 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
                                                       '${vehicles[index].lot}',
                                                       style: TextStyle(
                                                         color: Colors.grey[800],
-                                                        fontSize: 14,
+                                                        fontSize: 12,
                                                         fontWeight:
                                                             FontWeight.w600,
                                                       ),
@@ -472,130 +493,125 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
                                           ),
                                         ],
                                       ),
-                                      SizedBox(height: 16),
+                                      SizedBox(height: 12),
                                       // Status and action row
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  'UNIT REMAINING',
-                                                  style: TextStyle(
-                                                    color: Colors.grey[600],
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.w600,
-                                                    letterSpacing: 0.5,
+                                      if (widget.view == null)
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    'UNIT REMAINING',
+                                                    style: TextStyle(
+                                                      color: Colors.grey[600],
+                                                      fontSize: 10,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      letterSpacing: 0.5,
+                                                    ),
                                                   ),
-                                                ),
-                                                SizedBox(height: 6),
-                                                _buildStatusBadge(
-                                                    UnitRemaining),
-                                              ],
-                                            ),
-                                          ),
-                                          // Professional select button
-                                          Container(
-                                            decoration: BoxDecoration(
-                                              gradient: LinearGradient(
-                                                begin: Alignment.topLeft,
-                                                end: Alignment.bottomRight,
-                                                colors: [
-                                                  mycolor.withOpacity(0.7),
-                                                  mycolor.withOpacity(0.9),
+                                                  SizedBox(height: 4),
+                                                  _buildStatusBadge(
+                                                      UnitRemaining),
                                                 ],
                                               ),
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: Colors.amber[900]!
-                                                      .withOpacity(0.3),
-                                                  blurRadius: 6,
-                                                  offset: Offset(0, 2),
-                                                ),
-                                              ],
                                             ),
-                                            child: Material(
-                                              color: Colors.transparent,
-                                              child: InkWell(
+                                            // Professional select button
+                                            Container(
+                                              decoration: BoxDecoration(
+                                                color: mycolor,
                                                 borderRadius:
-                                                    BorderRadius.circular(8),
-                                                onTap: () {
-                                                  showDialog(
-                                                    context: context,
-                                                    builder: (context) =>
-                                                        ChooseComponent(
-                                                      vehicle_id:
-                                                          vehicles[index].id,
-                                                      route_id:
-                                                          vehicles[index].route,
-                                                      vehicle_line:
-                                                          vehicles[index].vehicle_line,
+                                                    BorderRadius.circular(6),
+                                                border: Border.all(
+                                                  color:
+                                                      mycolor.withOpacity(0.3),
+                                                  width: 1,
+                                                ),
+                                              ),
+                                              child: Material(
+                                                color: Colors.transparent,
+                                                child: InkWell(
+                                                  borderRadius:
+                                                      BorderRadius.circular(6),
+                                                  onTap: () {
+                                                    showDialog(
+                                                      context: context,
+                                                      builder: (context) =>
+                                                          ChooseComponent(
+                                                        vehicle_id:
+                                                            vehicles[index].id,
+                                                        route_id:
+                                                            vehicles[index]
+                                                                .route,
+                                                        vehicle_line:
+                                                            vehicles[index]
+                                                                .vehicle_line,
+                                                      ),
+                                                    ).then((value) {
+                                                      fetchData();
+                                                      setState(() {});
+                                                    });
+                                                    // showInDialog(context,
+                                                    //         builder: (context) =>
+                                                    //             ChooseComponent(
+                                                    //               vehicle_id:
+                                                    //                   vehicles[
+                                                    //                           index]
+                                                    //                       .id,
+                                                    //               job_no: vehicles[
+                                                    //                       index]
+                                                    //                   .job,
+                                                    //               route_id:
+                                                    //                   vehicles[
+                                                    //                           index]
+                                                    //                       .route,
+                                                    //             ),
+                                                    //         dialogAnimation:
+                                                    //             DialogAnimation
+                                                    //                 .SCALE)
+                                                    //     .then((value) {
+                                                    //   fetchData();
+                                                    //   setState(() {});
+                                                    // });
+                                                  },
+                                                  child: Container(
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                      horizontal: 12,
+                                                      vertical: 8,
                                                     ),
-                                                  ).then((value) {
-                                                    fetchData();
-                                                    setState(() {});
-                                                  });
-                                                  // showInDialog(context,
-                                                  //         builder: (context) =>
-                                                  //             ChooseComponent(
-                                                  //               vehicle_id:
-                                                  //                   vehicles[
-                                                  //                           index]
-                                                  //                       .id,
-                                                  //               job_no: vehicles[
-                                                  //                       index]
-                                                  //                   .job,
-                                                  //               route_id:
-                                                  //                   vehicles[
-                                                  //                           index]
-                                                  //                       .route,
-                                                  //             ),
-                                                  //         dialogAnimation:
-                                                  //             DialogAnimation
-                                                  //                 .SCALE)
-                                                  //     .then((value) {
-                                                  //   fetchData();
-                                                  //   setState(() {});
-                                                  // });
-                                                },
-                                                child: Container(
-                                                  padding: EdgeInsets.symmetric(
-                                                    horizontal: 20,
-                                                    vertical: 12,
-                                                  ),
-                                                  child: Row(
-                                                    mainAxisSize:
-                                                        MainAxisSize.min,
-                                                    children: [
-                                                      Icon(
-                                                        Icons
-                                                            .assignment_turned_in,
-                                                        color: Colors.white,
-                                                        size: 18,
-                                                      ),
-                                                      SizedBox(width: 8),
-                                                      Text(
-                                                        "SELECT",
-                                                        style: TextStyle(
+                                                    child: Row(
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      children: [
+                                                        Icon(
+                                                          Icons
+                                                              .assignment_turned_in,
                                                           color: Colors.white,
-                                                          fontSize: 14,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          letterSpacing: 0.5,
+                                                          size: 14,
                                                         ),
-                                                      ),
-                                                    ],
+                                                        SizedBox(width: 4),
+                                                        Text(
+                                                          "SELECT",
+                                                          style: TextStyle(
+                                                            color: Colors.white,
+                                                            fontSize: 11,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                            letterSpacing: 0.5,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
                                                   ),
                                                 ),
                                               ),
                                             ),
-                                          ),
-                                        ],
-                                      ),
+                                          ],
+                                        ),
                                     ],
                                   ),
                                 ),

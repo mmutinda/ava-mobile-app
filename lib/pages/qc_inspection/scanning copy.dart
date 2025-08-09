@@ -114,7 +114,7 @@ class _ScanningState extends State<Scanning> {
     String url = "${Api.api_url}checkunitshop/$sku/${widget.shopId}";
     print(url);
     var response = await httpget(url, user['data']['token'], context);
-    // log(jsonEncode(response));
+    log(jsonEncode(response));
     return response;
   }
 
@@ -147,9 +147,21 @@ class _ScanningState extends State<Scanning> {
 
       EasyLoading.dismiss().whenComplete(() {
         if (res == null || res["data"] == null) {
+          // Check if it's a NotFoundHttpException (invalid barcode)
+          String errorMessage = "Item not found";
+          if (res != null &&
+              res["exception"] != null &&
+              res["exception"].toString().contains("NotFoundHttpException")) {
+            errorMessage = "Invalid barcode";
+          } else if (res != null &&
+              res["msg"] != null &&
+              res["msg"].toString().isNotEmpty) {
+            errorMessage = res["msg"].toString();
+          }
+
           awesomeTopSnackbar(
             context,
-            "${res?["msg"] ?? "Item not found"}",
+            errorMessage,
             iconWithDecoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
               border: Border.all(),
@@ -192,7 +204,6 @@ class _ScanningState extends State<Scanning> {
             categoryName: widget.shopName,
             vehicle_receiving_item: res['data']['vehicledata']
                 ['vehicle_receiving_item'],
-            
           ).launch(
             context,
             pageRouteAnimation: PageRouteAnimation.Slide,
@@ -239,7 +250,6 @@ class _ScanningState extends State<Scanning> {
 
   TextEditingController searchController = TextEditingController();
   String searchText = '';
-  bool _isSearching = false;
 
   @override
   void dispose() {
@@ -278,35 +288,7 @@ class _ScanningState extends State<Scanning> {
       body: Container(
         child: isLoading
             ? Center(
-                child: Container(
-                  padding: EdgeInsets.all(20),
-                  margin: EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(15),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 10,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      CustomLoader(),
-                      SizedBox(height: 16),
-                      Text(
-                        'Loading units...',
-                        style: TextStyle(
-                          color: mycolor,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                child: CustomLoader(),
               )
             : message.isNotEmpty
                 ? ErrorMessageWidget(
@@ -387,7 +369,8 @@ class _ScanningState extends State<Scanning> {
                                     child: InkWell(
                                       borderRadius: BorderRadius.circular(16),
                                       onTap: () {
-                                        processSKU(car.vin);
+                                        showTapScanToast(context);
+                                        // processSKU(car.vin);
                                       },
                                       child: Padding(
                                         padding: const EdgeInsets.all(16),
@@ -568,7 +551,8 @@ class _ScanningState extends State<Scanning> {
                                     child: InkWell(
                                       borderRadius: BorderRadius.circular(16),
                                       onTap: () {
-                                        processSKU(vehicles[index].vin);
+                                        showTapScanToast(context);
+                                        // processSKU(vehicles[index].vin);
                                       },
                                       child: Padding(
                                         padding: const EdgeInsets.all(16),
@@ -589,14 +573,14 @@ class _ScanningState extends State<Scanning> {
                                                 ),
                                                 borderRadius:
                                                     BorderRadius.circular(12),
-                                                // boxShadow: [
-                                                //   BoxShadow(
-                                                //     color: categoryColor
-                                                //         .withOpacity(0.3),
-                                                //     blurRadius: 6,
-                                                //     offset: const Offset(0, 3),
-                                                //   ),
-                                                // ],
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: categoryColor
+                                                        .withOpacity(0.3),
+                                                    blurRadius: 6,
+                                                    offset: const Offset(0, 3),
+                                                  ),
+                                                ],
                                               ),
                                               child: Center(
                                                 child: Text(
@@ -800,113 +784,100 @@ class _ScanningState extends State<Scanning> {
 
                                   fetchproduct(value).then((res) {
                                     EasyLoading.dismiss().whenComplete(() {
-                                      res == null
-                                          ? null
-                                          : res["data"] == null
-                                              ? awesomeTopSnackbar(
-                                                  context,
-                                                  "${res["msg"]}",
-                                                  iconWithDecoration:
-                                                      BoxDecoration(
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(20),
-                                                          border: Border.all(),
-                                                          color: Colors.white),
-                                                  icon: Icon(
-                                                    Icons.close,
-                                                    color: Colors.red,
-                                                  ),
-                                                )
-                                              : widget.shopId == '16'
-                                                  ? OffliningBayPage(
-                                                      ShopId: widget.shopId,
-                                                      res: res,
-                                                      shop_name:
-                                                          widget.shopName,
-                                                    ).launch(
-                                                      context,
-                                                      pageRouteAnimation:
-                                                          PageRouteAnimation
-                                                              .Slide,
-                                                    )
-                                                  : widget.shopId == '18'
-                                                      ? SummaryGCP(
-                                                          ageing: res['data'][
-                                                                  'vehicledata']
-                                                              ['vin_no'],
-                                                          chassis: res['data'][
-                                                                  'vehicledata']
-                                                              ['chassis_no'],
-                                                          model: res['data'][
-                                                                  'vehicledata']
-                                                              ['model'],
-                                                          unit_movement_id: res[
-                                                                      'data'][
-                                                                  'unit_movement_id']
-                                                              .toString(),
-                                                        ).launch(
-                                                          context,
-                                                          pageRouteAnimation:
-                                                              PageRouteAnimation
-                                                                  .Slide,
-                                                        )
-                                                      : widget.shopId == '17'
-                                                          ? JobCardQuestionsTemplate(
-                                                              chasis_no: res[
-                                                                          'data']
-                                                                      [
-                                                                      'vehicledata']
-                                                                  ['vin_no'],
-                                                              shop_name:
-                                                                  'EOL station',
-                                                              station_id: widget
-                                                                  .subStationId,
-                                                              shop_id:
-                                                                  widget.shopId,
-                                                              vehicle_id: res[
-                                                                          'data']
-                                                                      [
-                                                                      'vehicledata']
-                                                                  ['id'],
-                                                              categoryName:
-                                                                  widget
-                                                                      .shopName,
-                                                                        vehicle_receiving_item: res[
-                                                                          'data']
-                                                                      [
-                                                                      'vehicledata']
-                                                                  [
-                                                                  'vehicle_receiving_item'],
-                                                            ).launch(
-                                                              context,
-                                                              pageRouteAnimation:
-                                                                  PageRouteAnimation
-                                                                      .Slide,
-                                                            )
-                                                          : res["data"][
-                                                                      'unitcheck'] ==
-                                                                  false
-                                                              ? showInDialog(
-                                                                  context,
-                                                                  builder: (context) => showPosition(
-                                                                      errorMessage:
-                                                                          res["data"]['currentposion']
-                                                                              .toString()),
-                                                                  dialogAnimation:
-                                                                      DialogAnimation
-                                                                          .SLIDE_TOP_BOTTOM)
-                                                              : QcCategories(
-                                                                  ShopId: widget
-                                                                      .shopId,
-                                                                  res: res,
-                                                                  shop_name: widget
-                                                                      .shopName,
-                                                                ).launch(
-                                                                  context,
-                                                                  pageRouteAnimation:
-                                                                      PageRouteAnimation
-                                                                          .Slide);
+                                      if (res == null || res["data"] == null) {
+                                        // Check if it's a NotFoundHttpException (invalid barcode)
+                                        String errorMessage = "Item not found";
+                                        if (res != null &&
+                                            res["exception"] != null &&
+                                            res["exception"]
+                                                .toString()
+                                                .contains(
+                                                    "NotFoundHttpException")) {
+                                          errorMessage = "Invalid barcode";
+                                        } else if (res != null &&
+                                            res["msg"] != null &&
+                                            res["msg"].toString().isNotEmpty) {
+                                          errorMessage = res["msg"].toString();
+                                        }
+
+                                        awesomeTopSnackbar(
+                                          context,
+                                          errorMessage,
+                                          iconWithDecoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                              border: Border.all(),
+                                              color: Colors.white),
+                                          icon: Icon(
+                                            Icons.close,
+                                            color: Colors.red,
+                                          ),
+                                        );
+                                      } else {
+                                        if (widget.shopId == '16') {
+                                          OffliningBayPage(
+                                            ShopId: widget.shopId,
+                                            res: res,
+                                            shop_name: widget.shopName,
+                                          ).launch(
+                                            context,
+                                            pageRouteAnimation:
+                                                PageRouteAnimation.Slide,
+                                          );
+                                        } else if (widget.shopId == '18') {
+                                          SummaryGCP(
+                                            ageing: res['data']['vehicledata']
+                                                ['vin_no'],
+                                            chassis: res['data']['vehicledata']
+                                                ['chassis_no'],
+                                            model: res['data']['vehicledata']
+                                                ['model'],
+                                            unit_movement_id: res['data']
+                                                    ['unit_movement_id']
+                                                .toString(),
+                                          ).launch(
+                                            context,
+                                            pageRouteAnimation:
+                                                PageRouteAnimation.Slide,
+                                          );
+                                        } else if (widget.shopId == '17') {
+                                          JobCardQuestionsTemplate(
+                                            chasis_no: res['data']
+                                                ['vehicledata']['vin_no'],
+                                            shop_name: 'EOL station',
+                                            station_id: widget.subStationId,
+                                            shop_id: widget.shopId,
+                                            vehicle_id: res['data']
+                                                ['vehicledata']['id'],
+                                            categoryName: widget.shopName,
+                                            vehicle_receiving_item: res['data']
+                                                    ['vehicledata']
+                                                ['vehicle_receiving_item'],
+                                          ).launch(
+                                            context,
+                                            pageRouteAnimation:
+                                                PageRouteAnimation.Slide,
+                                          );
+                                        } else if (res["data"]['unitcheck'] ==
+                                            false) {
+                                          showInDialog(context,
+                                              builder: (context) =>
+                                                  showPosition(
+                                                      errorMessage: res["data"]
+                                                              ['currentposion']
+                                                          .toString()),
+                                              dialogAnimation: DialogAnimation
+                                                  .SLIDE_TOP_BOTTOM);
+                                        } else {
+                                          QcCategories(
+                                            ShopId: widget.shopId,
+                                            res: res,
+                                            shop_name: widget.shopName,
+                                          ).launch(context,
+                                              pageRouteAnimation:
+                                                  PageRouteAnimation.Slide);
+                                        }
+                                      }
                                     });
                                   });
                                 }

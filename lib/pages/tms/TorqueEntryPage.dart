@@ -465,6 +465,7 @@ class _TorqueEntryPageState extends State<TorqueEntryPage>
       "torque_values": newTorqueValues,
     };
 
+    if (!mounted) return;
     setState(() {
       isLoading2 = true;
     });
@@ -478,11 +479,13 @@ class _TorqueEntryPageState extends State<TorqueEntryPage>
         context,
       );
 
+      if (!mounted) return;
       setState(() {
         isLoading2 = false;
       });
       log(jsonEncode(response));
       if (response != null && response['success'] == true) {
+        if (!mounted) return;
         awesomeTopSnackbar(
           context,
           "${response["msg"]}",
@@ -494,8 +497,9 @@ class _TorqueEntryPageState extends State<TorqueEntryPage>
           backgroundColor: Colors.green,
         );
 
-        Navigator.pop(context);
+        if (mounted) Navigator.pop(context);
       } else {
+        if (!mounted) return;
         awesomeTopSnackbar(
           context,
           "${response?["msg"] ?? "Failed to submit data."}",
@@ -508,6 +512,7 @@ class _TorqueEntryPageState extends State<TorqueEntryPage>
         );
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         isLoading2 = false;
       });
@@ -525,6 +530,7 @@ class _TorqueEntryPageState extends State<TorqueEntryPage>
     } finally {
       // Remove or update this block if 'isLoading2' is not defined elsewhere
       // If you want to use a loading state, define 'isLoading2' as a bool in your state
+      if (!mounted) return;
       setState(() {
         isLoading2 = false;
       });
@@ -1573,13 +1579,38 @@ class _TorqueEntryPageState extends State<TorqueEntryPage>
   }
 
   void submitData2(BuildContext context) async {
+    // Store the scaffold messenger before any async operations
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
+    // Validate that qfl3_id is not empty
+    if (qfl3_id.isEmpty) {
+      if (!mounted) return;
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.error, color: Colors.white),
+              SizedBox(width: 8),
+              Expanded(child: Text("Please select an operation first.")),
+            ],
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+      return;
+    }
+
     // ✅ Create payload for Laravel
     final payload = {
       "qfl3_id": qfl3_id,
     };
-    print(payload);
-    print(torqueEntries);
-    print(payload);
+
+    if (!mounted) return;
     setState(() {
       isLoading2 = true;
     });
@@ -1593,61 +1624,200 @@ class _TorqueEntryPageState extends State<TorqueEntryPage>
         context,
       );
 
+      if (!mounted) return;
       setState(() {
         isLoading2 = false;
       });
+
       log(jsonEncode(response));
+
       if (response != null && response['success'] == true) {
-        awesomeTopSnackbar(
-          context,
-          "${response["msg"]}",
-          iconWithDecoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(),
-            color: Colors.white,
+        if (!mounted) return;
+
+        // Show success message
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 8),
+                Expanded(child: Text("${response["msg"]}")),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            duration: Duration(seconds: 2),
           ),
-          backgroundColor: Colors.green,
         );
 
-        Navigator.pop(context);
+        // Wait for snackbar to show then navigate
+        Future.delayed(Duration(milliseconds: 2500), () {
+          if (mounted) navigator.pop();
+        });
       } else {
-        awesomeTopSnackbar(
-          context,
-          "${response?["msg"] ?? "Failed to submit data."}",
-          iconWithDecoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(),
-            color: Colors.white,
+        if (!mounted) return;
+
+        // Show error message
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.error, color: Colors.white),
+                SizedBox(width: 8),
+                Expanded(
+                    child: Text(
+                        "${response?["msg"] ?? "Failed to complete operation."}")),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            duration: Duration(seconds: 3),
           ),
-          backgroundColor: Colors.red,
         );
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         isLoading2 = false;
       });
-      debugPrint("❌ Error during saveData: $e");
-      awesomeTopSnackbar(
-        context,
-        "Something went wrong. Please try again.",
-        iconWithDecoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(),
-          color: Colors.white,
-        ),
-        backgroundColor: Colors.red,
-      );
+      debugPrint("❌ Error during completeQfl3: $e");
+
+      if (mounted) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.error, color: Colors.white),
+                SizedBox(width: 8),
+                Expanded(
+                    child: Text(
+                        "Network error. Please check your connection and try again.")),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
     } finally {
-      // Remove or update this block if 'isLoading2' is not defined elsewhere
-      // If you want to use a loading state, define 'isLoading2' as a bool in your state
+      if (!mounted) return;
       setState(() {
         isLoading2 = false;
       });
-      setState(() {
-        selectedOperation = null;
-        torqueEntries = [TorqueItem()];
-      });
+
+      // Reset form state only on success
+      if (mounted) {
+        setState(() {
+          selectedOperation = null;
+          torqueEntries = [TorqueItem()];
+          qfl3_id = '';
+        });
+      }
     }
+  }
+
+  void _showMessageDialog(BuildContext context, String message, bool isSuccess,
+      {VoidCallback? onOkPressed}) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: Colors.white,
+          title: Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: isSuccess
+                    ? [Colors.green.shade400, Colors.green.shade600]
+                    : [Colors.red.shade400, Colors.red.shade600],
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    isSuccess ? Icons.check_circle : Icons.error,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+                SizedBox(width: 12),
+                Text(
+                  isSuccess ? 'Success' : 'Error',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    fontSize: 18,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          content: Container(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Text(
+              message,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey.shade700,
+                height: 1.4,
+              ),
+            ),
+          ),
+          actionsPadding: const EdgeInsets.all(16),
+          actions: [
+            Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: isSuccess
+                      ? [Colors.green.shade400, Colors.green.shade600]
+                      : [Colors.red.shade400, Colors.red.shade600],
+                ),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                ),
+                onPressed:
+                    onOkPressed ?? () => Navigator.of(dialogContext).pop(),
+                icon: Icon(Icons.check, color: Colors.white),
+                label: Text(
+                  'OK',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 }
 

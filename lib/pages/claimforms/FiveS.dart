@@ -43,7 +43,7 @@ class Document {
       documentCreationDate: json['document_creation_date'].toString(),
       documentRef: json['document_ref'].toString(),
       revision: json['revision'].toString(),
-      createdBy: json['created_by'].toString(),
+      createdBy: json['created_by']['name'].toString(),
       items:
           (json['items'] as List).map((item) => Item.fromJson(item)).toList(),
     );
@@ -68,8 +68,8 @@ class Item {
   factory Item.fromJson(Map<String, dynamic> json) {
     return Item(
       fiveSId: json['id'],
-      category: json['category'],
-      physicalCondition: json['physical_condition'],
+      category: json['five_s_items_setting']['setting']['name'],
+      physicalCondition: json['five_s_items_setting']['item_name'],
       score: json['score'],
       comments: json['comments'],
     );
@@ -86,17 +86,30 @@ class DocumentListPage extends StatefulWidget {
 }
 
 class _DocumentListPageState extends State<DocumentListPage> {
-  late Future<List<Document>> futureDocuments;
+  Future<List<Document>>? futureDocuments;
   var user = {};
+  List<Document> allDocuments = [];
+  List<Document> filteredDocuments = [];
+  DateTime? selectedDate;
+
   @override
   void initState() {
     super.initState();
-    getuserdata().then((value) {
+    _initializeData();
+  }
+
+  Future<void> _initializeData() async {
+    try {
+      final userData = await getuserdata();
       setState(() {
-        user = jsonDecode(value);
+        user = jsonDecode(userData);
+        futureDocuments = fetchDocuments();
       });
-      futureDocuments = fetchDocuments();
-    });
+    } catch (e) {
+      setState(() {
+        futureDocuments = Future.error('Failed to load user data');
+      });
+    }
   }
 
   Future<List<Document>> fetchDocuments() async {
@@ -111,10 +124,79 @@ class _DocumentListPageState extends State<DocumentListPage> {
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       final List docs = data['data'];
-      return docs.map((json) => Document.fromJson(json)).toList();
+      final documents = docs.map((json) => Document.fromJson(json)).toList();
+
+      // Store all documents and apply current filter
+      allDocuments = documents;
+      _applyDateFilter();
+
+      return filteredDocuments;
     } else {
       throw Exception('Failed to load documents');
     }
+  }
+
+  void _applyDateFilter() {
+    if (selectedDate == null) {
+      filteredDocuments = List.from(allDocuments);
+    } else {
+      filteredDocuments = allDocuments.where((document) {
+        try {
+          final documentDate = DateTime.parse(document.date);
+          final documentDateOnly =
+              DateTime(documentDate.year, documentDate.month, documentDate.day);
+          final filterDate = DateTime(
+              selectedDate!.year, selectedDate!.month, selectedDate!.day);
+
+          return documentDateOnly.isAtSameMomentAs(filterDate);
+        } catch (e) {
+          return false;
+        }
+      }).toList();
+    }
+  }
+
+  void _showDatePicker() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: selectedDate ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: mycolor,
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null && picked != selectedDate) {
+      setState(() {
+        selectedDate = picked;
+        _applyDateFilter();
+        futureDocuments = Future.value(filteredDocuments);
+      });
+    }
+  }
+
+  void _clearDateFilter() {
+    setState(() {
+      selectedDate = null;
+      _applyDateFilter();
+      futureDocuments = Future.value(filteredDocuments);
+    });
+  }
+
+  String _formatSelectedDate() {
+    if (selectedDate == null) return '';
+    return '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}';
   }
 
   @override
@@ -142,9 +224,7 @@ class _DocumentListPageState extends State<DocumentListPage> {
                 builder: (_) => FiveSAuditPage(),
               ),
             ).then((result) {
-              setState(() {
-                futureDocuments = fetchDocuments();
-              });
+              _initializeData();
             });
           },
           backgroundColor: theme.primaryColor,
@@ -164,14 +244,45 @@ class _DocumentListPageState extends State<DocumentListPage> {
         ),
       ),
       appBar: AppBar(
-        title: const Text(
-          '5S Audit Records',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
-          ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '5S Audit Records',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
+              ),
+            ),
+            if (selectedDate != null)
+              Text(
+                _formatSelectedDate(),
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.normal,
+                ),
+              ),
+          ],
         ),
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(
+              selectedDate != null
+                  ? Icons.filter_list
+                  : Icons.filter_list_outlined,
+              color: selectedDate != null ? mycolor : null,
+            ),
+            onPressed: _showDatePicker,
+            tooltip: 'Filter by date',
+          ),
+          if (selectedDate != null)
+            IconButton(
+              icon: const Icon(Icons.clear),
+              onPressed: _clearDateFilter,
+              tooltip: 'Clear filter',
+            ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(
@@ -188,36 +299,42 @@ class _DocumentListPageState extends State<DocumentListPage> {
           ),
         ),
       ),
-      body: FutureBuilder<List<Document>>(
-        future: futureDocuments,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return _buildLoadingState();
-          } else if (snapshot.hasError) {
-            return _buildErrorState();
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return _buildEmptyState();
-          }
+      body: futureDocuments == null
+          ? _buildLoadingState()
+          : FutureBuilder<List<Document>>(
+              future: futureDocuments,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return _buildLoadingState();
+                } else if (snapshot.hasError) {
+                  return _buildErrorState();
+                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  // Check if we have data but filter resulted in empty list
+                  if (allDocuments.isNotEmpty && selectedDate != null) {
+                    return _buildNoFilterResultsState();
+                  }
+                  return _buildEmptyState();
+                }
 
-          final documents = snapshot.data!;
-          return Column(
-            children: [
-              // _buildStatsHeader(documents),
-              Expanded(
-                child: ListView.builder(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  itemCount: documents.length,
-                  itemBuilder: (context, index) {
-                    final doc = documents[index];
-                    return _buildDocumentCard(context, doc, index);
-                  },
-                ),
-              ),
-            ],
-          );
-        },
-      ),
+                final documents = snapshot.data!;
+                return Column(
+                  children: [
+                    // _buildStatsHeader(documents),
+                    Expanded(
+                      child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        itemCount: documents.length,
+                        itemBuilder: (context, index) {
+                          final doc = documents[index];
+                          return _buildDocumentCard(context, doc, index);
+                        },
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
     );
   }
 
@@ -288,9 +405,7 @@ class _DocumentListPageState extends State<DocumentListPage> {
             const SizedBox(height: 32),
             ElevatedButton.icon(
               onPressed: () {
-                setState(() {
-                  futureDocuments = fetchDocuments();
-                });
+                _initializeData();
               },
               icon: const Icon(Icons.refresh_rounded),
               label: const Text('Try Again'),
@@ -361,9 +476,7 @@ class _DocumentListPageState extends State<DocumentListPage> {
                     builder: (_) => FiveSAuditPage(),
                   ),
                 ).then((result) {
-                  setState(() {
-                    futureDocuments = fetchDocuments();
-                  });
+                  _initializeData();
                 });
               },
               icon: const Icon(Icons.add_circle_outline),
@@ -378,6 +491,51 @@ class _DocumentListPageState extends State<DocumentListPage> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoFilterResultsState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.search_off_outlined,
+              size: 80,
+              color: Colors.grey.shade400,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No audits found for selected date',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Try selecting a different date',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade500,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: _clearDateFilter,
+              icon: const Icon(Icons.clear),
+              label: const Text('Clear Filter'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: mycolor,
+                foregroundColor: Colors.white,
               ),
             ),
           ],
@@ -780,7 +938,7 @@ class DocumentDetailPage extends StatelessWidget {
             const SizedBox(height: 16),
 
             // Items Section
-            // _buildItemsSection(),
+            _buildItemsSection(),
           ],
         ),
       ),
