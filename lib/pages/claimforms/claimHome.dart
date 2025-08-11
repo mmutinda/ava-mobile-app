@@ -244,7 +244,7 @@ class _ClaimHomeState extends State<ClaimHome> {
         },
         Uri.parse('${Api.api_url}loadClaim/General_Calim'),
       );
-      print('${Api.api_url}loadClaim/General_Calimaim');
+      print('${Api.api_url}loadClaim/General_Calim');
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['success'] == true) {

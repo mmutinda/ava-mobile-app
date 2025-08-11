@@ -515,28 +515,6 @@ class _QFLThreeDetailsState extends State<QFLThreeDetails> {
                         blurRadius: 2,
                       ),
                     ])),
-            Text('Model: ${widget.project_model_Variant}',
-                style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    color: Colors.white,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black.withOpacity(0.3),
-                        offset: Offset(0, 1),
-                        blurRadius: 2,
-                      ),
-                    ])),
-            Text('Audit Line: ${widget.audit_line}',
-                style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    color: Colors.white,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black.withOpacity(0.3),
-                        offset: Offset(0, 1),
-                        blurRadius: 2,
-                      ),
-                    ])),
           ],
         ),
         actions: [
