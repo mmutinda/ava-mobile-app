@@ -7,7 +7,6 @@ import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/loader.dart';
-import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:top_snackbar_flutter/custom_snack_bar.dart';
 import 'package:top_snackbar_flutter/top_snack_bar.dart';
@@ -348,6 +347,7 @@ class FormContentState extends State<FormContent> {
       var data = {
         "username": email,
         "password": password,
+        "user_type": 'App User'
       };
 
       var responsedata = await httppost(loginurl, data, context);
@@ -386,8 +386,8 @@ class FormContentState extends State<FormContent> {
       Navigator.pop(context);
       showTopSnackBar(
         Overlay.of(context),
-        CustomSnackBar.success(
-          message: "${e.toString()}",
+        CustomSnackBar.error(
+          message: "Something went wrong, please try again.",
         ),
       );
     }

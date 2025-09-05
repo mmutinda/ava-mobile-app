@@ -185,8 +185,6 @@ class _QCDefectsUnitState extends State<QCDefectsUnit> {
                                 Row(
                                   children: [
                                     Text('lOT: ${vehicles[index].lot}'),
-                                    width(),
-                                    Text('JOB: ${vehicles[index].job}'),
                                   ],
                                 ),
                               ],

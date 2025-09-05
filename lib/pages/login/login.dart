@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/logo.dart';
 import 'form_content.dart';
 
@@ -10,7 +9,6 @@ class Login extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isSmallScreen = MediaQuery.of(context).size.width < 600;
-
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       body: Container(

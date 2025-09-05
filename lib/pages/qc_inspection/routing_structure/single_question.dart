@@ -73,6 +73,15 @@ class _SingleQuestionState extends State<SingleQuestion>
   bool _isScanned = false; // Track if scanning is completed
   String? _scannedData; // Store scanned data
   bool _scanningRequired = false; // Track if scanning is required
+  bool _claimCaptured = false; // Track if claim has been captured
+
+  // Store claim data for editing
+  String _claimDescription = '';
+  String _claimPartNo = '';
+  String? _claimCategory;
+  String? _claimType;
+  String? _claimClassification;
+  File? _claimImage;
 
   // Defect categories data
   final List<Map<String, String>> defectCategories = [
@@ -84,13 +93,26 @@ class _SingleQuestionState extends State<SingleQuestion>
 
   @override
   bool get wantKeepAlive => true;
+
+  // Helper method to validate defect category
+  String? _validateDefectCategory(String? category) {
+    if (category == null) return null;
+
+    // Check if the category exists in our defectCategories list
+    bool exists =
+        defectCategories.any((cat) => cat['classification'] == category);
+    return exists ? category : null;
+  }
+
   @override
   void initState() {
     super.initState();
     inputController = TextEditingController(text: widget.initialDecripValue);
     inputController.addListener(_handleValueChanged);
+
+    // Validate and set initial defect category
     selectedDefectCategory =
-        widget.initialDefectCategory; // Initialize defect category
+        _validateDefectCategory(widget.initialDefectCategory);
 
     // Check if scanning is required
     _scanningRequired =
@@ -282,7 +304,138 @@ class _SingleQuestionState extends State<SingleQuestion>
         ),
       ),
     );
-  } // Helper method to clean HTML tags from instruction text
+  }
+
+  // Method to show dialog asking for scan or manual entry
+  Future<void> _showScanOptionDialog() async {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            'Choose Input Method',
+            style: TextStyle(
+              color: mycolor,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content:
+              Text('How would you like to input the ${widget.parts_to_scan}?'),
+          actions: [
+            TextButton.icon(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _startScanning(); // Start camera scanning
+              },
+              icon: Icon(Icons.qr_code_scanner, color: mycolor),
+              label: Text(
+                'Scan Barcode',
+                style: TextStyle(color: mycolor),
+              ),
+            ),
+            TextButton.icon(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _showManualEntryDialog(); // Show manual entry dialog
+              },
+              icon: Icon(Icons.keyboard, color: mycolor),
+              label: Text(
+                'Manual Entry',
+                style: TextStyle(color: mycolor),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Method to show manual entry dialog
+  Future<void> _showManualEntryDialog() async {
+    TextEditingController controller = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            'Manual Entry',
+            style: TextStyle(
+              color: mycolor,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Enter ${widget.parts_to_scan} manually:'),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: controller,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: 'Enter ${widget.parts_to_scan}',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.edit, color: mycolor),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                if (controller.text.isNotEmpty) {
+                  setState(() {
+                    _isScanned = true;
+                    _scannedData = controller.text;
+
+                    // Compare manual entry with scandata
+                    String expectedData = '';
+                    if (widget.scandata is Map) {
+                      expectedData = widget.scandata['code'] ??
+                          widget.scandata['data'] ??
+                          widget.scandata.toString();
+                    } else if (widget.scandata is String) {
+                      expectedData = widget.scandata;
+                    } else {
+                      expectedData = widget.scandata?.toString() ?? '';
+                    }
+
+                    if (_scannedData == expectedData) {
+                      okay = "OK";
+                      widget.onValueChanged("OK");
+                    } else {
+                      okay = "NOK";
+                      widget.onValueChanged("NOK");
+                    }
+                  });
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: mycolor,
+              ),
+              child: Text(
+                'Submit',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Helper method to clean HTML tags from instruction text
 
   String _cleanHtmlTags(String htmlString) {
     RegExp exp = RegExp(r"<[^>]*>", multiLine: true, caseSensitive: true);
@@ -533,7 +686,7 @@ class _SingleQuestionState extends State<SingleQuestion>
                         Container(
                           width: double.infinity,
                           child: ElevatedButton.icon(
-                            onPressed: _startScanning,
+                            onPressed: _showScanOptionDialog,
                             icon: Icon(Icons.qr_code_scanner,
                                 color: Colors.white),
                             label: Text(
@@ -728,11 +881,40 @@ class _SingleQuestionState extends State<SingleQuestion>
                             onChanged: (widget.initialRadioValue != null ||
                                     (_scanningRequired))
                                 ? null
-                                : (value) {
-                                    setState(() {
-                                      okay = value!;
+                                : (value) async {
+                                    if (value == "NOK") {
+                                      // Show issue dialog
+                                      final result = await showDialog<
+                                          Map<String, dynamic>?>(
+                                        context: context,
+                                        barrierDismissible: true,
+                                        builder: (context) =>
+                                            const IssueDialog(),
+                                      );
+
+                                      if (result != null) {
+                                        setState(() {
+                                          okay = value!;
+                                          _claimCaptured = true;
+                                          // Store claim data
+                                          _claimDescription =
+                                              result['description'] ?? '';
+                                          _claimPartNo = result['partNo'] ?? '';
+                                          _claimCategory = result['category'];
+                                          _claimType = result['type'];
+                                          _claimClassification =
+                                              result['classification'];
+                                          _claimImage = result['image'];
+                                        });
+                                        widget.onValueChanged(okay!);
+                                      }
+                                    } else {
+                                      setState(() {
+                                        okay = value!;
+                                        _claimCaptured = false;
+                                      });
                                       widget.onValueChanged(okay!);
-                                    });
+                                    }
                                   },
                             activeColor: Colors.red,
                             materialTapTargetSize:
@@ -757,6 +939,82 @@ class _SingleQuestionState extends State<SingleQuestion>
                     ),
                   ],
                 ),
+
+                // Claim captured indicator
+                if (_claimCaptured)
+                  GestureDetector(
+                    onTap: () async {
+                      // Show issue dialog for editing
+                      final result = await showDialog<Map<String, dynamic>?>(
+                        context: context,
+                        barrierDismissible: true,
+                        builder: (context) => IssueDialog(
+                          initialDescription: _claimDescription,
+                          initialPartNo: _claimPartNo,
+                          initialCategory: _claimCategory,
+                          initialType: _claimType,
+                          initialClassification: _claimClassification,
+                          initialImage: _claimImage,
+                        ),
+                      );
+
+                      if (result != null) {
+                        setState(() {
+                          // Update stored claim data
+                          _claimDescription = result['description'] ?? '';
+                          _claimPartNo = result['partNo'] ?? '';
+                          _claimCategory = result['category'];
+                          _claimType = result['type'];
+                          _claimClassification = result['classification'];
+                          _claimImage = result['image'];
+                        });
+
+                        // Claim updated successfully
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Claim updated successfully'),
+                            backgroundColor: Colors.green,
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.only(top: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade50,
+                        border: Border.all(color: Colors.green.shade300),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.edit,
+                            color: Colors.green.shade600,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 6),
+                          Icon(
+                            Icons.check_circle,
+                            color: Colors.green.shade600,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Claim captured',
+                            style: TextStyle(
+                              color: Colors.green.shade700,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
 
                 // Warning message when scanning is required but not completed
                 if (_scanningRequired && !_isScanned)
@@ -815,7 +1073,8 @@ class _SingleQuestionState extends State<SingleQuestion>
                           border: Border.all(color: Colors.red.shade200),
                         ),
                         child: DropdownButtonFormField<String>(
-                          value: selectedDefectCategory,
+                          value:
+                              _validateDefectCategory(selectedDefectCategory),
                           decoration: InputDecoration(
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 12,
@@ -1389,5 +1648,558 @@ class _SingleQuestionState extends State<SingleQuestion>
         ],
       ),
     );
+  }
+}
+
+class IssueDialog extends StatefulWidget {
+  final String? initialDescription;
+  final String? initialPartNo;
+  final String? initialCategory;
+  final String? initialType;
+  final String? initialClassification;
+  final File? initialImage;
+
+  const IssueDialog({
+    Key? key,
+    this.initialDescription,
+    this.initialPartNo,
+    this.initialCategory,
+    this.initialType,
+    this.initialClassification,
+    this.initialImage,
+  }) : super(key: key);
+
+  @override
+  State<IssueDialog> createState() => _IssueDialogState();
+}
+
+class _IssueDialogState extends State<IssueDialog>
+    with SingleTickerProviderStateMixin {
+  final _issueDescriptionController = TextEditingController();
+  final _partNoController = TextEditingController();
+  File? _imageFile;
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _fadeAnimation;
+  bool _isSubmitting = false; // Add loading state
+
+  String? _selectedIssueCategory;
+  String? _selectedIssueType;
+  String? _selectedDefectClassification;
+
+  final List<String> _issueCategories = [
+    'Process Issues',
+    'Part Handling',
+    'Paint Issues',
+    'KDQR',
+    'MMO',
+  ];
+
+  final Map<String, List<String>> _issueCategoriesAndTypes = {
+    'Process Issues': [
+      'LOOSE PART',
+      'MISALIGNED PARTS',
+      'EXCESS/LESS WORKING FLUIDS',
+      'WRONG ROUTING',
+      'POORLY FITTED PART',
+      'MISSING INSPECTION MARKS',
+      'MISSING DOCUMENTS',
+      'INCOMPLETE PROCESS',
+      'LESS PRESSURE',
+      'TEMPORALY FITTED PART',
+      'ABS LIGHT ON',
+      'PART NOT FITTED',
+      'ALTERNATIVE PART',
+      'OVER TORQUE',
+      'INCOMPLETE WELDS',
+      'MISSING PART',
+      'DAMAGED PART',
+      'WARNING LIGHT',
+      'WRONG PART FITTED',
+      'LARGE GAPS',
+      'WELD SPOTS',
+      'WRONG DOCUMENTATION',
+      'POROSITY',
+      'UNDER TORQUE',
+      'WELD UNDERCUTS',
+      'POOR PUNCHING',
+      'Jig Missing',
+      'ROBBED',
+      'FAULTY MACHINE',
+    ],
+    'Part Handling': [
+      'SCRATCHES',
+      'DENTS',
+      'DIRT MARKS',
+      'STRAY MARKS',
+      'STAIN MARKS',
+    ],
+    'Paint Issues': [
+      'DEBRIS',
+      'OVERFLOW',
+      'PINHOLES',
+      'ORANGE PEELS',
+      'COLOUR MISMATCH',
+      'PAINT BLISS',
+      'LESS PAINT',
+      'PAINT BARE AREA',
+      'PVC PEEL OFF',
+      'PAINT OVERSPRAY',
+      'DRY PAINT',
+      'PAINT PEEL OFF',
+      'POORLY PAINTED',
+      'DAMAGED SEALER',
+      'DAMAGED PVC',
+      'PVC OVERSPRAY',
+      'WET PAINT',
+    ],
+    'KDQR': [
+      'PART QUALITY',
+      'WS-WRONG SHIPMENT',
+      'SS-SHORT SHIPMENT',
+      'PROGRAMMING/SERVER',
+      'FAULTY PART',
+      'SCRATCHES',
+      'DEBRIS',
+      'ME-MANUFACTURER ERROR',
+      'WRONG PART',
+      'NS-NOT SUPPLIED',
+    ],
+    'MMO': [
+      'LD-LINE DAMAGE',
+      'LL-LINE LOSS',
+      'RUST',
+    ],
+  };
+
+  final List<String> _defectClassifications = [
+    'A-Critical',
+    'B- Major',
+    'C-Minor',
+    'D-Cosmetic',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Initialize with provided data
+    _issueDescriptionController.text = widget.initialDescription ?? '';
+    _partNoController.text = widget.initialPartNo ?? '';
+    _selectedIssueCategory = widget.initialCategory;
+    _selectedIssueType = widget.initialType;
+    _selectedDefectClassification = widget.initialClassification;
+    _imageFile = widget.initialImage;
+
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 0.7, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOutBack),
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    _partNoController.dispose();
+    _issueDescriptionController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return WillPopScope(
+        onWillPop: () async {
+          // Allow back button to work unless submitting
+          return !_isSubmitting;
+        },
+        child: ScaleTransition(
+          scale: _scaleAnimation,
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: AlertDialog(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+              elevation: 8,
+              backgroundColor: Colors.white,
+              contentPadding: EdgeInsets.zero,
+              content: SingleChildScrollView(
+                child: Container(
+                  width: double.maxFinite,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Simple header
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: mycolor,
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(16),
+                            topRight: Radius.circular(16),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.warning_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Report Issue',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Content area
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildSimpleTextField(
+                              controller: _issueDescriptionController,
+                              label: 'Issue Description',
+                              hint: 'Describe the issue',
+                              maxLines: 3,
+                            ),
+                            SizedBox(height: 16),
+                            _buildSimpleTextField(
+                              controller: _partNoController,
+                              label: 'Part Number',
+                              hint: 'Enter part number',
+                            ),
+                            SizedBox(height: 16),
+                            _buildSimpleDropdown(
+                              label: 'Issue Category',
+                              value: _selectedIssueCategory,
+                              items: _issueCategories,
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedIssueCategory = value;
+                                  _selectedIssueType = null;
+                                });
+                              },
+                            ),
+                            if (_selectedIssueCategory != null) ...[
+                              SizedBox(height: 16),
+                              _buildSimpleDropdown(
+                                label: 'Issue Type',
+                                value: _selectedIssueType,
+                                items: _issueCategoriesAndTypes[
+                                        _selectedIssueCategory] ??
+                                    [],
+                                onChanged: (value) {
+                                  setState(() {
+                                    _selectedIssueType = value;
+                                  });
+                                },
+                              ),
+                            ],
+                            SizedBox(height: 16),
+                            _buildSimpleDropdown(
+                              label: 'Classification',
+                              value: _selectedDefectClassification,
+                              items: _defectClassifications,
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedDefectClassification = value;
+                                });
+                              },
+                            ),
+
+                            SizedBox(height: 20),
+
+                            // Camera button
+                            Container(
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: mycolor),
+                              ),
+                              child: TextButton.icon(
+                                onPressed: _pickImage,
+                                icon: Icon(Icons.camera_alt, color: mycolor),
+                                label: Text(
+                                  'Take Picture',
+                                  style: TextStyle(
+                                    color: mycolor,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                style: TextButton.styleFrom(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 12),
+                                ),
+                              ),
+                            ),
+
+                            // Image preview
+                            if (_imageFile != null)
+                              Container(
+                                margin: const EdgeInsets.only(top: 12),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.file(
+                                    _imageFile!,
+                                    height: 120,
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+
+                            const SizedBox(height: 24),
+
+                            // Action buttons
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextButton(
+                                    onPressed: _isSubmitting
+                                        ? null
+                                        : () => Navigator.pop(context, null),
+                                    style: TextButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 12),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        side: BorderSide(
+                                            color: _isSubmitting
+                                                ? Colors.grey.shade300
+                                                : Colors.grey.shade400),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'Cancel',
+                                      style: TextStyle(
+                                        color: _isSubmitting
+                                            ? Colors.grey.shade400
+                                            : Colors.grey.shade600,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed: _isSubmitting
+                                        ? null
+                                        : () => _submitForm(context),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor:
+                                          _isSubmitting ? Colors.grey : mycolor,
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 12),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    child: _isSubmitting
+                                        ? const SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(
+                                              color: Colors.white,
+                                              strokeWidth: 2,
+                                            ),
+                                          )
+                                        : const Text(
+                                            'Submit',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ));
+  }
+
+  Widget _buildSimpleTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    int maxLines = 1,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[700],
+          ),
+        ),
+        SizedBox(height: 6),
+        TextField(
+          controller: controller,
+          maxLines: maxLines,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(color: Colors.grey[400]),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: mycolor, width: 2),
+            ),
+            filled: true,
+            fillColor: Colors.grey.shade50,
+            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSimpleDropdown({
+    required String label,
+    required String? value,
+    required List<String> items,
+    required Function(String?) onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[700],
+          ),
+        ),
+        SizedBox(height: 6),
+        DropdownButtonFormField<String>(
+          value: value,
+          decoration: InputDecoration(
+            hintText: 'Select $label',
+            hintStyle: TextStyle(color: Colors.grey[400]),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: mycolor, width: 2),
+            ),
+            filled: true,
+            fillColor: Colors.grey.shade50,
+            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          ),
+          items: items.map((String item) {
+            return DropdownMenuItem<String>(
+              value: item,
+              child: Text(
+                item,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[700],
+                ),
+              ),
+            );
+          }).toList(),
+          onChanged: onChanged,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final image = await picker.pickImage(source: ImageSource.camera);
+    if (image != null) {
+      setState(() => _imageFile = File(image.path));
+    }
+  }
+
+  void _submitForm(BuildContext context) async {
+    // Prevent multiple submissions
+    if (_isSubmitting) return;
+
+    // Basic validation
+    if (_issueDescriptionController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please enter issue description'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Set loading state
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      // Simulate processing delay (you can remove this in production)
+      await Future.delayed(Duration(milliseconds: 500));
+
+      // Return claim data to indicate successful submission
+      final claimData = {
+        'description': _issueDescriptionController.text.trim(),
+        'partNo': _partNoController.text.trim(),
+        'category': _selectedIssueCategory,
+        'type': _selectedIssueType,
+        'classification': _selectedDefectClassification,
+        'image': _imageFile,
+      };
+
+      Navigator.pop(context, claimData);
+    } catch (e) {
+      // Reset loading state on error
+      setState(() {
+        _isSubmitting = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error submitting claim. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }

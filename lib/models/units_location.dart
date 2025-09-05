@@ -79,12 +79,12 @@ class UnitsLocationResponse {
       lot: vehicle.lotNo,
       created_at: vehicle.createdAt,
       job: vehicle.jobNo,
-      vehicle_line: vehicle.vehicleLine,
       route: vehicle.route.toString(),
       component_moved: vehicle.componentMoved.toString(),
       cabin_cockpit_moved: vehicle.cabinCockpitMoved.toString(),
       chasis_moved: vehicle.chasisMoved.toString(),
       unitRemaining: vehicle.componentMoved.toString(),
+      vehicle_line: vehicle.vehicleLine,
     );
   }
 

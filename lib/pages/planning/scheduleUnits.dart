@@ -8,7 +8,6 @@ import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/models/qc_inpection.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/chooseComponent.dart';
-import 'package:nb_utils/nb_utils.dart';
 
 class SCheduleUnits extends StatefulWidget {
   final view;
@@ -104,6 +103,262 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
     }
   }
 
+  // Method to show unit details dialog
+  void _showUnitDetailsDialog(Vehicle vehicle) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            constraints: BoxConstraints(maxWidth: 400, maxHeight: 600),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Container(
+                  padding: EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: mycolor,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Unit Details',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: Icon(Icons.close, color: Colors.white),
+                        padding: EdgeInsets.zero,
+                        constraints: BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Content
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // VIN Section
+                        _buildDetailRow(
+                          'VIN Number',
+                          vehicle.vin,
+                          Icons.qr_code_2,
+                          Colors.blue,
+                        ),
+                        SizedBox(height: 16),
+
+                        // Model Section
+                        _buildDetailRow(
+                          'Model',
+                          vehicle.model,
+                          Icons.directions_car,
+                          Colors.orange,
+                        ),
+                        SizedBox(height: 16),
+
+                        // Client Section
+                        _buildDetailRow(
+                          'Client',
+                          vehicle.customer_name ?? 'N/A',
+                          Icons.business,
+                          Colors.green,
+                        ),
+                        SizedBox(height: 16),
+
+                        // Route Section
+                        _buildDetailRow(
+                          'Route',
+                          'Route ${vehicle.route}',
+                          Icons.route,
+                          Colors.purple,
+                        ),
+                        SizedBox(height: 16),
+
+                        // Vehicle Line Section
+                        _buildDetailRow(
+                          'Vehicle Line',
+                          vehicle.vehicle_line,
+                          Icons.linear_scale,
+                          Colors.teal,
+                        ),
+                        SizedBox(height: 16),
+
+                        // LOT Section
+                        _buildDetailRow(
+                          'LOT Number',
+                          vehicle.lot,
+                          Icons.inventory_2,
+                          Colors.amber,
+                        ),
+                        SizedBox(height: 16),
+
+                        // Job Number Section
+                        _buildDetailRow(
+                          'Job Number',
+                          vehicle.job,
+                          Icons.work,
+                          Colors.indigo,
+                        ),
+
+                        // Show additional fields if available from backend
+                        if (vehicle.engine_no != null) ...[
+                          SizedBox(height: 16),
+                          _buildDetailRow(
+                            'Engine Number',
+                            vehicle.engine_no!,
+                            Icons.engineering,
+                            Colors.red,
+                          ),
+                        ],
+
+                        if (vehicle.production_start_date != null) ...[
+                          SizedBox(height: 16),
+                          _buildDetailRow(
+                            'Production Start Date',
+                            vehicle.production_start_date!,
+                            Icons.calendar_today,
+                            Colors.pink,
+                          ),
+                        ],
+
+                        if (vehicle.current_shop != null) ...[
+                          SizedBox(height: 16),
+                          _buildDetailRow(
+                            'Current Shop',
+                            vehicle.current_shop!,
+                            Icons.factory,
+                            Colors.brown,
+                          ),
+                        ],
+
+                        if (vehicle.status != null) ...[
+                          SizedBox(height: 16),
+                          _buildDetailRow(
+                            'Status',
+                            vehicle.status == 0 ? 'In Progress' : 'Completed',
+                            Icons.info,
+                            vehicle.status == 0 ? Colors.orange : Colors.green,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Footer
+                Padding(
+                  padding: EdgeInsets.all(20),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: mycolor,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        'Close',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Helper method to build detail rows
+  Widget _buildDetailRow(
+      String label, String value, IconData icon, Color color) {
+    return Container(
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: color.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Icon(
+              icon,
+              color: color,
+              size: 20,
+            ),
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  value,
+                  style: TextStyle(
+                    color: Colors.black87,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   void dispose() {
     if (isLoading) {
@@ -118,7 +373,7 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
   @override
   Widget build(BuildContext context) {
     vehicles.sort((a, b) =>
-        DateTime.parse(b.created_at).compareTo(DateTime.parse(a.created_at)));
+        DateTime.parse(a.created_at).compareTo(DateTime.parse(b.created_at)));
 
     Widget _buildSearchField() {
       return TextField(
@@ -495,9 +750,10 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
                                       ),
                                       SizedBox(height: 12),
                                       // Status and action row
-                                      if (widget.view == null)
-                                        Row(
-                                          children: [
+                                      Row(
+                                        children: [
+                                          // Show unit remaining status only for scheduled units
+                                          if (widget.view == null)
                                             Expanded(
                                               child: Column(
                                                 crossAxisAlignment:
@@ -518,25 +774,60 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
                                                       UnitRemaining),
                                                 ],
                                               ),
+                                            )
+                                          else
+                                            // For units at line, show different info or just take the space
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    'ACTION',
+                                                    style: TextStyle(
+                                                      color: Colors.grey[600],
+                                                      fontSize: 10,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      letterSpacing: 0.5,
+                                                    ),
+                                                  ),
+                                                  SizedBox(height: 4),
+                                                  Text(
+                                                    'Tap for details',
+                                                    style: TextStyle(
+                                                      color: Colors.grey[500],
+                                                      fontSize: 9,
+                                                      fontStyle:
+                                                          FontStyle.italic,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
                                             ),
-                                            // Professional select button
-                                            Container(
-                                              decoration: BoxDecoration(
-                                                color: mycolor,
+                                          // Professional select/details button
+                                          Container(
+                                            decoration: BoxDecoration(
+                                              color: mycolor,
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                              border: Border.all(
+                                                color: mycolor.withOpacity(0.3),
+                                                width: 1,
+                                              ),
+                                            ),
+                                            child: Material(
+                                              color: Colors.transparent,
+                                              child: InkWell(
                                                 borderRadius:
                                                     BorderRadius.circular(6),
-                                                border: Border.all(
-                                                  color:
-                                                      mycolor.withOpacity(0.3),
-                                                  width: 1,
-                                                ),
-                                              ),
-                                              child: Material(
-                                                color: Colors.transparent,
-                                                child: InkWell(
-                                                  borderRadius:
-                                                      BorderRadius.circular(6),
-                                                  onTap: () {
+                                                onTap: () {
+                                                  if (widget.view != null) {
+                                                    // Show unit details dialog
+                                                    _showUnitDetailsDialog(
+                                                        vehicles[index]);
+                                                  } else {
+                                                    // Original functionality for scheduled units
                                                     showDialog(
                                                       context: context,
                                                       builder: (context) =>
@@ -554,64 +845,46 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
                                                       fetchData();
                                                       setState(() {});
                                                     });
-                                                    // showInDialog(context,
-                                                    //         builder: (context) =>
-                                                    //             ChooseComponent(
-                                                    //               vehicle_id:
-                                                    //                   vehicles[
-                                                    //                           index]
-                                                    //                       .id,
-                                                    //               job_no: vehicles[
-                                                    //                       index]
-                                                    //                   .job,
-                                                    //               route_id:
-                                                    //                   vehicles[
-                                                    //                           index]
-                                                    //                       .route,
-                                                    //             ),
-                                                    //         dialogAnimation:
-                                                    //             DialogAnimation
-                                                    //                 .SCALE)
-                                                    //     .then((value) {
-                                                    //   fetchData();
-                                                    //   setState(() {});
-                                                    // });
-                                                  },
-                                                  child: Container(
-                                                    padding:
-                                                        EdgeInsets.symmetric(
-                                                      horizontal: 12,
-                                                      vertical: 8,
-                                                    ),
-                                                    child: Row(
-                                                      mainAxisSize:
-                                                          MainAxisSize.min,
-                                                      children: [
-                                                        Icon(
-                                                          Icons
-                                                              .assignment_turned_in,
+                                                  }
+                                                },
+                                                child: Container(
+                                                  padding: EdgeInsets.symmetric(
+                                                    horizontal: 12,
+                                                    vertical: 8,
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      Icon(
+                                                        widget.view != null
+                                                            ? Icons.info_outline
+                                                            : Icons
+                                                                .assignment_turned_in,
+                                                        color: Colors.white,
+                                                        size: 14,
+                                                      ),
+                                                      SizedBox(width: 4),
+                                                      Text(
+                                                        widget.view != null
+                                                            ? "DETAILS"
+                                                            : "SELECT",
+                                                        style: TextStyle(
                                                           color: Colors.white,
-                                                          size: 14,
+                                                          fontSize: 11,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          letterSpacing: 0.5,
                                                         ),
-                                                        SizedBox(width: 4),
-                                                        Text(
-                                                          "SELECT",
-                                                          style: TextStyle(
-                                                            color: Colors.white,
-                                                            fontSize: 11,
-                                                            fontWeight:
-                                                                FontWeight.w600,
-                                                            letterSpacing: 0.5,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
+                                                      ),
+                                                    ],
                                                   ),
                                                 ),
                                               ),
                                             ),
-                                          ],
-                                        ),
+                                          ),
+                                        ],
+                                      ),
                                     ],
                                   ),
                                 ),

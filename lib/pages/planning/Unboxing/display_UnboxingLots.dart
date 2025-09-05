@@ -135,15 +135,7 @@ class _display_UnboxingLotsState extends State<display_UnboxingLots>
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(80),
         child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [mycolor.withOpacity(0.8), mycolor],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
           child: AppBar(
-            backgroundColor: Colors.transparent,
             elevation: 0,
             title: _isSearching
                 ? _buildSearchField()
@@ -475,9 +467,8 @@ class _display_UnboxingLotsState extends State<display_UnboxingLots>
   }
 
   Widget _buildVehicleCard(Map vehicle, int index) {
-    var lotNumber = vehicle['lot_number'] ?? 'N/A';
-    var lotQty = vehicle['lot_qty'] ?? 'N/A';
-    var modelName = vehicle['model']?['model_name'] ?? 'Unknown Model';
+    var lotNumber = vehicle['lot_number'] ?? '';
+    var modelName = vehicle['model']?['model_name'] ?? '';
 
     return AnimatedContainer(
       duration: Duration(milliseconds: 300 + (index * 100)),
@@ -624,51 +615,6 @@ class _display_UnboxingLotsState extends State<display_UnboxingLots>
                             const SizedBox(height: 4),
                             Text(
                               lotNumber.toString(),
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.grey.shade800,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Vertical divider
-                      Container(
-                        width: 1,
-                        height: 40,
-                        color: Colors.grey.shade300,
-                      ),
-
-                      const SizedBox(width: 16),
-
-                      // Lot quantity
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.inventory_2,
-                                  size: 16,
-                                  color: Colors.grey.shade600,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'LOT Quantity',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade600,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              lotQty.toString(),
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,

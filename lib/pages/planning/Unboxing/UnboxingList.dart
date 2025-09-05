@@ -116,15 +116,7 @@ class _UnboxingListState extends State<UnboxingList>
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(80),
         child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [mycolor.withOpacity(0.8), mycolor],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
           child: AppBar(
-            backgroundColor: Colors.transparent,
             elevation: 0,
             title: _isSearching
                 ? _buildSearchField()

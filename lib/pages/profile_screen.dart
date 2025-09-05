@@ -30,6 +30,11 @@ class _ProfileTabState extends State<ProfileTab> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    getuserdata().then((value) {
+      setState(() {
+        user = jsonDecode(value);
+      });
+    });
     _animationController = AnimationController(
       duration: Duration(milliseconds: 800),
       vsync: this,
@@ -174,147 +179,193 @@ class _ProfileTabState extends State<ProfileTab> with TickerProviderStateMixin {
 
   void _resetPassword(BuildContext context) {
     showDialog(
-      
       context: context,
       builder: (context) {
+        final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
         final TextEditingController oldPasswordController =
             TextEditingController();
         final TextEditingController newPasswordController =
             TextEditingController();
-        return AlertDialog(
-          
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20.0),
-          ),
-          title: Container(
-            padding: EdgeInsets.symmetric(vertical: 10),
-            child: Row(
-              children: [
+        final TextEditingController new2PasswordController =
+            TextEditingController();
+
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20.0),
+              ),
+              title: Container(
+                padding: EdgeInsets.symmetric(vertical: 10),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [mycolor, mycolor],
+                        ),
+                        shape: BoxShape.circle,
+                      ),
+                      child:
+                          Icon(Icons.lock_reset, color: Colors.white, size: 20),
+                    ),
+                    SizedBox(width: 12),
+                    Text(
+                      "Change Password",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              content: Form(
+                key: _formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        "Update your password by entering the current password and a new one.",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 14, color: Colors.grey),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Old password
+                      _buildPasswordField(
+                        controller: oldPasswordController,
+                        label: "Current Password",
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your current password';
+                          }
+                          if (value.length < 4) {
+                            return 'Password must be at least 4 characters';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // New password
+                      _buildPasswordField(
+                        controller: newPasswordController,
+                        label: "New Password",
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter a new password';
+                          }
+                          if (value.length < 4) {
+                            return 'Password must be at least 4 characters';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Confirm password
+                      _buildPasswordField(
+                        controller: new2PasswordController,
+                        label: "Confirm New Password",
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please confirm your new password';
+                          }
+                          if (value.length < 4) {
+                            return 'Password must be at least 4 characters';
+                          }
+                          if (value != newPasswordController.text) {
+                            return 'Passwords do not match';
+                          }
+                          return null;
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text(
+                    "Cancel",
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ),
                 Container(
-                  padding: EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [mycolor, mycolor],
                     ),
-                    shape: BoxShape.circle,
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(Icons.lock_reset, color: Colors.white, size: 20),
-                ),
-                SizedBox(width: 12),
-                Text(
-                  "Reset Password",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
+                  child: TextButton(
+                    onPressed: () {
+                      if (_formKey.currentState?.validate() ?? false) {
+                        Navigator.pop(context);
+                        reset(
+                          oldPasswordController.text,
+                          newPasswordController.text,
+                          new2PasswordController.text,
+                        );
+                      }
+                    },
+                    child: const Text(
+                      "Update Password",
+                      style: TextStyle(color: Colors.white),
+                    ),
                   ),
                 ),
               ],
-            ),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                "Update your password by entering the current password and a new one.",
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, color: Colors.grey),
-              ),
-              const SizedBox(height: 20),
-              Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
-                      blurRadius: 5,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: TextField(
-                  controller: oldPasswordController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: "Current Password",
-                    filled: true,
-                    fillColor: Colors.grey.shade50,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12.0),
-                      borderSide: BorderSide.none,
-                    ),
-                    prefixIcon: Icon(Icons.lock_outline, color: mycolor),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
-                      blurRadius: 5,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: TextField(
-                  controller: newPasswordController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: "New Password",
-                    filled: true,
-                    fillColor: Colors.grey.shade50,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12.0),
-                      borderSide: BorderSide.none,
-                    ),
-                    prefixIcon: Icon(Icons.lock, color: mycolor),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text(
-                "Cancel",
-                style: TextStyle(color: Colors.grey),
-              ),
-            ),
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    mycolor,
-                    mycolor,
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: TextButton(
-                onPressed: () {
-                  if (oldPasswordController.text.isEmpty ||
-                      newPasswordController.text.isEmpty) {
-                    toasty(context, "Fill the Details",
-                        gravity: ToastGravity.TOP,
-                        bgColor: Colors.red,
-                        textColor: Colors.white);
-                    return;
-                  }
-                  Navigator.pop(context);
-                  reset(oldPasswordController.text, newPasswordController.text);
-                },
-                child: const Text(
-                  "Update Password",
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-            ),
-          ],
+            );
+          },
         );
       },
+    );
+  }
+
+  Widget _buildPasswordField({
+    required TextEditingController controller,
+    required String label,
+    required String? Function(String?) validator,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 5,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: TextFormField(
+        controller: controller,
+        obscureText: true,
+        decoration: InputDecoration(
+          labelText: label,
+          fillColor: Colors.grey.shade50,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade200),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade200),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: mycolor, width: 2),
+          ),
+          prefixIcon: Icon(Icons.lock_outline, color: mycolor),
+        ),
+        validator: validator,
+      ),
     );
   }
 
@@ -325,21 +376,11 @@ class _ProfileTabState extends State<ProfileTab> with TickerProviderStateMixin {
         child: CustomScrollView(
           slivers: [
             SliverAppBar(
-              expandedHeight: 100,
+              // expandedHeight: 100,
               floating: false,
               pinned: true,
               flexibleSpace: FlexibleSpaceBar(
                 background: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        mycolor,
-                        mycolor,
-                      ],
-                    ),
-                  ),
                   child: Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -383,135 +424,140 @@ class _ProfileTabState extends State<ProfileTab> with TickerProviderStateMixin {
                         child: Column(
                           children: [
                             // Profile Picture Section
-                            Container(
-                              padding: EdgeInsets.all(20),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(20),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: mycolor.withOpacity(0.2),
-                                    blurRadius: 5,
-                                    offset: Offset(0, 5),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                children: [
-                                  GestureDetector(
-                                    onTap: _pickImage,
-                                    child: Stack(
-                                      children: [
-                                        Container(
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: mycolor.withOpacity(0.3),
-                                                blurRadius: 10,
-                                                offset: Offset(0, 8),
-                                              ),
-                                            ],
-                                          ),
-                                          child: CircleAvatar(
-                                            radius: 60,
-                                            backgroundColor:
-                                                Colors.grey.shade200,
-                                            backgroundImage:
-                                                _profileImage != null
-                                                    ? FileImage(_profileImage!)
-                                                    : null,
-                                            child: _profileImage == null
-                                                ? Icon(
-                                                    Icons.person,
-                                                    size: 60,
-                                                    color: Colors.grey.shade600,
-                                                  )
-                                                : null,
-                                          ),
-                                        ),
-                                        Positioned(
-                                          bottom: 0,
-                                          right: 0,
-                                          child: Container(
-                                            padding: EdgeInsets.all(8),
+                            Card(
+                              child: Container(
+                                padding: EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                  // boxShadow: [
+                                  //   BoxShadow(
+                                  //     color: mycolor.withOpacity(0.2),
+                                  //     blurRadius: 5,
+                                  //     offset: Offset(0, 5),
+                                  //   ),
+                                  // ],
+                                ),
+                                child: Column(
+                                  children: [
+                                    GestureDetector(
+                                      onTap: _pickImage,
+                                      child: Stack(
+                                        children: [
+                                          Container(
                                             decoration: BoxDecoration(
-                                              gradient: LinearGradient(
-                                                colors: [
-                                                  mycolor,
-                                                  mycolor,
-                                                ],
-                                              ),
                                               shape: BoxShape.circle,
                                               boxShadow: [
                                                 BoxShadow(
-                                                  color:
-                                                      mycolor.withOpacity(0.3),
-                                                  blurRadius: 5,
-                                                  offset: Offset(0, 2),
+                                                  color: Colors.black
+                                                      .withOpacity(0.1),
+                                                  blurRadius: 10,
+                                                  offset: Offset(0, 8),
                                                 ),
                                               ],
                                             ),
-                                            child: Icon(
-                                              Icons.camera_alt,
-                                              color: Colors.white,
-                                              size: 20,
+                                            child: CircleAvatar(
+                                              radius: 60,
+                                              backgroundColor:
+                                                  Colors.grey.shade200,
+                                              backgroundImage: _profileImage !=
+                                                      null
+                                                  ? FileImage(_profileImage!)
+                                                  : null,
+                                              child: _profileImage == null
+                                                  ? Icon(
+                                                      Icons.person,
+                                                      size: 60,
+                                                      color:
+                                                          Colors.grey.shade600,
+                                                    )
+                                                  : null,
                                             ),
+                                          ),
+                                          Positioned(
+                                            bottom: 0,
+                                            right: 0,
+                                            child: Container(
+                                              padding: EdgeInsets.all(8),
+                                              decoration: BoxDecoration(
+                                                gradient: LinearGradient(
+                                                  colors: [
+                                                    mycolor,
+                                                    mycolor,
+                                                  ],
+                                                ),
+                                                shape: BoxShape.circle,
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: mycolor
+                                                        .withOpacity(0.3),
+                                                    blurRadius: 5,
+                                                    offset: Offset(0, 2),
+                                                  ),
+                                                ],
+                                              ),
+                                              child: Icon(
+                                                Icons.camera_alt,
+                                                color: Colors.white,
+                                                size: 20,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    SizedBox(height: 20),
+                                    Text(
+                                      "${user["data"]?["name"] ?? 'User Name'}",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 24,
+                                        color: Colors.grey.shade800,
+                                      ),
+                                    ),
+                                    SizedBox(height: 8),
+                                    Container(
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            mycolor,
+                                            mycolor,
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(15),
+                                      ),
+                                      child: Text(
+                                        "${user["data"]?["email"] ?? 'email@example.com'}",
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(height: 12),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.alternate_email,
+                                          color: Colors.grey.shade600,
+                                          size: 18,
+                                        ),
+                                        SizedBox(width: 6),
+                                        Text(
+                                          "${user["data"]?['username'] ?? 'username'}",
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            color: Colors.grey.shade600,
                                           ),
                                         ),
                                       ],
                                     ),
-                                  ),
-                                  SizedBox(height: 20),
-                                  Text(
-                                    "${user["data"]?["name"] ?? 'User Name'}",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 24,
-                                      color: Colors.grey.shade800,
-                                    ),
-                                  ),
-                                  SizedBox(height: 8),
-                                  Container(
-                                    padding: EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 6),
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          mycolor,
-                                          mycolor,
-                                        ],
-                                      ),
-                                      borderRadius: BorderRadius.circular(15),
-                                    ),
-                                    child: Text(
-                                      "${user["data"]?["email"] ?? 'email@example.com'}",
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(height: 12),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.alternate_email,
-                                        color: Colors.grey.shade600,
-                                        size: 18,
-                                      ),
-                                      SizedBox(width: 6),
-                                      Text(
-                                        "${user["data"]?['username'] ?? 'username'}",
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          color: Colors.grey.shade600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                             SizedBox(height: 30),
@@ -639,7 +685,8 @@ class _ProfileTabState extends State<ProfileTab> with TickerProviderStateMixin {
     );
   }
 
-  void reset(OldpasswordController, passwordController) async {
+  void reset(
+      OldpasswordController, passwordController, new2PasswordController) async {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -671,23 +718,25 @@ class _ProfileTabState extends State<ProfileTab> with TickerProviderStateMixin {
     );
 
     final dataToStore = {
-      'old_password': OldpasswordController,
-      'password': passwordController,
+      'current_password': OldpasswordController,
+      'new_password': passwordController,
+      'new_password_confirmation': new2PasswordController,
     };
 
     print(dataToStore);
 
     try {
-      final url = "${Api.api_url}apichangePassword";
-      var response =
-          await httppostwithtoken(url, user['token'], dataToStore, context);
+      final url = "${Api.api_url}password-change";
+      var response = await httppostwithtoken(
+          url, user['data']['token'], dataToStore, context);
+      log(jsonEncode(response));
       if (response['success']) {
         Navigator.pop(context);
-
         showTopSnackBar(
           Overlay.of(context),
           CustomSnackBar.success(
-            message: "${response['msg']}",
+            message:
+                "${response['msg'] ?? response['message'] ?? 'Something went wrong, please try again.'}",
           ),
         );
         Login().launch(context,
@@ -697,7 +746,8 @@ class _ProfileTabState extends State<ProfileTab> with TickerProviderStateMixin {
         showTopSnackBar(
           Overlay.of(context),
           CustomSnackBar.error(
-            message: "${response['msg']}",
+            message:
+                "${response['msg'] ?? response['message'] ?? 'Something went wrong, please try again.'}",
           ),
         );
       }
@@ -707,7 +757,7 @@ class _ProfileTabState extends State<ProfileTab> with TickerProviderStateMixin {
       showTopSnackBar(
         Overlay.of(context),
         CustomSnackBar.error(
-          message: "${e}",
+          message: "Something went wrong, please try again.",
         ),
       );
     }

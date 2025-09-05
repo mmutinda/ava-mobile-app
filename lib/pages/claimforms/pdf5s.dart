@@ -140,7 +140,7 @@ Future<Uint8List> generatedocumentPdf(Document document) async {
               pw.SizedBox(width: 10),
               pw.Expanded(
                 child: pw.Text(
-                  'AUDITOR: ${_sanitizeText(document.author)}',
+                  'AUDITOR: ${_sanitizeText(document.createdBy)}',
                   style: pw.TextStyle(fontSize: 10),
                 ),
               ),

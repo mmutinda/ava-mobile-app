@@ -1,20 +1,13 @@
 import 'dart:convert';
-import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/pages/claimforms/NearMissForm.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:pdfrx/pdfrx.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:isuze_pqcs/pages/claimforms/nearmisDetails.dart';
 
 class NearMiss {
   final int id;
@@ -85,6 +78,7 @@ class _NearMissListPageState extends State<NearMissListPage> {
   List<NearMiss> _filteredRecords = [];
   bool _isLoading = true;
   String? _errorMessage;
+  Map<String, dynamic>? _bestPerformer;
   @override
   void initState() {
     super.initState();
@@ -101,6 +95,7 @@ class _NearMissListPageState extends State<NearMissListPage> {
               _filteredRecords = records; // Initially no filter, show all
               _isLoading = false;
               _errorMessage = null;
+              _calculateBestPerformer();
             });
           }
         }).catchError((error) {
@@ -322,14 +317,17 @@ class _NearMissListPageState extends State<NearMissListPage> {
       if (mounted) {
         setState(() {
           _allRecords = records;
-          // Apply current filter if any
-          if (_selectedDate != null) {
-            _filterByDate(_selectedDate);
-          } else {
-            _filteredRecords = records;
-          }
+          // Apply current filters if any
+          _applyFilters(
+            date: _selectedDate,
+            category: _selectedCategory,
+            level: _selectedLevel,
+            department: _selectedDepartment,
+          );
           _isLoading = false;
           _errorMessage = null;
+          _calculateBestPerformer();
+          _calculateBestPerformer();
         });
       }
     } catch (e) {
@@ -343,6 +341,26 @@ class _NearMissListPageState extends State<NearMissListPage> {
   }
 
   DateTime? _selectedDate;
+  String? _selectedCategory;
+  String? _selectedLevel;
+  String? _selectedDepartment;
+
+  // Get unique values for filter dropdowns
+  List<String> get _availableCategories {
+    return _allRecords.map((record) => record.category).toSet().toList()
+      ..sort();
+  }
+
+  List<String> get _availableLevels {
+    return _allRecords.map((record) => record.levelOfRisk).toSet().toList()
+      ..sort();
+  }
+
+  List<String> get _availableDepartments {
+    return _allRecords.map((record) => record.department).toSet().toList()
+      ..sort();
+  }
+
   Future<void> _pickDate() async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -352,34 +370,552 @@ class _NearMissListPageState extends State<NearMissListPage> {
     );
 
     if (picked != null) {
-      _filterByDate(picked);
+      _applyFilters(date: picked);
     }
+  }
+
+  void _showFilterBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildFilterBottomSheet(),
+    );
+  }
+
+  Widget _buildFilterBottomSheet() {
+    final theme = Theme.of(context);
+
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.6,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 12,
+            offset: Offset(0, -6),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Drag handle
+          Padding(
+            padding: const EdgeInsets.only(top: 10, bottom: 6),
+            child: Container(
+              width: 40,
+              height: 5,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          ),
+
+          // Header
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Filter Records',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey.shade800,
+                  ),
+                ),
+                if (_hasActiveFilters())
+                  TextButton(
+                    onPressed: () {
+                      _clearFilter();
+                      Navigator.pop(context);
+                    },
+                    style: TextButton.styleFrom(
+                      foregroundColor: theme.primaryColor,
+                      textStyle: TextStyle(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    child: Text('Clear All'),
+                  ),
+              ],
+            ),
+          ),
+
+          Divider(height: 1, color: Colors.grey.shade300),
+
+          // Filter Sections
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildFilterSection(
+                    'Category',
+                    _selectedCategory,
+                    _availableCategories,
+                    Icons.category_outlined,
+                    (value) => _applyFilters(category: value),
+                  ),
+                  const SizedBox(height: 24),
+                  _buildFilterSection(
+                    'Risk Level',
+                    _selectedLevel,
+                    _availableLevels,
+                    Icons.warning_amber_outlined,
+                    (value) => _applyFilters(level: value),
+                  ),
+                  const SizedBox(height: 24),
+                  _buildFilterSection(
+                    'Department',
+                    _selectedDepartment,
+                    _availableDepartments,
+                    Icons.apartment_outlined,
+                    (value) => _applyFilters(department: value),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterSection(
+    String title,
+    String? selectedValue,
+    List<String> options,
+    IconData icon,
+    Function(String?) onChanged,
+  ) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 18, color: theme.primaryColor),
+            SizedBox(width: 8),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade700,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 12),
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: DropdownButtonFormField<String>(
+            value: selectedValue,
+            decoration: InputDecoration(
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              border: InputBorder.none,
+              hintText: 'Select $title',
+              hintStyle: TextStyle(color: Colors.grey.shade500),
+            ),
+            items: [
+              DropdownMenuItem<String>(
+                value: null,
+                child: Text(
+                  'All ${title}s',
+                  style: TextStyle(color: Colors.grey.shade600),
+                ),
+              ),
+              ...options.map((option) => DropdownMenuItem<String>(
+                    value: option,
+                    child: Text(option),
+                  )),
+            ],
+            onChanged: (value) {
+              onChanged(value);
+              Navigator.pop(context);
+            },
+            dropdownColor: Colors.white,
+            style: TextStyle(color: Colors.grey.shade800),
+          ),
+        ),
+      ],
+    );
+  }
+
+  bool _hasActiveFilters() {
+    return _selectedDate != null ||
+        _selectedCategory != null ||
+        _selectedLevel != null ||
+        _selectedDepartment != null;
+  }
+
+  int _getActiveFilterCount() {
+    int count = 0;
+    if (_selectedDate != null) count++;
+    if (_selectedCategory != null) count++;
+    if (_selectedLevel != null) count++;
+    if (_selectedDepartment != null) count++;
+    return count;
+  }
+
+  Widget _buildFilterSummary() {
+    final theme = Theme.of(context);
+    List<Widget> filterChips = [];
+
+    if (_selectedDate != null) {
+      filterChips.add(_buildFilterChip(
+        'Date: ${DateFormat('dd MMM yyyy').format(_selectedDate!)}',
+        () => _applyFilters(date: null),
+        Icons.calendar_today,
+      ));
+    }
+
+    if (_selectedCategory != null) {
+      filterChips.add(_buildFilterChip(
+        'Category: $_selectedCategory',
+        () => _applyFilters(category: null),
+        Icons.category,
+      ));
+    }
+
+    if (_selectedLevel != null) {
+      filterChips.add(_buildFilterChip(
+        'Level: $_selectedLevel',
+        () => _applyFilters(level: null),
+        Icons.warning,
+      ));
+    }
+
+    if (_selectedDepartment != null) {
+      filterChips.add(_buildFilterChip(
+        'Dept: $_selectedDepartment',
+        () => _applyFilters(department: null),
+        Icons.business,
+      ));
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(16),
+      color: theme.primaryColor.withOpacity(0.05),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.filter_alt,
+                size: 16,
+                color: theme.primaryColor,
+              ),
+              SizedBox(width: 6),
+              Text(
+                'Active Filters (${filterChips.length})',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: theme.primaryColor,
+                ),
+              ),
+              Spacer(),
+              TextButton(
+                onPressed: _clearFilter,
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  minimumSize: Size(0, 0),
+                ),
+                child: Text(
+                  'Clear All',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: theme.primaryColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: filterChips,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String label, VoidCallback onRemove, IconData icon) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: theme.primaryColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.primaryColor.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: theme.primaryColor),
+          SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: theme.primaryColor,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          SizedBox(width: 4),
+          GestureDetector(
+            onTap: onRemove,
+            child: Container(
+              padding: EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: theme.primaryColor.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.close,
+                size: 10,
+                color: theme.primaryColor,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _clearFilter() {
-    _filterByDate(null);
+    _applyFilters(date: null, category: null, level: null, department: null);
   }
 
-  void _filterByDate(DateTime? selectedDate) {
-    if (selectedDate == null) {
-      setState(() {
-        _selectedDate = null;
-        _filteredRecords = _allRecords;
-      });
-    } else {
-      print(selectedDate);
-      setState(() {
-        _selectedDate = selectedDate;
-        _filteredRecords = _allRecords.where((record) {
-          // Parse record.date string back to DateTime
-          print(record.date);
-          DateTime recordDate = DateFormat('yyyy-MM-dd').parse(record.date);
-          return recordDate.year == selectedDate.year &&
-              recordDate.month == selectedDate.month &&
-              recordDate.day == selectedDate.day;
-        }).toList();
-      });
+  void _applyFilters({
+    DateTime? date,
+    String? category,
+    String? level,
+    String? department,
+  }) {
+    setState(() {
+      _selectedDate = date;
+      _selectedCategory = category;
+      _selectedLevel = level;
+      _selectedDepartment = department;
+
+      _filteredRecords = _allRecords.where((record) {
+        // Date filter
+        if (_selectedDate != null) {
+          try {
+            DateTime recordDate = DateFormat('yyyy-MM-dd').parse(record.date);
+            if (!(recordDate.year == _selectedDate!.year &&
+                recordDate.month == _selectedDate!.month &&
+                recordDate.day == _selectedDate!.day)) {
+              return false;
+            }
+          } catch (e) {
+            return false;
+          }
+        }
+
+        // Category filter
+        if (_selectedCategory != null && record.category != _selectedCategory) {
+          return false;
+        }
+
+        // Level filter
+        if (_selectedLevel != null && record.levelOfRisk != _selectedLevel) {
+          return false;
+        }
+
+        // Department filter
+        if (_selectedDepartment != null &&
+            record.department != _selectedDepartment) {
+          return false;
+        }
+
+        return true;
+      }).toList();
+    });
+  }
+
+  // Calculate the best performer based on number of near miss reports for the previous month
+  void _calculateBestPerformer() {
+    if (_allRecords.isEmpty) {
+      _bestPerformer = null;
+      return;
     }
+
+    // Get previous month date range
+    DateTime now = DateTime.now();
+    DateTime previousMonth = DateTime(now.year, now.month - 1, 1);
+    DateTime startOfPreviousMonth = DateTime(previousMonth.year, previousMonth.month, 1);
+    DateTime endOfPreviousMonth = DateTime(previousMonth.year, previousMonth.month + 1, 0);
+
+    // Count reports by user for previous month only
+    Map<String, Map<String, dynamic>> userCounts = {};
+
+    for (var record in _allRecords) {
+      try {
+        // Parse the record date
+        DateTime recordDate = DateFormat('yyyy-MM-dd').parse(record.date);
+        
+        // Check if record is from previous month
+        if (recordDate.isAfter(startOfPreviousMonth.subtract(Duration(days: 1))) &&
+            recordDate.isBefore(endOfPreviousMonth.add(Duration(days: 1)))) {
+          
+          String userId = record.createdBy.email;
+
+          if (userCounts.containsKey(userId)) {
+            userCounts[userId]!['count']++;
+          } else {
+            userCounts[userId] = {
+              'count': 1,
+              'name': record.createdBy.name,
+              'email': record.createdBy.email,
+            };
+          }
+        }
+      } catch (e) {
+        // Skip records with invalid dates
+        print("Error parsing date for record ${record.id}: ${record.date}");
+        continue;
+      }
+    }
+
+    // Find the user with the most reports in previous month
+    String? bestUserId;
+    int maxCount = 0;
+
+    userCounts.forEach((userId, userData) {
+      if (userData['count'] > maxCount) {
+        maxCount = userData['count'];
+        bestUserId = userId;
+      }
+    });
+
+    if (bestUserId != null && maxCount > 0) {
+      _bestPerformer = userCounts[bestUserId];
+    } else {
+      _bestPerformer = null;
+    }
+  }
+
+  // Build the best performer banner
+  Widget _buildBestPerformerBanner() {
+    if (_bestPerformer == null || _allRecords.isEmpty) {
+      return SizedBox.shrink();
+    }
+
+    final theme = Theme.of(context);
+
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            theme.primaryColor.withOpacity(0.1),
+            theme.primaryColor.withOpacity(0.05),
+          ],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.primaryColor.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.amber.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(50),
+            ),
+            child: Icon(
+              Icons.emoji_events,
+              color: Colors.amber.shade700,
+              size: 24,
+            ),
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Top Near Miss Reporter - Previous Month',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: theme.primaryColor.withOpacity(0.8),
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  _bestPerformer!['name'],
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey.shade800,
+                  ),
+                ),
+                Text(
+                  '${_bestPerformer!['count']} reports last month',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.amber.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.star,
+                  color: Colors.amber.shade700,
+                  size: 14,
+                ),
+                SizedBox(width: 4),
+                Text(
+                  '#1',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.amber.shade700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -398,7 +934,7 @@ class _NearMissListPageState extends State<NearMissListPage> {
             ),
           ],
         ),
-        child: FloatingActionButton.extended(
+        child: FloatingActionButton(
           foregroundColor: Colors.white,
           backgroundColor: theme.primaryColor,
           elevation: 0,
@@ -409,7 +945,8 @@ class _NearMissListPageState extends State<NearMissListPage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => NearMissFormPage(),
+                builder: (_) => NearMissFormPage(
+                    pfNumber: user['data']['staff_no'] ?? '1'.toString()),
               ),
             ).then((result) async {
               // Reload all records again on add
@@ -419,12 +956,14 @@ class _NearMissListPageState extends State<NearMissListPage> {
                 if (mounted) {
                   setState(() {
                     _allRecords = records;
-                    // Apply current filter if any
-                    if (_selectedDate != null) {
-                      _filterByDate(_selectedDate);
-                    } else {
-                      _filteredRecords = records;
-                    }
+                    // Apply current filters if any
+                    _applyFilters(
+                      date: _selectedDate,
+                      category: _selectedCategory,
+                      level: _selectedLevel,
+                      department: _selectedDepartment,
+                    );
+                    _calculateBestPerformer();
                   });
 
                   // Show success message if new record was added
@@ -457,14 +996,7 @@ class _NearMissListPageState extends State<NearMissListPage> {
               }
             });
           },
-          icon: const Icon(Icons.add_circle_outline, size: 20),
-          label: const Text(
-            'Report Issue',
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-            ),
-          ),
+          child: Icon(Icons.add, size: 16),
         ),
       ),
       appBar: AppBar(
@@ -477,43 +1009,44 @@ class _NearMissListPageState extends State<NearMissListPage> {
         ),
         elevation: 0,
         actions: [
-          if (_selectedDate != null)
+          // Active filter chips
+          if (_hasActiveFilters())
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Center(
                 child: Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: Colors.white.withOpacity(0.3)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.filter_alt, size: 14, color: Colors.white),
-                      const SizedBox(width: 6),
+                      Icon(Icons.filter_alt, size: 12, color: Colors.white),
+                      const SizedBox(width: 4),
                       Text(
-                        DateFormat('dd MMM yyyy').format(_selectedDate!),
+                        '${_getActiveFilterCount()}',
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 4),
                       GestureDetector(
                         onTap: _clearFilter,
                         child: Container(
-                          padding: const EdgeInsets.all(2),
+                          padding: const EdgeInsets.all(1),
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Icon(
                             Icons.close,
-                            size: 12,
+                            size: 10,
                             color: Colors.white,
                           ),
                         ),
@@ -523,6 +1056,13 @@ class _NearMissListPageState extends State<NearMissListPage> {
                 ),
               ),
             ),
+
+          IconButton(
+            icon: const Icon(Icons.filter_list),
+            tooltip: 'Filter records',
+            onPressed: _showFilterBottomSheet,
+          ),
+
           IconButton(
             icon: const Icon(Icons.calendar_today),
             tooltip: 'Filter by date',
@@ -560,6 +1100,12 @@ class _NearMissListPageState extends State<NearMissListPage> {
                     ? _buildEmptyState()
                     : Column(
                         children: [
+                          // Best performer banner
+                          _buildBestPerformerBanner(),
+
+                          // Filter summary
+                          if (_hasActiveFilters()) _buildFilterSummary(),
+
                           Expanded(
                             child: ListView.builder(
                               physics: const AlwaysScrollableScrollPhysics(),
@@ -757,7 +1303,7 @@ class _NearMissListPageState extends State<NearMissListPage> {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  _selectedDate != null
+                  _hasActiveFilters()
                       ? 'No Records Found'
                       : 'No Near Miss Records',
                   style: TextStyle(
@@ -768,8 +1314,8 @@ class _NearMissListPageState extends State<NearMissListPage> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  _selectedDate != null
-                      ? 'No near miss records found for the selected date.'
+                  _hasActiveFilters()
+                      ? 'No near miss records found matching the selected filters.'
                       : 'No near miss incidents have been reported yet.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
@@ -807,12 +1353,12 @@ class _NearMissListPageState extends State<NearMissListPage> {
                     ],
                   ),
                 ),
-                if (_selectedDate != null) ...[
+                if (_hasActiveFilters()) ...[
                   const SizedBox(height: 20),
                   ElevatedButton.icon(
                     onPressed: _clearFilter,
                     icon: const Icon(Icons.clear_all),
-                    label: const Text('Clear Filter'),
+                    label: const Text('Clear Filters'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: theme.primaryColor,
                       foregroundColor: Colors.white,
@@ -840,6 +1386,7 @@ class _NearMissListPageState extends State<NearMissListPage> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
+      height: 200, // Fixed height to maintain consistency
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -894,101 +1441,171 @@ class _NearMissListPageState extends State<NearMissListPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          record.department,
+                          record.category,
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                             color: Colors.grey.shade800,
                           ),
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'PF: ${record.pfNumber}',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
+                        Text('${record.description}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis),
                       ],
                     ),
                   ),
-                  // _buildRiskChip(record.levelOfRisk, riskColor),
                 ],
               ),
             ),
 
-            // Content
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildRiskChip(record.levelOfRisk, riskColor),
-                  // Location and Date
-                  SizedBox(height: 5),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildInfoChip(
-                          Icons.location_on_outlined,
-                          record.location,
-                          Colors.blue,
-                        ),
+            // Content with image on right side
+            Expanded(
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Left side content
+                    Expanded(
+                      flex: 2,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Row(
+                          //   children: [
+                          //     _buildRiskChip(record.levelOfRisk, riskColor),
+                          //   ],
+                          // ),
+                          // const SizedBox(height: 8),
+
+                          // Location and Date
+                          Row(
+                            children: [
+                              Expanded(
+                                  child: _buildRiskChip(
+                                      record.department, riskColor)),
+                              const SizedBox(width: 5),
+                              Expanded(
+                                child: _buildInfoChip(
+                                  Icons.location_on_outlined,
+                                  record.location,
+                                  Colors.blue,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildInfoChip(
+                                  Icons.category_outlined,
+                                  record.levelOfRisk,
+                                  Colors.purple,
+                                ),
+                              ),
+                              Expanded(
+                                child: _buildInfoChip(
+                                  Icons.calendar_today_outlined,
+                                  _formatDate(record.date),
+                                  Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+
+                          // View button
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        NearMissDetailPage(record: record),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.visibility_outlined,
+                                  size: 14),
+                              label: const Text(
+                                'View Details',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: theme.primaryColor,
+                                foregroundColor: Colors.white,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 0,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _buildInfoChip(
-                          Icons.calendar_today_outlined,
-                          _formatDate(record.date),
-                          Colors.grey,
+                    ),
+
+                    // Right side image
+                    if (record.files != null && record.files!.isNotEmpty) ...[
+                      const SizedBox(width: 12),
+                      Container(
+                        width: 80,
+                        height: double.infinity,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.grey.shade200,
+                            width: 1,
+                          ),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: CachedNetworkImage(
+                            imageUrl: "${Api.files}${record.files!.first}",
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => Container(
+                              color: Colors.grey.shade100,
+                              child: Center(
+                                child: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      theme.primaryColor,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            errorWidget: (context, url, error) => Container(
+                              color: Colors.grey.shade100,
+                              child: Icon(
+                                Icons.image_not_supported_outlined,
+                                color: Colors.grey.shade400,
+                                size: 20,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ],
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Category
-                  _buildInfoChip(
-                    Icons.category_outlined,
-                    record.category,
-                    Colors.purple,
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // View button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => NearMissDetailPage(record: record),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.visibility_outlined, size: 16),
-                      label: const Text(
-                        'View Details',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: theme.primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],
@@ -1032,12 +1649,15 @@ class _NearMissListPageState extends State<NearMissListPage> {
             color: color,
           ),
           const SizedBox(width: 4),
-          Text(
-            risk.toUpperCase(),
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: color,
+          Expanded(
+            child: Text(
+              risk.toUpperCase(),
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -1077,19 +1697,6 @@ class _NearMissListPageState extends State<NearMissListPage> {
     );
   }
 
-  Color _getRiskColor(String risk) {
-    switch (risk.toLowerCase()) {
-      case 'high':
-        return Colors.red;
-      case 'medium':
-        return Colors.orange;
-      case 'low':
-        return Colors.green;
-      default:
-        return Colors.grey;
-    }
-  }
-
   String _formatDate(String dateStr) {
     try {
       DateTime date = DateFormat('yyyy-MM-dd').parse(dateStr);
@@ -1111,1015 +1718,4 @@ class _NearMissListPageState extends State<NearMissListPage> {
   }
 }
 
-class NearMissDetailPage extends StatefulWidget {
-  final NearMiss record;
-
-  const NearMissDetailPage({super.key, required this.record});
-
-  @override
-  State<NearMissDetailPage> createState() => _NearMissDetailPageState();
-}
-
-class _NearMissDetailPageState extends State<NearMissDetailPage> {
-  bool _isGeneratingPdf = false;
-
-  Future<Uint8List> generateNearMissPdf(NearMiss record) async {
-    final pdf = pw.Document();
-
-    // Load logo image
-    final ByteData logoByteData = await rootBundle.load('images/logo2.png');
-    final Uint8List logoUint8List = logoByteData.buffer.asUint8List();
-    final pw.MemoryImage logoImage = pw.MemoryImage(logoUint8List);
-
-    pdf.addPage(
-      pw.MultiPage(
-        pageFormat: PdfPageFormat.a4,
-        margin: pw.EdgeInsets.all(20),
-        build: (pw.Context context) {
-          return [
-            // Header Section
-            pw.Row(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                // Logo
-                pw.Container(
-                  height: 80,
-                  width: 130,
-                  child: pw.Image(logoImage),
-                ),
-
-                // Title (Centered)
-                pw.Expanded(
-                  flex: 3,
-                  child: pw.Container(
-                    alignment: pw.Alignment.center,
-                    child: pw.Text(
-                      'NEAR MISS INCIDENT REPORT',
-                      style: pw.TextStyle(
-                        fontSize: 16,
-                        fontWeight: pw.FontWeight.bold,
-                      ),
-                      textAlign: pw.TextAlign.center,
-                    ),
-                  ),
-                ),
-
-                // Metadata (Right-aligned)
-                pw.Container(
-                  // width: 140,
-                  child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Row(
-                        mainAxisAlignment: pw.MainAxisAlignment.end,
-                        children: [
-                          pw.Text('Date:', style: pw.TextStyle(fontSize: 9)),
-                          pw.SizedBox(width: 5),
-                          pw.Text(record.date,
-                              style: pw.TextStyle(fontSize: 9)),
-                        ],
-                      ),
-                      // pw.SizedBox(height: 3),
-                      // pw.Row(
-                      //   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                      //   children: [
-                      //     pw.Text('Risk Level:',
-                      //         style: pw.TextStyle(fontSize: 9)),
-                      //     pw.Text(record.levelOfRisk.toUpperCase(),
-                      //         style: pw.TextStyle(
-                      //             fontSize: 9, fontWeight: pw.FontWeight.bold)),
-                      //   ],
-                      // ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            pw.SizedBox(height: 20),
-
-            // Report Details Section
-            pw.Container(
-              padding: pw.EdgeInsets.all(15),
-              decoration: pw.BoxDecoration(
-                border: pw.Border.all(color: PdfColors.grey400),
-                borderRadius: pw.BorderRadius.circular(8),
-              ),
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Text(
-                    'INCIDENT DETAILS',
-                    style: pw.TextStyle(
-                        fontSize: 12, fontWeight: pw.FontWeight.bold),
-                  ),
-                  pw.SizedBox(height: 10),
-
-                  // Two-column layout for details
-                  pw.Row(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Expanded(
-                        child: pw.Column(
-                          crossAxisAlignment: pw.CrossAxisAlignment.start,
-                          children: [
-                            _buildPdfDetailRow(
-                                'Department:', record.department),
-                            _buildPdfDetailRow('PF Number:', record.pfNumber),
-                            _buildPdfDetailRow('Location:', record.location),
-                          ],
-                        ),
-                      ),
-                      pw.SizedBox(width: 20),
-                      pw.Expanded(
-                        child: pw.Column(
-                          crossAxisAlignment: pw.CrossAxisAlignment.start,
-                          children: [
-                            _buildPdfDetailRow('Date:', record.date),
-                            _buildPdfDetailRow(
-                                'Risk Level:', record.levelOfRisk),
-                            _buildPdfDetailRow('Category:', record.category),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            pw.SizedBox(height: 15),
-
-            // Description Section
-            pw.Container(
-              width: double.infinity,
-              padding: pw.EdgeInsets.all(15),
-              decoration: pw.BoxDecoration(
-                border: pw.Border.all(color: PdfColors.grey400),
-                borderRadius: pw.BorderRadius.circular(8),
-              ),
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Text(
-                    'INCIDENT DESCRIPTION',
-                    style: pw.TextStyle(
-                        fontSize: 12, fontWeight: pw.FontWeight.bold),
-                  ),
-                  pw.SizedBox(height: 10),
-                  pw.Text(
-                    record.description,
-                    style: pw.TextStyle(fontSize: 10),
-                    textAlign: pw.TextAlign.justify,
-                  ),
-                ],
-              ),
-            ),
-            pw.SizedBox(height: 15),
-
-            // Reporter Section
-            pw.Container(
-              padding: pw.EdgeInsets.all(15),
-              decoration: pw.BoxDecoration(
-                border: pw.Border.all(color: PdfColors.grey400),
-                borderRadius: pw.BorderRadius.circular(8),
-              ),
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Text(
-                    'REPORTED BY',
-                    style: pw.TextStyle(
-                        fontSize: 12, fontWeight: pw.FontWeight.bold),
-                  ),
-                  pw.SizedBox(height: 10),
-                  _buildPdfDetailRow('Name:', record.createdBy.name),
-                  _buildPdfDetailRow('Email:', record.createdBy.email),
-                ],
-              ),
-            ),
-            pw.SizedBox(height: 15),
-
-            // Attachments Section (if any)
-            if (record.files != null && record.files!.isNotEmpty) ...[
-              pw.Container(
-                padding: pw.EdgeInsets.all(15),
-                decoration: pw.BoxDecoration(
-                  border: pw.Border.all(color: PdfColors.grey400),
-                  borderRadius: pw.BorderRadius.circular(8),
-                ),
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text(
-                      'ATTACHMENTS (${record.files!.length})',
-                      style: pw.TextStyle(
-                          fontSize: 12, fontWeight: pw.FontWeight.bold),
-                    ),
-                    // pw.SizedBox(height: 10),
-
-                    // File type summary
-                    pw.Container(
-                      padding: pw.EdgeInsets.all(10),
-                      decoration: pw.BoxDecoration(
-                        color: PdfColors.grey50,
-                        borderRadius: pw.BorderRadius.circular(5),
-                      ),
-                      child: _buildAttachmentSummary(record.files!),
-                    ),
-                  ],
-                ),
-              ),
-              pw.SizedBox(height: 15),
-            ],
-
-            // Footer
-            pw.Spacer(),
-            pw.Container(
-              padding: pw.EdgeInsets.all(8),
-              decoration: pw.BoxDecoration(
-                borderRadius: pw.BorderRadius.circular(5),
-                color: PdfColors.grey100,
-              ),
-              width: double.infinity,
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Text(
-                    'DOCUMENT INFORMATION:',
-                    style: pw.TextStyle(
-                        fontSize: 10, fontWeight: pw.FontWeight.bold),
-                  ),
-                  pw.Text(
-                    'Generated on: ${DateFormat('dd MMM yyyy, hh:mm a').format(DateTime.now())}',
-                    style: pw.TextStyle(fontSize: 9),
-                  ),
-                  pw.SizedBox(height: 5),
-                  pw.Text(
-                    'NOTE: This document serves as evidence of near miss incident reporting and should be kept for safety management records.',
-                    style: pw.TextStyle(
-                        fontSize: 9, fontStyle: pw.FontStyle.italic),
-                  ),
-                ],
-              ),
-            ),
-          ];
-        },
-      ),
-    );
-
-    return pdf.save();
-  }
-
-  pw.Widget _buildPdfDetailRow(String label, String value) {
-    return pw.Padding(
-      padding: pw.EdgeInsets.only(bottom: 5),
-      child: pw.Row(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Container(
-            width: 80,
-            child: pw.Text(
-              label,
-              style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
-            ),
-          ),
-          pw.Expanded(
-            child: pw.Text(
-              value,
-              style: pw.TextStyle(fontSize: 9),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  pw.Widget _buildAttachmentSummary(List<String> files) {
-    // Categorize files by type
-    int imageCount = 0;
-    int videoCount = 0;
-    int documentCount = 0;
-    int otherCount = 0;
-
-    for (String file in files) {
-      String extension = file.split('.').last.toLowerCase();
-
-      if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg']
-          .contains(extension)) {
-        imageCount++;
-      } else if (['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv', '3gp']
-          .contains(extension)) {
-        videoCount++;
-      } else if ([
-        'pdf',
-        'doc',
-        'docx',
-        'txt',
-        'rtf',
-        'odt',
-        'xls',
-        'xlsx',
-        'ppt',
-        'pptx'
-      ].contains(extension)) {
-        documentCount++;
-      } else {
-        otherCount++;
-      }
-    }
-
-    List<pw.Widget> summaryItems = [];
-
-    if (imageCount > 0) {
-      summaryItems.add(
-        pw.Text(
-          '${imageCount} ${imageCount == 1 ? 'Image' : 'Images'}',
-          style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.normal),
-        ),
-      );
-    }
-
-    if (videoCount > 0) {
-      summaryItems.add(
-        pw.Text(
-          '${videoCount} ${videoCount == 1 ? 'Video' : 'Videos'}',
-          style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.normal),
-        ),
-      );
-    }
-
-    if (documentCount > 0) {
-      summaryItems.add(
-        pw.Text(
-          '${documentCount} ${documentCount == 1 ? 'Document' : 'Documents'}',
-          style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.normal),
-        ),
-      );
-    }
-
-    if (otherCount > 0) {
-      summaryItems.add(
-        pw.Text(
-          '${otherCount} Other ${otherCount == 1 ? 'File' : 'Files'}',
-          style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.normal),
-        ),
-      );
-    }
-
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        pw.Wrap(
-          spacing: 15,
-          runSpacing: 3,
-          children: summaryItems,
-        ),
-      ],
-    );
-  }
-
-  Future<void> _viewPdf() async {
-    try {
-      setState(() {
-        _isGeneratingPdf = true;
-      });
-
-      // Generate PDF
-      final pdfBytes = await generateNearMissPdf(widget.record);
-
-      // Get temporary directory and create file
-      final directory = await getTemporaryDirectory();
-      final fileName =
-          'NearMiss_Report_${widget.record.department}_${DateTime.now().millisecondsSinceEpoch}.pdf';
-      final file = File('${directory.path}/$fileName');
-
-      // Write PDF to file
-      await file.writeAsBytes(pdfBytes);
-
-      if (mounted) {
-        // Navigate to PDF viewer
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PdfViewerScreen(
-              filePath: file.path,
-              title: 'Near Miss Report - ${widget.record.department}',
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to generate PDF: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isGeneratingPdf = false;
-        });
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final riskColor = mycolor;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Near Miss Details',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
-          ),
-        ),
-        elevation: 0,
-        actions: [
-          // PDF Viewer Button
-          Container(
-            margin: EdgeInsets.only(right: 4),
-            child: IconButton(
-              icon: _isGeneratingPdf
-                  ? SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : Icon(
-                      Icons.picture_as_pdf_outlined,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-              onPressed: _isGeneratingPdf ? null : () => _viewPdf(),
-              tooltip: 'View PDF Report',
-            ),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // Header Card
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    mycolor,
-                    mycolor.withOpacity(0.8),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: mycolor.withOpacity(0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          _getRiskIcon(widget.record.levelOfRisk),
-                          color: Colors.white,
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              widget.record.department,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${widget.record.levelOfRisk.toUpperCase()} RISK INCIDENT',
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.9),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 1,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.person_outline,
-                          color: Colors.white.withOpacity(0.9),
-                          size: 16,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'PF Number: ${widget.record.pfNumber}',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Details Card
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Incident Details',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade800,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  _buildDetailTile(
-                    Icons.calendar_today_outlined,
-                    'Date',
-                    _formatDetailDate(widget.record.date),
-                    Colors.blue,
-                  ),
-                  _buildDetailTile(
-                    Icons.location_on_outlined,
-                    'Location',
-                    widget.record.location,
-                    Colors.green,
-                  ),
-                  _buildDetailTile(
-                    Icons.category_outlined,
-                    'Category',
-                    widget.record.category,
-                    Colors.purple,
-                  ),
-                  _buildDetailTile(
-                    Icons.shield_outlined,
-                    'Risk Level',
-                    widget.record.levelOfRisk,
-                    riskColor,
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Description Card
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.description_outlined,
-                        color: theme.primaryColor,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Description',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey.shade800,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
-                    child: Text(
-                      widget.record.description,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey.shade700,
-                        height: 1.5,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Reporter Card
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.person_outlined,
-                        color: theme.primaryColor,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Reported By',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey.shade800,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: theme.primaryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          backgroundColor: theme.primaryColor,
-                          radius: 20,
-                          child: Text(
-                            widget.record.createdBy.name.isNotEmpty
-                                ? widget.record.createdBy.name[0].toUpperCase()
-                                : 'U',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                widget.record.createdBy.name,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.grey.shade800,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                widget.record.createdBy.email,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Attachments Card
-            if (widget.record.files != null &&
-                widget.record.files!.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.attach_file_rounded,
-                          color: theme.primaryColor,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Attachments',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey.shade800,
-                          ),
-                        ),
-                        const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: theme.primaryColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '${widget.record.files!.length}',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: theme.primaryColor,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    ...widget.record.files!.map(
-                      (file) => Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        child: InkWell(
-                          onTap: () async {
-                            final url = Uri.parse('${Api.files}$file');
-                            if (await canLaunchUrl(url)) {
-                              await launchUrl(
-                                url,
-                                mode: LaunchMode.externalApplication,
-                              );
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Could not open file'),
-                                ),
-                              );
-                            }
-                          },
-                          borderRadius: BorderRadius.circular(8),
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: Colors.blue.withOpacity(0.2),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.insert_drive_file_outlined,
-                                  size: 18,
-                                  color: Colors.blue.shade600,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    file.split('/').last,
-                                    style: TextStyle(
-                                      color: Colors.blue.shade600,
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                                Icon(
-                                  Icons.open_in_new,
-                                  size: 16,
-                                  color: Colors.blue.shade600,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDetailTile(
-      IconData icon, String title, String value, Color color) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, size: 18, color: color),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade800,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  IconData _getRiskIcon(String risk) {
-    switch (risk.toLowerCase()) {
-      case 'high':
-        return Icons.priority_high;
-      case 'medium':
-        return Icons.warning;
-      case 'low':
-        return Icons.info;
-      default:
-        return Icons.help_outline;
-    }
-  }
-
-  String _formatDetailDate(String dateStr) {
-    try {
-      DateTime date = DateFormat('yyyy-MM-dd').parse(dateStr);
-      return DateFormat('EEEE, MMMM dd, yyyy').format(date);
-    } catch (e) {
-      return dateStr;
-    }
-  }
-}
-
-// PDF Viewer Screen
-class PdfViewerScreen extends StatelessWidget {
-  final String filePath;
-  final String title;
-
-  const PdfViewerScreen({
-    super.key,
-    required this.filePath,
-    required this.title,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 16,
-          ),
-        ),
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.share),
-            onPressed: () async {
-              await Share.shareXFiles(
-                [XFile(filePath)],
-                text: title,
-              );
-            },
-            tooltip: 'Share PDF',
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: PdfViewer.file(
-        filePath,
-        params: PdfViewerParams(
-          minScale: 0.5,
-          // Enable text selection
-          enableTextSelection: true,
-          // Enable document link handling
-          linkHandlerParams: PdfLinkHandlerParams(
-            onLinkTap: (link) {
-              // Handle link taps if needed
-            },
-          ),
-        ),
-      ),
-    );
-  }
-}
+// 

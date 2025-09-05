@@ -86,8 +86,7 @@ class ListCard extends StatelessWidget {
                       Row(
                         children: [
                           Text('LOT: ${vehicle.lot}'),
-                          const SizedBox(width: 8),
-                          Text('JOB: ${vehicle.job}'),
+                          
                         ],
                       ),
                     if (caseIndex == 3)

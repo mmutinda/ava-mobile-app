@@ -130,8 +130,8 @@ class _AssemblyStationsState extends State<AssemblyStations> {
               return 0;
             }
             // Stations with units come first
-            if (aUnits > 0 && bUnits == 0) return -1;
-            if (aUnits == 0 && bUnits > 0) return 1;
+            // if (aUnits > 0 && bUnits == 0) return -1;
+            // if (aUnits == 0 && bUnits > 0) return 1;
 
             return 0;
           });

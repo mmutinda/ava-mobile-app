@@ -8,7 +8,6 @@ import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/loader.dart';
 import 'package:isuze_pqcs/pages/mpa/mpa_deatils.dart';
 import 'package:isuze_pqcs/pages/mpa/mpaForm.dart';
-import 'package:isuze_pqcs/pages/mpa/mpaFormAdd.dart';
 import 'package:nb_utils/nb_utils.dart';
 
 class QflT {
@@ -17,6 +16,7 @@ class QflT {
   final String audit_department;
   final String period;
   final String station_number;
+  final String audit_line;
 
   final String date;
 
@@ -26,6 +26,7 @@ class QflT {
     required this.audit_department,
     required this.period,
     required this.station_number,
+    required this.audit_line,
     required this.date,
   });
 
@@ -36,6 +37,7 @@ class QflT {
       audit_department: json['audit_department'].toString(),
       period: json['period'].toString(),
       station_number: json['station_number'].toString(),
+      audit_line: json['audit_line'].toString(),
       date: DateFormat('dd MMM yyyy, hh:mm a')
           .format(DateTime.parse(json['created_at'])),
     );
@@ -498,208 +500,223 @@ class _QFLThreeListState extends State<QFLThreeList> {
 
   Widget _buildRecordsList() {
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       itemCount: _filteredRecords.length,
       itemBuilder: (context, index) {
         final record = _filteredRecords[index];
-        return Container(
-            margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(15),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Colors.white,
-                  Colors.grey.shade50,
-                ],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.15),
-                  spreadRadius: 2,
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Card(
-              elevation: 0,
-              color: Colors.transparent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            mycolor,
-                            mycolor.withOpacity(0.7),
-                          ],
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: mycolor.withOpacity(0.3),
-                            spreadRadius: 1,
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: CircleAvatar(
-                        backgroundColor: Colors.transparent,
-                        foregroundColor: Colors.white,
-                        radius: 22,
-                        child: Text(
-                          "${index + 1}",
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            record.project_model_Variant,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              color: mycolor,
-                            ),
-                          ),
-                          Text(
-                            record.station_number,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                              color: mycolor,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text.rich(
-                            TextSpan(
-                              children: [
-                                const TextSpan(
-                                  text: 'Audit Department: ',
-                                  style: TextStyle(fontWeight: FontWeight.w500),
-                                ),
-                                TextSpan(text: record.audit_department),
-                              ],
-                            ),
-                            style: const TextStyle(
-                                color: Colors.black87, fontSize: 13),
-                          ),
-                          Text.rich(
-                            TextSpan(
-                              children: [
-                                const TextSpan(
-                                  text: 'Date: ',
-                                  style: TextStyle(fontWeight: FontWeight.w500),
-                                ),
-                                TextSpan(text: '${record.date}\n'),
-                              ],
-                            ),
-                            style: const TextStyle(
-                                color: Colors.black87, fontSize: 13),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            boxShadow: [
-                              BoxShadow(
-                                color: mycolor.withOpacity(0.3),
-                                spreadRadius: 1,
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              QFLThreeDetails(
-                                id: record.id,
-                                audit_line: record.audit_department,
-                                project_model_Variant:
-                                    record.project_model_Variant,
-                              ).launch(context,
-                                  pageRouteAnimation: PageRouteAnimation.Slide);
-                            },
-                            icon: const Icon(Icons.visibility, size: 16),
-                            label: const Text('View',
-                                style: TextStyle(fontSize: 12)),
-                            style: ElevatedButton.styleFrom(
-                              elevation: 0,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 8),
-                              backgroundColor: mycolor,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                          ),
-                        ),
-                        // const SizedBox(height: 8),
-                        // Container(
-                        //   decoration: BoxDecoration(
-                        //     borderRadius: BorderRadius.circular(10),
-                        //     boxShadow: [
-                        //       BoxShadow(
-                        //         color: Colors.green.withOpacity(0.2),
-                        //         spreadRadius: 1,
-                        //         blurRadius: 4,
-                        //         offset: const Offset(0, 2),
-                        //       ),
-                        //     ],
-                        //   ),
-                        //   child: OutlinedButton.icon(
-                        //     onPressed: () {
-                        //       AuditChecklistPageAdd(id: record.id).launch(
-                        //         context,
-                        //         pageRouteAnimation: PageRouteAnimation.Slide,
-                        //       );
-                        //     },
-                        //     icon: const Icon(Icons.add, size: 16),
-                        //     label: const Text('Add',
-                        //         style: TextStyle(fontSize: 12)),
-                        //     style: OutlinedButton.styleFrom(
-                        //       padding: const EdgeInsets.symmetric(
-                        //           horizontal: 12, vertical: 8),
-                        //       side: BorderSide(
-                        //           color: Colors.green.shade700, width: 1.5),
-                        //       foregroundColor: Colors.green.shade700,
-                        //       backgroundColor: Colors.green.shade50,
-                        //       shape: RoundedRectangleBorder(
-                        //         borderRadius: BorderRadius.circular(10),
-                        //       ),
-                        //     ),
-                        //   ),
-                        // ),
-                      ],
-                    ),
+        _filteredRecords.sort((a, b) {
+          DateTime dateA = DateFormat('dd MMM yyyy, hh:mm a').parse(a.date);
+          DateTime dateB = DateFormat('dd MMM yyyy, hh:mm a').parse(b.date);
+          return dateB.compareTo(dateA);
+        });
+        return _buildDocumentCard(context, record, index);
+      },
+    );
+  }
+
+  Widget _buildDocumentCard(BuildContext context, QflT record, int index) {
+    final theme = Theme.of(context);
+    Color scoreColor = mycolor;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: scoreColor.withOpacity(0.3),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: scoreColor.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          children: [
+            // Header with gradient background
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    scoreColor.withOpacity(0.1),
+                    scoreColor.withOpacity(0.05),
                   ],
                 ),
               ),
-            ));
-      },
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: scoreColor,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '${index + 1}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          record.station_number,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey.shade800,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Audit Line: ${record.audit_line}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Content
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Department and Period
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildInfoChip(
+                          Icons.business_outlined,
+                          record.audit_department,
+                          Colors.blue,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildInfoChip(
+                          Icons.access_time_outlined,
+                          record.project_model_Variant,
+                          Colors.green,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Date
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildInfoChip(
+                          Icons.calendar_today_outlined,
+                          "Created Date",
+                          Colors.teal,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildInfoChip(
+                          Icons.calendar_today_outlined,
+                          record.date,
+                          Colors.purple,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // View button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        QFLThreeDetails(
+                          id: record.id,
+                          audit_line: record.audit_department,
+                          project_model_Variant: record.project_model_Variant,
+                        ).launch(context,
+                            pageRouteAnimation: PageRouteAnimation.Slide);
+                      },
+                      icon: const Icon(Icons.visibility_outlined, size: 16),
+                      label: const Text(
+                        'View Details',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoChip(IconData icon, String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 14,
+            color: color,
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: color.withOpacity(0.8),
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

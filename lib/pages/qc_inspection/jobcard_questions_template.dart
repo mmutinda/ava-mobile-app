@@ -63,6 +63,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
   String haserror = '';
   List questions = [];
   var Category = {};
+  var substations = [];
   Map question = {};
   Map<int, String> traceableSignature = {};
   List<File> selectedImage = [];
@@ -71,6 +72,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
   bool isButtonEnabled = true;
   bool isInitloading = true;
   var jobCardId;
+  int? selectedNextStationId; // Changed to int? for better type safety
   @override
   void initState() {
     super.initState();
@@ -92,6 +94,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
 
   @override
   Widget build(BuildContext context) {
+    // print('Substation data: $substations');
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -273,7 +276,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                 // var can_sign = get['can_sign'] ?? '';
                                 var answer_given = get['answer_given'] ?? '';
                                 // print(get);
-                                print('Quiz type: ${get['quiz_type']}');
+                                // print('Quiz type: ${get['quiz_type']}');
                                 haserror = (get['haserror'] ?? '').toString();
 
                                 Widget questionWidget;
@@ -516,28 +519,6 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                   );
                                 }
                                 return questionWidget;
-                                // return Card(
-                                //   color: Colors.white,
-                                //   margin: EdgeInsets.only(bottom: 3),
-                                //   child: Padding(
-                                //     padding: EdgeInsets.all(5),
-                                //     child: Column(
-                                //       crossAxisAlignment:
-                                //           CrossAxisAlignment.start,
-                                //       children: [
-                                //         Text(
-                                //           "Question ${index + 1}",
-                                //           style: TextStyle(
-                                //             fontWeight: FontWeight.bold,
-                                //             fontSize: 16,
-                                //           ),
-                                //         ),
-                                //         SizedBox(height: 1),
-                                //         questionWidget,
-                                //       ],
-                                //     ),
-                                //   ),
-                                // );
                               },
                             ),
                           ),
@@ -751,7 +732,9 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                             SizedBox(height: 8),
                                             Text(
                                               widget.station_id != null
-                                                  ? 'Are you sure you want to complete the ${widget.categoryName} checklist? This will mark all checks as finished.'
+                                                  ? substations.isNotEmpty
+                                                      ? 'Are you sure you want to complete the ${widget.categoryName} checklist? Please select the next station to route the vehicle. This will mark all checks as finished.'
+                                                      : 'Are you sure you want to complete the ${widget.categoryName} checklist? This will mark all checks as finished.'
                                                   : 'Are you sure you want to save your answers? This action cannot be undone.',
                                               style: TextStyle(
                                                 fontSize: 14,
@@ -759,6 +742,317 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                               ),
                                               textAlign: TextAlign.center,
                                             ),
+                                            if (widget.station_id != null &&
+                                                (substations).isNotEmpty)
+                                              Column(
+                                                children: [
+                                                  SizedBox(height: 16),
+                                                  Container(
+                                                    padding: EdgeInsets.all(12),
+                                                    decoration: BoxDecoration(
+                                                      color:
+                                                          Colors.blue.shade50,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              8),
+                                                      border: Border.all(
+                                                          color: Colors
+                                                              .blue.shade200),
+                                                    ),
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Row(
+                                                          children: [
+                                                            Icon(
+                                                              Icons
+                                                                  .route_outlined,
+                                                              color: Colors.blue
+                                                                  .shade700,
+                                                              size: 20,
+                                                            ),
+                                                            SizedBox(width: 8),
+                                                            Text(
+                                                              'Select Next Station: *',
+                                                              style: TextStyle(
+                                                                fontSize: 14,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w600,
+                                                                color: Colors
+                                                                    .blue
+                                                                    .shade700,
+                                                              ),
+                                                            ),
+                                                            SizedBox(width: 4),
+                                                            Text(
+                                                              '(Required)',
+                                                              style: TextStyle(
+                                                                fontSize: 11,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w500,
+                                                                color: Colors
+                                                                    .red
+                                                                    .shade600,
+                                                                fontStyle:
+                                                                    FontStyle
+                                                                        .italic,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                        SizedBox(height: 8),
+                                                        StatefulBuilder(
+                                                          builder: (context,
+                                                              setStateDialog) {
+                                                            // Create a snapshot of the substations data to avoid modification during build
+                                                            final stationsSnapshot = List<
+                                                                    Map<String,
+                                                                        dynamic>>.from(
+                                                                substations);
+
+                                                            // Get valid station IDs to ensure selectedNextStationId is valid
+                                                            Set<int>
+                                                                validStationIds =
+                                                                {};
+
+                                                            for (var station
+                                                                in stationsSnapshot) {
+                                                              if (station[
+                                                                      'sub_stations_id'] !=
+                                                                  null) {
+                                                                int stationId = station[
+                                                                            'sub_stations_id']
+                                                                        is int
+                                                                    ? station[
+                                                                        'sub_stations_id']
+                                                                    : int.tryParse(
+                                                                            station['sub_stations_id'].toString()) ??
+                                                                        0;
+
+                                                                if (stationId >
+                                                                    0) {
+                                                                  validStationIds
+                                                                      .add(
+                                                                          stationId);
+                                                                }
+                                                              }
+                                                            }
+
+                                                            // Validate selectedNextStationId
+                                                            if (selectedNextStationId !=
+                                                                    null &&
+                                                                !validStationIds
+                                                                    .contains(
+                                                                        selectedNextStationId)) {
+                                                              selectedNextStationId =
+                                                                  null;
+                                                            }
+
+                                                            return DropdownButtonFormField<
+                                                                int>(
+                                                              value:
+                                                                  selectedNextStationId,
+                                                              decoration:
+                                                                  InputDecoration(
+                                                                contentPadding:
+                                                                    EdgeInsets.symmetric(
+                                                                        horizontal:
+                                                                            12,
+                                                                        vertical:
+                                                                            8),
+                                                                border:
+                                                                    OutlineInputBorder(
+                                                                  borderRadius:
+                                                                      BorderRadius
+                                                                          .circular(
+                                                                              6),
+                                                                  borderSide: BorderSide(
+                                                                      color: Colors
+                                                                          .grey
+                                                                          .shade300),
+                                                                ),
+                                                                focusedBorder:
+                                                                    OutlineInputBorder(
+                                                                  borderRadius:
+                                                                      BorderRadius
+                                                                          .circular(
+                                                                              6),
+                                                                  borderSide:
+                                                                      BorderSide(
+                                                                          color:
+                                                                              mycolor),
+                                                                ),
+                                                              ),
+                                                              hint: Text(
+                                                                'Choose next station (Required)',
+                                                                style: TextStyle(
+                                                                    color: Colors
+                                                                        .grey
+                                                                        .shade600,
+                                                                    fontSize:
+                                                                        12),
+                                                              ),
+                                                              items: () {
+                                                                // First, get unique station data from snapshot
+                                                                Map<
+                                                                        int,
+                                                                        Map<String,
+                                                                            dynamic>>
+                                                                    uniqueStations =
+                                                                    {};
+
+                                                                print(
+                                                                    '=== DEBUG: Building dropdown items ===');
+                                                                print(
+                                                                    'Total substations: ${stationsSnapshot.length}');
+
+                                                                for (var station
+                                                                    in stationsSnapshot) {
+                                                                  if (station[
+                                                                          'sub_stations_id'] !=
+                                                                      null) {
+                                                                    int stationId = station['sub_stations_id']
+                                                                            is int
+                                                                        ? station[
+                                                                            'sub_stations_id']
+                                                                        : int.tryParse(station['sub_stations_id'].toString()) ??
+                                                                            0;
+
+                                                                    print(
+                                                                        'Processing station: ID=$stationId, exists=${uniqueStations.containsKey(stationId)}');
+
+                                                                    if (stationId >
+                                                                        0) {
+                                                                      // Only keep the first occurrence of each station ID
+                                                                      if (!uniqueStations
+                                                                          .containsKey(
+                                                                              stationId)) {
+                                                                        uniqueStations[stationId] =
+                                                                            station;
+                                                                        print(
+                                                                            'Added unique station: $stationId');
+                                                                      } else {
+                                                                        print(
+                                                                            'Skipped duplicate station: $stationId');
+                                                                      }
+                                                                    }
+                                                                  }
+                                                                }
+
+                                                                // Create dropdown items
+                                                                List<
+                                                                        DropdownMenuItem<
+                                                                            int>>
+                                                                    items = [];
+                                                                uniqueStations.forEach(
+                                                                    (stationId,
+                                                                        station) {
+                                                                  String
+                                                                      stationName =
+                                                                      '';
+                                                                  if (station['station'] !=
+                                                                          null &&
+                                                                      station['station']
+                                                                              [
+                                                                              'name'] !=
+                                                                          null) {
+                                                                    stationName =
+                                                                        station['station']['name']
+                                                                            .toString();
+                                                                  } else {
+                                                                    stationName =
+                                                                        'Station ${stationId}';
+                                                                  }
+
+                                                                  items.add(
+                                                                      DropdownMenuItem<
+                                                                          int>(
+                                                                    value:
+                                                                        stationId,
+                                                                    child: Text(
+                                                                      stationName,
+                                                                      style: TextStyle(
+                                                                          fontSize:
+                                                                              12),
+                                                                    ),
+                                                                  ));
+                                                                });
+
+                                                                print(
+                                                                    'Created ${items.length} dropdown items');
+                                                                print(
+                                                                    'Item values: ${items.map((item) => item.value).toList()}');
+
+                                                                return items;
+                                                              }(),
+                                                              validator:
+                                                                  (value) {
+                                                                if (widget.station_id !=
+                                                                        null &&
+                                                                    substations
+                                                                        .isNotEmpty &&
+                                                                    value ==
+                                                                        null) {
+                                                                  return 'Next station selection is required';
+                                                                }
+                                                                return null;
+                                                              },
+                                                              onChanged:
+                                                                  (int? value) {
+                                                                print(
+                                                                    '=== DEBUG: Dropdown selection changed ===');
+                                                                print(
+                                                                    'Selected value: $value');
+                                                                print(
+                                                                    'Previous value: $selectedNextStationId');
+                                                                setStateDialog(
+                                                                    () {
+                                                                  selectedNextStationId =
+                                                                      value;
+                                                                  print(
+                                                                      'Updated selectedNextStationId: $selectedNextStationId');
+                                                                });
+                                                              },
+                                                            );
+                                                          },
+                                                        ),
+                                                        SizedBox(height: 8),
+                                                        Row(
+                                                          children: [
+                                                            Icon(
+                                                              Icons
+                                                                  .info_outline,
+                                                              size: 14,
+                                                              color: Colors.blue
+                                                                  .shade600,
+                                                            ),
+                                                            SizedBox(width: 6),
+                                                            Expanded(
+                                                              child: Text(
+                                                                'You must select a next station before completing the checklist',
+                                                                style:
+                                                                    TextStyle(
+                                                                  fontSize: 11,
+                                                                  color: Colors
+                                                                      .blue
+                                                                      .shade600,
+                                                                  fontStyle:
+                                                                      FontStyle
+                                                                          .italic,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
                                             SizedBox(height: 20),
                                             Row(
                                               children: [
@@ -859,6 +1153,15 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
 
                                 // Only proceed if user confirmed
                                 if (confirmSave == true) {
+                                  // Additional validation for next station selection
+                                  if (widget.station_id != null &&
+                                      substations.isNotEmpty &&
+                                      selectedNextStationId == null) {
+                                    awesomeTopSnackbar(context,
+                                        "Please select the next station to continue",
+                                        backgroundColor: Colors.orange);
+                                    return;
+                                  }
                                   // Show loading dialog
                                   showDialog(
                                     context: context,
@@ -1049,27 +1352,39 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
       var request = http.MultipartRequest('POST', Uri.parse(url));
       request.headers.addAll({
         'Accept': 'application/json',
-        // 'Content-Type': 'application/json',s
         'Authorization': 'Bearer ${user['data']["token"]}',
       });
       request.fields['answers'] = jsonEncode(answers);
       request.fields['vehicle_id'] = widget.vehicle_id.toString();
-      // request.fields['answer_type'] = 'QFL3';
       request.fields['sub_station_id'] =
           widget.station_id != null ? widget.station_id.toString() : '';
+      if (selectedNextStationId != null) {
+        request.fields['next_station_id'] = selectedNextStationId.toString();
+      }
 
+      if (selectedNextStationId != null) {
+        request.fields['current_station_id'] = selectedNextStationId.toString();
+      }
       for (var entry in images.entries) {
         request.files.add(await http.MultipartFile.fromPath(
             'images[${entry.key}]', entry.value.path));
-        // print("${entry.key}, Path: ${entry.value.path}");
       }
-
+      print("=== PAYLOAD DEBUG ===");
+      print("Answers: ${jsonEncode(answers)}");
+      print("Vehicle ID: ${widget.vehicle_id}");
+      print("Station ID: ${widget.station_id}");
+      print("Next Station ID: $selectedNextStationId");
+      print("Images count: ${images.length}");
+      print("=====================");
       var response = await request.send();
       var responseData = await response.stream.bytesToString();
-      print("===>${responseData}");
+      // print("===>${responseData}");
       var result = jsonDecode(responseData);
       // print(result);
+      // Log the complete payload for debugging
+
       log(jsonEncode(result));
+
       setState(() => isButtonEnabled = true);
 
       if (result["success"]) {
@@ -1107,7 +1422,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
     print(url);
     final responseData = await httpget(url, user['data']["token"], context);
     // final responseData = await httpget(url, Api.usr, context);
-    print(responseData);
+    // print(responseData['data']['substation']);
     EasyLoading.dismiss(); // Dismiss once, outside branching
     setState(() {
       isInitloading = false;
@@ -1119,11 +1434,23 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
       return;
     }
 
-    final data = responseData["data"];
-    if (data != null) {
+    final dataMain = responseData["data"];
+    if (dataMain != null) {
       setState(() {
-        questions = data["query"] ?? [];
-        Category = data["category"];
+        questions = dataMain["query"] ?? [];
+        Category = dataMain["category"] ?? {};
+        substations = dataMain["substation"] ?? [];
+        print('Substation data: $substations');
+
+        // Debug: Print substations structure
+        for (int i = 0; i < substations.length; i++) {
+          var station = substations[i];
+          print(
+              'Station $i: sub_stations_id=${station['sub_stations_id']}, station=${station['station']}');
+        }
+
+        // Reset selectedNextStationId when new data is loaded
+        selectedNextStationId = null;
       });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(

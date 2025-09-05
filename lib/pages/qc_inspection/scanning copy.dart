@@ -9,6 +9,7 @@ import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/loader.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/models/qc_inpection.dart';
+import 'package:isuze_pqcs/pages/Rework/ReworkList.dart';
 import 'package:isuze_pqcs/pages/planning/offlining/GCP.dart';
 import 'package:isuze_pqcs/pages/planning/offlining/offliningbaypage.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/jobcard_questions_template.dart';
@@ -194,6 +195,15 @@ class _ScanningState extends State<Scanning> {
           );
           return;
         }
+        if (widget.shopId == '19') {
+          ReworkList(
+            unit_movement_id: res['data']['unit_movement_id'].toString(),
+          ).launch(
+            context,
+            pageRouteAnimation: PageRouteAnimation.Slide,
+          );
+          return;
+        }
         if (widget.shopId == '17') {
           JobCardQuestionsTemplate(
             chasis_no: res['data']['vehicledata']['vin_no'],
@@ -370,7 +380,7 @@ class _ScanningState extends State<Scanning> {
                                       borderRadius: BorderRadius.circular(16),
                                       onTap: () {
                                         showTapScanToast(context);
-                                        // processSKU(car.vin);
+                                        processSKU(car.vin);
                                       },
                                       child: Padding(
                                         padding: const EdgeInsets.all(16),
@@ -552,7 +562,7 @@ class _ScanningState extends State<Scanning> {
                                       borderRadius: BorderRadius.circular(16),
                                       onTap: () {
                                         showTapScanToast(context);
-                                        // processSKU(vehicles[index].vin);
+                                        processSKU(vehicles[index].vin);
                                       },
                                       child: Padding(
                                         padding: const EdgeInsets.all(16),
@@ -840,6 +850,18 @@ class _ScanningState extends State<Scanning> {
                                             pageRouteAnimation:
                                                 PageRouteAnimation.Slide,
                                           );
+                                        }
+                                        if (widget.shopId == '19') {
+                                          ReworkList(
+                                            unit_movement_id: res['data']
+                                                    ['unit_movement_id']
+                                                .toString(),
+                                          ).launch(
+                                            context,
+                                            pageRouteAnimation:
+                                                PageRouteAnimation.Slide,
+                                          );
+                                          return;
                                         } else if (widget.shopId == '17') {
                                           JobCardQuestionsTemplate(
                                             chasis_no: res['data']

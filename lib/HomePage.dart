@@ -20,6 +20,7 @@ import 'package:isuze_pqcs/pages/planning/planningHome.dart';
 import 'package:isuze_pqcs/pages/profile_screen.dart';
 import 'package:isuze_pqcs/pages/mpa/mpa_list.dart';
 import 'package:isuze_pqcs/pages/tms/TMS_listUnits.dart';
+import 'package:isuze_pqcs/pages/dispatch/dispatch_home.dart';
 import 'package:nb_utils/nb_utils.dart';
 
 class HomeScrean extends StatefulWidget {
@@ -268,6 +269,8 @@ class _HomeScreanState extends State<HomeScrean> {
                         _buildSectionDivider("OPERATIONS", theme),
                         singleDrawerItem(
                             FeatherIcons.truck, "Vehicle Receiving", 5, theme),
+                        singleDrawerItem(
+                            FeatherIcons.send, "Dispatch", 17, theme),
                         singleDrawerItem(
                             FeatherIcons.calendar, "Planning", 1, theme),
                         singleDrawerItem(
@@ -595,6 +598,15 @@ class _HomeScreanState extends State<HomeScrean> {
                               builder: (context) => DisplayVehicles())),
                     ),
                     _buildQuickActionCard(
+                      FeatherIcons.send,
+                      "Dispatch",
+                      Colors.purple,
+                      () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => DispatchHome())),
+                    ),
+                    _buildQuickActionCard(
                       FeatherIcons.calendar,
                       "Planning",
                       Colors.green,
@@ -607,15 +619,6 @@ class _HomeScreanState extends State<HomeScrean> {
                       Colors.orange,
                       () => TMSUnits().launch(context,
                           pageRouteAnimation: PageRouteAnimation.Slide),
-                    ),
-                    _buildQuickActionCard(
-                      FeatherIcons.user,
-                      "My Profile",
-                      Colors.purple,
-                      () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => ProfileTab())),
                     ),
                   ],
                 ),
@@ -824,6 +827,12 @@ class _HomeScreanState extends State<HomeScrean> {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => AssemblyStations()),
+              );
+              break;
+            case 17:
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => DispatchHome()),
               );
               break;
             case 133:

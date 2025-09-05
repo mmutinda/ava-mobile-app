@@ -92,15 +92,13 @@ class _AuditChecklistPageAddState extends State<AuditChecklistPageAdd> {
   bool isLoadingAuditItems = true;
   String auditItemsError = '';
 
-  String? selectedResp = "Prodn";
   String? selectedGroup = "Man";
 
   List<AuditChecklistItem> get filteredItems {
     return auditItems.where((item) {
-      final matchResp = selectedResp == null || item.resp == selectedResp;
       final matchGroup = selectedGroup == null || item.group == selectedGroup;
       final notAlreadyFilled = !isItemPreviouslyAnswered(item);
-      return matchResp && matchGroup && notAlreadyFilled;
+      return matchGroup && notAlreadyFilled;
     }).toList();
   }
 
@@ -135,6 +133,21 @@ class _AuditChecklistPageAddState extends State<AuditChecklistPageAdd> {
   }
 
   bool showFilters = false;
+
+  // Helper method to calculate progress
+  int get answeredCount {
+    return auditItems.where((item) => item.rating != null).length;
+  }
+
+  int get totalCount {
+    return auditItems.length;
+  }
+
+  double get progressPercentage {
+    if (totalCount == 0) return 0.0;
+    return answeredCount / totalCount;
+  }
+
   bool isItemPreviouslyAnswered(AuditChecklistItem item) {
     return items.any((prev) =>
         prev.category == item.group &&
@@ -214,12 +227,8 @@ class _AuditChecklistPageAddState extends State<AuditChecklistPageAdd> {
 
         // Update filter values based on fetched data
         if (auditItems.isNotEmpty) {
-          final uniqueResps = auditItems.map((e) => e.resp).toSet().toList();
           final uniqueGroups = auditItems.map((e) => e.group).toSet().toList();
 
-          if (uniqueResps.isNotEmpty && !uniqueResps.contains(selectedResp)) {
-            selectedResp = uniqueResps.first;
-          }
           if (uniqueGroups.isNotEmpty &&
               !uniqueGroups.contains(selectedGroup)) {
             selectedGroup = uniqueGroups.first;
@@ -437,20 +446,8 @@ class _AuditChecklistPageAddState extends State<AuditChecklistPageAdd> {
                 )),
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text("Resp: ${selectedResp ?? 'All'}",
-                      style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white)),
-                ),
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
@@ -722,7 +719,6 @@ class _AuditChecklistPageAddState extends State<AuditChecklistPageAdd> {
   }
 
   Widget _buildMainContent() {
-    final uniqueResps = auditItems.map((e) => e.resp).toSet().toList();
     final uniqueGroups = auditItems.map((e) => e.group).toSet().toList();
 
     return Column(
@@ -768,94 +764,39 @@ class _AuditChecklistPageAddState extends State<AuditChecklistPageAdd> {
                         ],
                       ),
                       SizedBox(height: 16),
-                      Row(
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Responsibility",
-                                    style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.grey.shade700)),
-                                const SizedBox(height: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                        color: mycolor.withOpacity(0.3)),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: mycolor.withOpacity(0.1),
-                                        blurRadius: 4,
-                                        offset: Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: DropdownButton<String>(
-                                    isExpanded: true,
-                                    underline: const SizedBox(),
-                                    value: selectedResp,
-                                    hint: const Text("Select RESP"),
-                                    icon: Icon(Icons.arrow_drop_down_rounded,
-                                        color: mycolor),
-                                    items: uniqueResps.map((resp) {
-                                      return DropdownMenuItem<String>(
-                                        value: resp,
-                                        child: Text(resp,
-                                            style: TextStyle(
-                                                fontWeight: FontWeight.w500)),
-                                      );
-                                    }).toList(),
-                                    onChanged: (value) =>
-                                        setState(() => selectedResp = value),
-                                  ),
-                                ),
-                              ],
+                          Text("Category Group",
+                              style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey.shade700)),
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border:
+                                  Border.all(color: mycolor.withOpacity(0.3)),
                             ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Category Group",
-                                    style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.grey.shade700)),
-                                const SizedBox(height: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                        color: mycolor.withOpacity(0.3)),
-                                  ),
-                                  child: DropdownButton<String>(
-                                    isExpanded: true,
-                                    underline: const SizedBox(),
-                                    value: selectedGroup,
-                                    hint: const Text("Select Group"),
-                                    icon: Icon(Icons.arrow_drop_down_rounded,
-                                        color: mycolor),
-                                    items: uniqueGroups.map((group) {
-                                      return DropdownMenuItem<String>(
-                                        value: group,
-                                        child: Text(group,
-                                            style: TextStyle(
-                                                fontWeight: FontWeight.w500)),
-                                      );
-                                    }).toList(),
-                                    onChanged: (value) =>
-                                        setState(() => selectedGroup = value),
-                                  ),
-                                ),
-                              ],
+                            child: DropdownButton<String>(
+                              isExpanded: true,
+                              underline: const SizedBox(),
+                              value: selectedGroup,
+                              hint: const Text("Select Group"),
+                              icon: Icon(Icons.arrow_drop_down_rounded,
+                                  color: mycolor),
+                              items: uniqueGroups.map((group) {
+                                return DropdownMenuItem<String>(
+                                  value: group,
+                                  child: Text(group,
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.w500)),
+                                );
+                              }).toList(),
+                              onChanged: (value) =>
+                                  setState(() => selectedGroup = value),
                             ),
                           ),
                         ],
@@ -868,6 +809,127 @@ class _AuditChecklistPageAddState extends State<AuditChecklistPageAdd> {
           ),
           secondChild: const SizedBox.shrink(),
         ),
+
+        // Progress Card
+        if (auditItems.isNotEmpty)
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Card(
+              color: Colors.white,
+              elevation: 8,
+              shadowColor: mycolor.withOpacity(0.2),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: mycolor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(Icons.assignment_turned_in_outlined,
+                              color: mycolor, size: 20),
+                        ),
+                        SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Overall Progress',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey.shade800,
+                              ),
+                            ),
+                            Text(
+                              filteredItems.length == totalCount
+                                  ? '$answeredCount of $totalCount questions completed'
+                                  : '$answeredCount of $totalCount total questions answered',
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                        Spacer(),
+                        Container(
+                          padding:
+                              EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: progressPercentage == 1.0
+                                ? Colors.green.withOpacity(0.1)
+                                : mycolor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            '${(progressPercentage * 100).toInt()}%',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: progressPercentage == 1.0
+                                  ? Colors.green
+                                  : mycolor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 12),
+                    Container(
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: FractionallySizedBox(
+                        alignment: Alignment.centerLeft,
+                        widthFactor: progressPercentage,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: progressPercentage == 1.0
+                                  ? [Colors.green, Colors.green.shade400]
+                                  : [mycolor, mycolor.withOpacity(0.8)],
+                            ),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (answeredCount > 0) ...[
+                      SizedBox(height: 8),
+                      Text(
+                        progressPercentage == 1.0
+                            ? '🎉 All questions completed!'
+                            : '${totalCount - answeredCount} questions remaining',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: progressPercentage == 1.0
+                              ? Colors.green
+                              : Colors.grey.shade600,
+                          fontWeight: progressPercentage == 1.0
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
 
         // Checklist
         Expanded(
@@ -897,68 +959,129 @@ class _AuditChecklistPageAddState extends State<AuditChecklistPageAdd> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                /// Row with title and badge
+                                /// Header row with question number and status
                                 Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Expanded(
+                                    Container(
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            mycolor.withOpacity(0.1),
+                                            mycolor.withOpacity(0.05)
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
                                       child: Text(
-                                        "${index + 1}. ${item.description}",
+                                        filteredItems.length == totalCount
+                                            ? "Question ${index + 1} of $totalCount"
+                                            : "Question ${index + 1} of ${filteredItems.length} filtered ($totalCount total)",
                                         style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                          color: Colors.grey.shade800,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: mycolor,
                                         ),
                                       ),
                                     ),
+                                    Spacer(),
                                     if (alreadyFilled)
                                       Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 12, vertical: 6),
+                                        padding: EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 4),
                                         decoration: BoxDecoration(
+                                          color: Colors.green.withOpacity(0.1),
                                           borderRadius:
-                                              BorderRadius.circular(20),
+                                              BorderRadius.circular(12),
                                           border: Border.all(
-                                              color: Colors.green.shade400),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color:
-                                                  Colors.green.withOpacity(0.2),
-                                              blurRadius: 4,
-                                              offset: Offset(0, 2),
+                                              color: Colors.green
+                                                  .withOpacity(0.3)),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.check_circle,
+                                                color: Colors.green, size: 14),
+                                            SizedBox(width: 4),
+                                            Text(
+                                              "Already Filled",
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w600,
+                                                color: Colors.green,
+                                              ),
                                             ),
                                           ],
                                         ),
-                                        child: Text(
-                                          "Already Filled",
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.green.shade700,
-                                            fontWeight: FontWeight.w600,
-                                          ),
+                                      ),
+                                    if (item.rating != null && !alreadyFilled)
+                                      Container(
+                                        padding: EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.green.withOpacity(0.1),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          border: Border.all(
+                                              color: Colors.green
+                                                  .withOpacity(0.3)),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.check_circle,
+                                                color: Colors.green, size: 14),
+                                            SizedBox(width: 4),
+                                            Text(
+                                              "Answered",
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w600,
+                                                color: Colors.green,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                   ],
                                 ),
-
+                                const SizedBox(height: 12),
+                                Text(
+                                  item.description,
+                                  style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black87,
+                                      height: 1.3),
+                                ),
                                 const SizedBox(height: 16),
 
                                 /// Rating chips
                                 Wrap(
-                                  spacing: 12,
+                                  spacing: 8,
                                   runSpacing: 8,
                                   children: List.generate(4, (value) {
                                     final isSelected = item.rating == value;
                                     return Container(
                                       decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(25),
+                                        borderRadius: BorderRadius.circular(8),
+                                        boxShadow: isSelected
+                                            ? [
+                                                BoxShadow(
+                                                  color: getRatingColor(value)
+                                                      .withOpacity(0.3),
+                                                  blurRadius: 6,
+                                                  offset: Offset(0, 3),
+                                                ),
+                                              ]
+                                            : null,
                                       ),
                                       child: ChoiceChip(
                                         label: Text(
                                           getRatingLabel(value),
                                           style: TextStyle(
-                                            fontSize: 14,
+                                            fontSize: 13,
                                             fontWeight: FontWeight.w600,
                                             color: isSelected
                                                 ? Colors.white
@@ -968,17 +1091,6 @@ class _AuditChecklistPageAddState extends State<AuditChecklistPageAdd> {
                                         selected: isSelected,
                                         selectedColor: getRatingColor(value),
                                         backgroundColor: Colors.grey.shade100,
-                                        elevation: isSelected ? 4 : 2,
-                                        pressElevation: 6,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(25),
-                                          side: BorderSide(
-                                            color: isSelected
-                                                ? getRatingColor(value)
-                                                : Colors.grey.shade300,
-                                          ),
-                                        ),
                                         onSelected: alreadyFilled
                                             ? null
                                             : (_) {
@@ -997,16 +1109,22 @@ class _AuditChecklistPageAddState extends State<AuditChecklistPageAdd> {
                                 Container(
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(12),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: mycolor.withOpacity(0.1),
+                                        blurRadius: 4,
+                                        offset: Offset(0, 2),
+                                      ),
+                                    ],
                                   ),
                                   child: TextFormField(
                                     initialValue: item.comment,
                                     enabled: !alreadyFilled,
                                     decoration: InputDecoration(
-                                      hintText: 'Add comment (optional)',
+                                      hintText:
+                                          'Add your comments here (optional)',
                                       hintStyle: TextStyle(
                                           color: Colors.grey.shade500),
-                                      filled: true,
-                                      fillColor: Colors.grey.shade50,
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
                                         borderSide: BorderSide(
@@ -1022,14 +1140,19 @@ class _AuditChecklistPageAddState extends State<AuditChecklistPageAdd> {
                                         borderSide: BorderSide(
                                             color: mycolor, width: 2),
                                       ),
+                                      filled: true,
+                                      fillColor: Colors.grey.shade50,
                                       contentPadding:
                                           const EdgeInsets.symmetric(
                                               horizontal: 16, vertical: 12),
+                                      prefixIcon: Icon(Icons.comment_outlined,
+                                          color: mycolor.withOpacity(0.7)),
                                     ),
                                     onChanged: (val) {
                                       item.comment = val;
                                     },
-                                    maxLines: 2,
+                                    maxLines: 3,
+                                    minLines: 1,
                                   ),
                                 ),
                               ],
@@ -1045,74 +1168,168 @@ class _AuditChecklistPageAddState extends State<AuditChecklistPageAdd> {
         filteredItems.isEmpty
             ? Container()
             : isLoading2
-                ? CustomLoader()
-                : SafeArea(
-                    child: Container(
-                      margin: const EdgeInsets.all(16.0),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: mycolor.withOpacity(0.4),
-                            blurRadius: 12,
-                            offset: Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size(double.infinity, 56),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16)),
-                          backgroundColor: mycolor,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
+                ? Container(padding: EdgeInsets.all(20), child: CustomLoader())
+                : Container(
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: mycolor.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: Offset(0, -5),
                         ),
-                        icon: Icon(Icons.send_rounded, size: 20),
-                        label: Text(
-                          "Submit Audit Checklist",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
-                            shadows: [
-                              Shadow(
-                                color: Colors.black.withOpacity(0.3),
-                                offset: Offset(0, 1),
-                                blurRadius: 2,
+                      ],
+                    ),
+                    child: SafeArea(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [mycolor, mycolor.withOpacity(0.8)],
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: mycolor.withOpacity(0.4),
+                              blurRadius: 12,
+                              offset: Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: const Size(double.infinity, 56),
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16)),
+                          ),
+                          icon: Container(
+                            padding: EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              progressPercentage == 1.0
+                                  ? Icons.check_circle_rounded
+                                  : Icons.send_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                          label: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                progressPercentage == 1.0
+                                    ? "Submit Complete Audit"
+                                    : "Submit Partial Audit ($answeredCount/$totalCount)",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
+                              if (progressPercentage < 1.0)
+                                Text(
+                                  "${totalCount - answeredCount} questions not answered",
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.8),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.normal,
+                                  ),
+                                ),
                             ],
                           ),
+                          onPressed: () {
+                            final answered = auditItems
+                                .where((item) => item.rating != null)
+                                .toList();
+
+                            if (answered.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Row(
+                                    children: [
+                                      Icon(Icons.warning_amber_rounded,
+                                          color: Colors.white),
+                                      SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                            "Please answer at least one question before submitting. Progress: $answeredCount/$totalCount completed.",
+                                            style: TextStyle(
+                                                fontWeight: FontWeight.w500)),
+                                      ),
+                                    ],
+                                  ),
+                                  backgroundColor: Colors.orange,
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              );
+                              return;
+                            }
+
+                            if (!hasNewDataToSave()) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                      "No new data to save. All answered items are identical to previously submitted data."),
+                                  backgroundColor: Colors.orange,
+                                ),
+                              );
+                              return;
+                            }
+
+                            // Show confirmation dialog for partial submissions
+                            if (progressPercentage < 1.0) {
+                              showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return AlertDialog(
+                                    title: Row(
+                                      children: [
+                                        Icon(Icons.info_outline,
+                                            color: mycolor),
+                                        SizedBox(width: 8),
+                                        Text('Partial Submission'),
+                                      ],
+                                    ),
+                                    content: Text(
+                                      'You have answered $answeredCount out of $totalCount questions (${(progressPercentage * 100).toInt()}% complete).\n\nDo you want to submit this partial audit?',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.of(context).pop(),
+                                        child: Text('Cancel'),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+                                          _showDocumentDialog();
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: mycolor,
+                                        ),
+                                        child: Text('Submit Anyway',
+                                            style:
+                                                TextStyle(color: Colors.white)),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+                            } else {
+                              _showDocumentDialog();
+                            }
+                          },
                         ),
-                        onPressed: () {
-                          final answered = auditItems
-                              .where((item) => item.rating != null)
-                              .toList();
-
-                          if (answered.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                    "Please answer at least one checklist item before submitting."),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                            return;
-                          }
-
-                          if (!hasNewDataToSave()) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                    "No new data to save. All answered items are identical to previously submitted data."),
-                                backgroundColor: Colors.orange,
-                              ),
-                            );
-                            return;
-                          }
-
-                          _showDocumentDialog();
-                        },
                       ),
                     ),
                   )

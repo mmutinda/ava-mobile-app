@@ -1760,65 +1760,7 @@ class _LotIssueDialogFinishRackingState
     );
   }
 
-  Widget _buildModernTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300, width: 1.5),
-        color: Colors.grey.shade50,
-      ),
-      child: TextField(
-        controller: controller,
-        decoration: InputDecoration(
-          labelText: label,
-          prefixIcon: Icon(icon, color: mycolor),
-          border: InputBorder.none,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          labelStyle: TextStyle(color: Colors.grey.shade600),
-        ),
-      ),
-    );
-  }
 
-  Widget _buildModernDropdown({
-    required String? value,
-    required String label,
-    required IconData icon,
-    required List<String> options,
-    required ValueChanged<String?> onChanged,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300, width: 1.5),
-        color: Colors.grey.shade50,
-      ),
-      child: DropdownButtonFormField<String>(
-        value: value,
-        decoration: InputDecoration(
-          labelText: label,
-          prefixIcon: Icon(icon, color: mycolor),
-          border: InputBorder.none,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          labelStyle: TextStyle(color: Colors.grey.shade600),
-        ),
-        items: options
-            .map((e) => DropdownMenuItem(
-                  value: e,
-                  child: Text(e, style: TextStyle(color: Colors.grey.shade800)),
-                ))
-            .toList(),
-        onChanged: onChanged,
-        dropdownColor: Colors.white,
-      ),
-    );
-  }
 
   Widget _buildStyledTextField({
     required TextEditingController controller,

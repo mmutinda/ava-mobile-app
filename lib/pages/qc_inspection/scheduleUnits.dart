@@ -218,8 +218,6 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
                                   Row(
                                     children: [
                                       Text('lOT: ${vehicles[index].lot}'),
-                                      width(),
-                                      Text('JOB: ${vehicles[index].job}'),
                                     ],
                                   ),
                                   Row(
@@ -250,7 +248,8 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
                                                     vehicle_id:
                                                         vehicles[index].id,
                                                     vehicle_line:
-                                                        vehicles[index].job,
+                                                        vehicles[index]
+                                                            .vehicle_line,
                                                     route_id:
                                                         vehicles[index].route,
                                                   ),
@@ -307,52 +306,7 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
   }
 }
 
-class VehicleDetailsPage extends StatelessWidget {
-  final Vehicle vehicle;
 
-  const VehicleDetailsPage({Key? key, required this.vehicle}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Vehicle Details'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Model: ${vehicle.model}',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 10),
-            Text(
-              'VIN: ${vehicle.vin}',
-              style: TextStyle(fontSize: 18),
-            ),
-            SizedBox(height: 10),
-            Text(
-              'Lot: ${vehicle.lot}',
-              style: TextStyle(fontSize: 18),
-            ),
-            SizedBox(height: 10),
-            Text(
-              'Job: ${vehicle.job}',
-              style: TextStyle(fontSize: 18),
-            ),
-            SizedBox(height: 10),
-            Text(
-              'Units Remaining: ${vehicle.unitRemaining}',
-              style: TextStyle(fontSize: 18),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 BoxDecoration boxDecoration(
     {double radius = 2,

@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
@@ -14,7 +15,9 @@ import 'package:isuze_pqcs/common/loader.dart';
 import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
 
 class NearMissFormPage extends StatefulWidget {
-  const NearMissFormPage({Key? key}) : super(key: key);
+  final String pfNumber;
+
+  const NearMissFormPage({super.key, required this.pfNumber});
 
   @override
   State<NearMissFormPage> createState() => _NearMissFormPageState();
@@ -25,8 +28,9 @@ class _NearMissFormPageState extends State<NearMissFormPage> {
   String? department, riskLevel, category;
   DateTime? selectedDate;
   List<PlatformFile>? uploadedFiles;
+  File? _pickedImage;
 
-  final TextEditingController pfController = TextEditingController();
+  late final TextEditingController pfController;
   final TextEditingController locationController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
@@ -53,27 +57,164 @@ class _NearMissFormPageState extends State<NearMissFormPage> {
     }
   }
 
-  Future<void> _pickFiles() async {
-    final result = await FilePicker.platform.pickFiles(
-      allowMultiple: true,
-      type: FileType.custom,
-      allowedExtensions: [
-        'pdf',
-        'ppt',
-        'doc',
-        'docx',
-        'jpg',
-        'png',
-        'mp4',
-        'mp3'
-      ],
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+
+    // Show bottom sheet instead of dialog for better mobile UX
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Handle indicator
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                const Text(
+                  'Add Photo Evidence',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF212529),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Choose how you want to add photo evidence',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+
+                // Camera Option
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context, ImageSource.camera),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: mycolor,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.camera_alt_rounded, size: 24),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Take Photo',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Gallery Option
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: ElevatedButton(
+                    onPressed: () =>
+                        Navigator.pop(context, ImageSource.gallery),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: mycolor,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: mycolor, width: 2),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.photo_library_rounded, size: 24),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Choose from Gallery',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Cancel Option
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
-    if (result != null && result.files.length <= 3) {
-      setState(() => uploadedFiles = result.files);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('You can upload up to 3 files only.')),
-      );
+
+    if (source != null) {
+      try {
+        final picked = await picker.pickImage(
+          source: source,
+          imageQuality: 80, // Compress image for better performance
+          maxWidth: 1024, // Limit image size
+          maxHeight: 1024,
+        );
+        if (picked != null) {
+          setState(() => _pickedImage = File(picked.path));
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error picking image: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     }
   }
 
@@ -131,17 +272,24 @@ class _NearMissFormPageState extends State<NearMissFormPage> {
     request.fields['category_of_near_miss'] = category ?? '';
     request.fields['description'] = descriptionController.text;
 
-    // Add uploaded files
-    if (uploadedFiles != null && uploadedFiles!.isNotEmpty) {
-      for (var file in uploadedFiles!) {
-        final filePath = file.path;
-        if (filePath!.isNotEmpty) {
-          request.files.add(await http.MultipartFile.fromPath(
-            'files[]', // Use 'files' if your backend doesn't expect an array
-            filePath,
-          ));
-        }
-      }
+    // // Add uploaded files
+    // if (uploadedFiles != null && uploadedFiles!.isNotEmpty) {
+    //   for (var file in uploadedFiles!) {
+    //     final filePath = file.path;
+    //     if (filePath != null && filePath.isNotEmpty) {
+    //       request.files.add(await http.MultipartFile.fromPath(
+    //         'files[]', // Use 'files' if your backend doesn't expect an array
+    //         filePath,
+    //       ));
+    //     }
+    //   }
+    // }
+    // Add picked image if present
+    if (_pickedImage != null && await _pickedImage!.exists()) {
+      request.files.add(await http.MultipartFile.fromPath(
+        'files[]',
+        _pickedImage!.path,
+      ));
     }
 
     final progressDialog = ProgressDialog(context);
@@ -225,8 +373,8 @@ class _NearMissFormPageState extends State<NearMissFormPage> {
   var user = {};
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
+    pfController = TextEditingController(text: widget.pfNumber);
     getuserdata().then((value) {
       setState(() {
         user = jsonDecode(value);
@@ -270,6 +418,7 @@ class _NearMissFormPageState extends State<NearMissFormPage> {
               ),
               const SizedBox(height: 12),
               TextFormField(
+                enabled: false,
                 controller: pfController,
                 decoration: _inputDecoration('PF Number'),
                 validator: (val) =>
@@ -339,19 +488,116 @@ class _NearMissFormPageState extends State<NearMissFormPage> {
                     val == null || val.isEmpty ? 'Enter description' : null,
               ),
               const SizedBox(height: 24),
-              _sectionTitle('Media Upload', Icons.attach_file),
-              ElevatedButton.icon(
-                onPressed: _pickFiles,
-                icon: const Icon(Icons.upload_file),
-                label: const Text('Upload Media (max 3 files)'),
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  backgroundColor: mycolor,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+              _sectionTitle('Photo Evidence', Icons.attach_file),
+              const SizedBox(height: 8),
+              if (_pickedImage == null)
+                GestureDetector(
+                  onTap: _pickImage,
+                  child: Container(
+                    width: double.infinity,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8F9FA),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.grey.shade300,
+                        width: 2,
+                        style: BorderStyle.solid,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.add_a_photo_outlined,
+                          size: 32,
+                          color: Colors.grey.shade500,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Tap to add photo evidence',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Optional',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.grey.shade300,
+                      width: 1,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      ClipRRect(
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(12),
+                          topRight: Radius.circular(12),
+                        ),
+                        child: Image.file(
+                          _pickedImage!,
+                          width: double.infinity,
+                          height: 200,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: const BorderRadius.only(
+                            bottomLeft: Radius.circular(12),
+                            bottomRight: Radius.circular(12),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.check_circle,
+                                color: Colors.green.shade600, size: 16),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Photo evidence added',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xFF495057),
+                              ),
+                            ),
+                            const Spacer(),
+                            TextButton(
+                              onPressed: _pickImage,
+                              child: Text(
+                                'Change',
+                                style: TextStyle(
+                                  color: mycolor,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
               if (uploadedFiles != null)
                 ...uploadedFiles!
                     .map((file) => ListTile(title: Text(file.name))),

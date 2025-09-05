@@ -13,6 +13,10 @@ class Vehicle {
   final String cabin_cockpit_moved;
   final String chasis_moved;
   final unitRemaining;
+  final String? engine_no;
+  final String? production_start_date;
+  final String? current_shop;
+  final int? status;
 
   Vehicle({
     required this.model,
@@ -29,6 +33,10 @@ class Vehicle {
     required this.cabin_cockpit_moved,
     required this.chasis_moved,
     required this.unitRemaining,
+    this.engine_no,
+    this.production_start_date,
+    this.current_shop,
+    this.status,
   });
 
   factory Vehicle.fromJson(Map<String, dynamic> json) {
@@ -49,6 +57,9 @@ class Vehicle {
       cabin_cockpit_moved: json['cabin_cockpit_moved'].toString(),
       chasis_moved: json['chasis_moved'].toString(),
       unitRemaining: json['component_moved'].toString(),
+      engine_no: json['engine_no']?.toString(),
+      production_start_date: json['production_start_date']?.toString(),
+      current_shop: json['current_shop']?.toString(),
     );
   }
 }

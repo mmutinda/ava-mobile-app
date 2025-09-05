@@ -1,6 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
@@ -8,9 +6,7 @@ import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/pages/claimforms/FiveSForm.dart';
-import 'package:isuze_pqcs/pages/claimforms/pdf5s.dart';
-import 'package:isuze_pqcs/pages/claimforms/pdfscreen.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:isuze_pqcs/pages/claimforms/fiveSdetails.dart';
 
 // ------------------ Models ------------------
 
@@ -319,6 +315,8 @@ class _DocumentListPageState extends State<DocumentListPage> {
                 final documents = snapshot.data!;
                 return Column(
                   children: [
+                    // Top Performer Banner
+                    _buildTopPerformerBanner(documents),
                     // _buildStatsHeader(documents),
                     Expanded(
                       child: ListView.builder(
@@ -607,7 +605,7 @@ class _DocumentListPageState extends State<DocumentListPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          doc.documentRef,
+                          doc.section,
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -616,7 +614,7 @@ class _DocumentListPageState extends State<DocumentListPage> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Rev: ${doc.revision}',
+                          'Auditee: ${doc.author}',
                           style: TextStyle(
                             fontSize: 11,
                             color: Colors.grey.shade600,
@@ -636,12 +634,13 @@ class _DocumentListPageState extends State<DocumentListPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Section and Auditor
+
                   Row(
                     children: [
                       Expanded(
                         child: _buildInfoChip(
                           Icons.folder_special_outlined,
-                          doc.section,
+                          "Auditor",
                           Colors.blue,
                         ),
                       ),
@@ -649,7 +648,7 @@ class _DocumentListPageState extends State<DocumentListPage> {
                       Expanded(
                         child: _buildInfoChip(
                           Icons.person_outline,
-                          doc.author,
+                          doc.createdBy,
                           Colors.green,
                         ),
                       ),
@@ -721,52 +720,6 @@ class _DocumentListPageState extends State<DocumentListPage> {
     );
   }
 
-  Widget _buildScoreChip(double score, Color color) {
-    String scoreText = score.toStringAsFixed(1);
-    IconData scoreIcon;
-
-    if (score >= 4.0) {
-      scoreIcon = Icons.stars;
-    } else if (score >= 3.0) {
-      scoreIcon = Icons.star;
-    } else if (score >= 2.0) {
-      scoreIcon = Icons.star_half;
-    } else {
-      scoreIcon = Icons.star_border;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            scoreIcon,
-            size: 12,
-            color: color,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            scoreText,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildInfoChip(IconData icon, String text, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -799,18 +752,6 @@ class _DocumentListPageState extends State<DocumentListPage> {
     );
   }
 
-  Color _getScoreColor(double score) {
-    if (score >= 4.0) {
-      return Colors.green;
-    } else if (score >= 3.0) {
-      return Colors.amber;
-    } else if (score >= 2.0) {
-      return Colors.orange;
-    } else {
-      return Colors.red;
-    }
-  }
-
   String _formatDate(String dateStr) {
     try {
       DateTime date = DateTime.parse(dateStr);
@@ -830,502 +771,120 @@ class _DocumentListPageState extends State<DocumentListPage> {
       return dateStr;
     }
   }
-}
 
-// ------------------ Detail Page ------------------
+  Widget _buildTopPerformerBanner(List<Document> documents) {
+    // Get last month's date range
+    DateTime now = DateTime.now();
+    DateTime lastMonth = DateTime(now.year, now.month - 1, 1);
+    DateTime lastMonthEnd =
+        DateTime(now.year, now.month, 1).subtract(Duration(days: 1));
 
-class DocumentDetailPage extends StatelessWidget {
-  final Document document;
-  const DocumentDetailPage({super.key, required this.document});
-  Future<void> previewPdf(
-      BuildContext context, Uint8List pdfData, invoiceNo) async {
-    final tempDir = await getTemporaryDirectory();
-    final tempFile = File('${tempDir.path}/${invoiceNo}.pdf');
-    await tempFile.writeAsBytes(pdfData);
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) =>
-            PdfPreviewScreen(filePath: tempFile.path, name: invoiceNo),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    // Calculate overall statistics
-    double totalScore = 0;
-    int itemCount = 0;
-    Map<String, int> categoryCount = {};
-
-    for (var item in document.items) {
+    // Filter documents from last month only
+    List<Document> lastMonthDocs = documents.where((doc) {
       try {
-        totalScore += double.parse(item.score.toString());
-        itemCount++;
-        categoryCount[item.category] = (categoryCount[item.category] ?? 0) + 1;
+        DateTime docDate = DateTime.parse(doc.date);
+        return docDate.isAfter(lastMonth.subtract(Duration(days: 1))) &&
+            docDate.isBefore(lastMonthEnd.add(Duration(days: 1)));
       } catch (e) {
-        // Skip invalid scores
+        return false;
       }
+    }).toList();
+
+    // Count section appearances in last month
+    Map<String, int> sectionCounts = {};
+    for (var doc in lastMonthDocs) {
+      String section = doc.section;
+      sectionCounts[section] = (sectionCounts[section] ?? 0) + 1;
     }
 
-    double avgScore = itemCount > 0 ? totalScore / itemCount : 0;
-    _getScoreColor(avgScore);
+    // Find section with most appearances
+    String topSection = '';
+    int maxCount = 0;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          document.documentRef,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
-          ),
-        ),
-        elevation: 0,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(
-            height: 1,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.transparent,
-                  theme.primaryColor.withOpacity(0.2),
-                  Colors.transparent,
-                ],
-              ),
-            ),
-          ),
-        ),
-        actions: [
+    sectionCounts.forEach((section, count) {
+      if (count > maxCount) {
+        maxCount = count;
+        topSection = section;
+      }
+    });
+
+    // If no data, don't show banner
+    if (topSection.isEmpty || maxCount == 0) {
+      return const SizedBox.shrink();
+    }
+
+    // Get previous month name
+    String monthName = _getMonthName(lastMonth.month);
+
+    return Card(
+      elevation: 1,
+      color: Colors.white,
+      child: Row(
+        children: [
           Container(
-            margin: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: theme.primaryColor.withOpacity(0.1),
+              // color: Colors.white.withOpacity(0.2),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: IconButton(
-              icon: Icon(
-                Icons.picture_as_pdf_outlined,
-                // color: theme.primaryColor,
-                size: 20,
-              ),
-              tooltip: 'Generate PDF',
-              onPressed: () async {
-                final pdfData = await generatedocumentPdf(document);
-                await previewPdf(context, pdfData, "${document.documentRef}");
-              },
+            child: const Icon(
+              Icons.emoji_events,
+              // color: Colors.white,
+              size: 24,
             ),
           ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Overview Card with Score
-
-            const SizedBox(height: 16),
-
-            // Document Information
-            _buildDocumentInfoCard(),
-            const SizedBox(height: 16),
-
-            // Statistics Card
-            _buildStatisticsCard(categoryCount, totalScore),
-            const SizedBox(height: 16),
-
-            // Items Section
-            _buildItemsSection(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDocumentInfoCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.info_outline,
-                color: mycolor,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Document Information',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade800,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildInfoTile(
-                  Icons.refresh_rounded,
-                  'Revision',
-                  document.revision,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildInfoTile(
-                  Icons.description_outlined,
-                  'Reference',
-                  document.documentRef,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildInfoTile(
-                  Icons.folder_special_outlined,
-                  'Section',
-                  document.section,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildInfoTile(
-                  Icons.person_outline,
-                  'Auditor',
-                  document.author,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatisticsCard(
-      Map<String, int> categoryCount, double totalScore) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.analytics_outlined,
-                color: mycolor,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Audit Statistics',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade800,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatChip(
-                  'Categories',
-                  categoryCount.length.toString(),
-                  Icons.category_outlined,
-                  Colors.blue,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildStatChip(
-                  'Total Items',
-                  document.items.length.toString(),
-                  Icons.inventory_outlined,
-                  Colors.green,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildStatChip(
-                  'Total Points',
-                  totalScore.toStringAsFixed(1),
-                  Icons.star_outline,
-                  Colors.amber,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatChip(
-      String label, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withOpacity(0.2),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            icon,
-            color: color,
-            size: 16,
-          ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              color: Colors.grey.shade600,
-              fontWeight: FontWeight.w500,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildItemsSection() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.checklist_outlined,
-                color: mycolor,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Audit Items',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade800,
-                ),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: mycolor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${document.items.length} items',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: mycolor,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          ...document.items.asMap().entries.map((entry) {
-            int index = entry.key;
-            Item item = entry.value;
-            return _buildItemCard(item, index);
-          }).toList(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildItemCard(Item item, int index) {
-    double score;
-    try {
-      score = double.parse(item.score.toString());
-    } catch (e) {
-      score = 0;
-    }
-
-    Color scoreColor = _getScoreColor(score);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: scoreColor.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: scoreColor.withOpacity(0.2),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: scoreColor,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  '${index + 1}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 10,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  item.category,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade800,
-                  ),
-                ),
-              ),
-              _buildScoreChip(score, scoreColor),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(8),
-            ),
+          const SizedBox(width: 12),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.build_outlined,
-                      size: 14,
-                      color: Colors.grey.shade600,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Physical Condition',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
                 Text(
-                  item.physicalCondition,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey.shade800,
+                  'Top Performer',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    // color: Colors.white,
                   ),
                 ),
-                if (item.comments != null &&
-                    item.comments.toString().isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.comment_outlined,
-                        size: 14,
-                        color: Colors.grey.shade600,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Comments',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
+                const SizedBox(height: 2),
+                Text(
+                  '$topSection - $monthName ${lastMonth.year}',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    // color: Colors.white.withOpacity(0.9),
+                    fontWeight: FontWeight.w500,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    item.comments ?? 'No comments',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey.shade800,
-                      fontStyle: item.comments == null
-                          ? FontStyle.italic
-                          : FontStyle.normal,
-                    ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.star,
+                  color: Colors.white,
+                  size: 14,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '${maxCount} audits',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
                   ),
-                ],
+                ),
               ],
             ),
           ),
@@ -1334,121 +893,22 @@ class DocumentDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildScoreChip(double score, Color color) {
-    IconData scoreIcon = _getScoreIcon(score);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            scoreIcon,
-            size: 12,
-            color: color,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            score.toStringAsFixed(1),
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
+  String _getMonthName(int month) {
+    const months = [
+      '',
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December'
+    ];
+    return months[month];
   }
-
-  Color _getScoreColor(double score) {
-    if (score >= 1.0) {
-      return Colors.green;
-    } else {
-      return Colors.red;
-    }
-  }
-
-  IconData _getScoreIcon(double score) {
-    if (score >= 1.0) {
-      return Icons.check_circle;
-    } else {
-      return Icons.cancel;
-    }
-  }
-
-  String _getScoreStatus(double score) {
-    if (score >= 1.0) {
-      return 'Pass';
-    } else {
-      return 'Fail';
-    }
-  }
-
-  String _formatDetailDate(String dateStr) {
-    try {
-      DateTime date = DateTime.parse(dateStr);
-      return '${date.day}/${date.month}/${date.year}';
-    } catch (e) {
-      return dateStr;
-    }
-  }
-}
-
-Widget _buildInfoTile(IconData icon, String label, String value) {
-  return Container(
-    margin: const EdgeInsets.all(8),
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.grey.withOpacity(0.2),
-          blurRadius: 6,
-          offset: const Offset(0, 3),
-        )
-      ],
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, color: const Color(0xFFEA4C89), size: 20),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                label,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.poppins(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey[700]),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        Text(
-          value,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: GoogleFonts.poppins(
-            fontSize: 15,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-      ],
-    ),
-  );
 }

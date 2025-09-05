@@ -696,21 +696,6 @@ class _DisplayVehiclesState extends State<DisplayVehicles>
                             ],
                           ),
                           SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Icon(FeatherIcons.layers,
-                                  size: 14, color: Colors.grey[600]),
-                              SizedBox(width: 6),
-                              Text(
-                                'QTY: ${vehicles[index]['lot_qty'] ?? 'N/A'}',
-                                style: GoogleFonts.poppins(
-                                  color: Colors.grey[600],
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 4),
                         ],
                       ),
                     ),

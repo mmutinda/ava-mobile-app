@@ -54,39 +54,6 @@ class _OffliningBayPageState extends State<OffliningBayPage> {
   List<Issue> issues = [];
   bool isLoading = true;
   String errorMessage = '';
-
-  // ✅ Example: Simulate API call
-  // Future<void> fetchIssues() async {
-  //   setState(() {
-  //     isLoading = true;
-  //     errorMessage = '';
-  //   });
-
-  //   try {
-  //     await Future.delayed(const Duration(seconds: 2)); // simulate network
-  //     // ✅ Replace this with your real API call:
-  //     final response = [
-  //       {"title": "Faulty cab mount bracket", "status": "OPEN"},
-  //       {"title": "Faulty 1st cross member", "status": "OPEN"},
-  //       {"title": "Scratch on bumper", "status": "OPEN"},
-  //       {"title": "ECU flashing not done", "status": "OPEN"},
-  //     ];
-
-  //     final fetched = response.map((e) => Issue.fromJson(e)).toList();
-
-  //     setState(() {
-  //       issues = fetched;
-  //     });
-  //   } catch (e) {
-  //     setState(() {
-  //       errorMessage = 'Failed to load issues.';
-  //     });
-  //   } finally {
-  //     setState(() {
-  //       isLoading = false;
-  //     });
-  //   }
-  // }
   bool isLoading2 = false;
   Future<void> fetchData() async {
     print("Fetching Data...");
@@ -542,147 +509,243 @@ class _OffliningBayPageState extends State<OffliningBayPage> {
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: Colors.grey.shade200),
                     ),
-                    child: Row(
+                    child: Column(
                       children: [
-                        Expanded(
-                          child: Container(
-                            height: 50,
-                            decoration: BoxDecoration(
-                              color: toEolColor,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.green.shade300),
-                            ),
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.transparent,
-                                shadowColor: Colors.transparent,
-                                shape: RoundedRectangleBorder(
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  color: toEolColor,
                                   borderRadius: BorderRadius.circular(12),
+                                  border:
+                                      Border.all(color: Colors.green.shade300),
                                 ),
-                              ),
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) => ChooseEOLOperationsPage(
-                                            ModelId: widget.res['data']
-                                                ['vehicledata']['model_id'],
-                                            ShopId: widget.ShopId,
-                                            VehicleId: widget.res['data']
-                                                ['vehicledata']['id'],
-                                          )),
-                                );
-                              },
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: const [
-                                  Icon(
-                                    Icons.arrow_forward_rounded,
-                                    color: Colors.black87,
-                                    size: 20,
-                                  ),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    "TO EOL",
-                                    style: TextStyle(
-                                      color: Colors.black87,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 16,
+                                child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.transparent,
+                                    shadowColor: Colors.transparent,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
                                     ),
                                   ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Container(
-                            height: 50,
-                            decoration: BoxDecoration(
-                              color: toGcpColor,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.red.shade300),
-                            ),
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.transparent,
-                                shadowColor: Colors.transparent,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              onPressed: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (BuildContext context) {
-                                    return AlertDialog(
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      backgroundColor: Colors.white,
-                                      title: Row(
-                                        children: const [
-                                          Icon(Icons.warning,
-                                              color: Colors.orange),
-                                          SizedBox(width: 8),
-                                          Text("Confirm Submission"),
-                                        ],
-                                      ),
-                                      content: const Text(
-                                        "Are you sure you want to submit this data to GCP?",
-                                        style: TextStyle(fontSize: 16),
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.pop(context),
-                                          child: const Text(
-                                            "Cancel",
-                                            style:
-                                                TextStyle(color: Colors.grey),
-                                          ),
-                                        ),
-                                        ElevatedButton(
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.green,
-                                            foregroundColor: Colors.white,
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                          ),
-                                          onPressed: () async {
-                                            Navigator.pop(
-                                                context); // Close dialog first
-                                            await saveData(); // Your API call
-                                          },
-                                          child: const Text("Confirm"),
-                                        ),
-                                      ],
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (_) =>
+                                              ChooseEOLOperationsPage(
+                                                ModelId: widget.res['data']
+                                                    ['vehicledata']['model_id'],
+                                                ShopId: widget.ShopId,
+                                                VehicleId: widget.res['data']
+                                                    ['vehicledata']['id'],
+                                              )),
                                     );
                                   },
-                                );
-                              },
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: const [
-                                  Icon(
-                                    Icons.send_rounded,
-                                    color: Colors.black87,
-                                    size: 20,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: const [
+                                      Icon(
+                                        Icons.arrow_forward_rounded,
+                                        color: Colors.black87,
+                                        size: 20,
+                                      ),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        "TO EOL",
+                                        style: TextStyle(
+                                          color: Colors.black87,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    "TO GCP",
-                                    style: TextStyle(
-                                      color: Colors.black87,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 16,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Container(
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  color: toGcpColor,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border:
+                                      Border.all(color: Colors.red.shade300),
+                                ),
+                                child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.transparent,
+                                    shadowColor: Colors.transparent,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
                                     ),
                                   ),
-                                ],
+                                  onPressed: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (BuildContext context) {
+                                        return AlertDialog(
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(20),
+                                          ),
+                                          backgroundColor: Colors.white,
+                                          title: Row(
+                                            children: const [
+                                              Icon(Icons.warning,
+                                                  color: Colors.orange),
+                                              SizedBox(width: 8),
+                                              Text("Confirm Submission"),
+                                            ],
+                                          ),
+                                          content: const Text(
+                                            "Are you sure you want to submit this data to GCP?",
+                                            style: TextStyle(fontSize: 16),
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(context),
+                                              child: const Text(
+                                                "Cancel",
+                                                style: TextStyle(
+                                                    color: Colors.grey),
+                                              ),
+                                            ),
+                                            ElevatedButton(
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.green,
+                                                foregroundColor: Colors.white,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                              ),
+                                              onPressed: () async {
+                                                Navigator.pop(
+                                                    context); // Close dialog first
+                                                await saveData(); // Your API call
+                                              },
+                                              child: const Text("Confirm"),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    );
+                                  },
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: const [
+                                      Icon(
+                                        Icons.send_rounded,
+                                        color: Colors.black87,
+                                        size: 20,
+                                      ),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        "TO GCP",
+                                        style: TextStyle(
+                                          color: Colors.black87,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          width: double.infinity,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: Colors.orange.shade200,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.orange.shade300),
+                          ),
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return AlertDialog(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    backgroundColor: Colors.white,
+                                    title: Row(
+                                      children: const [
+                                        Icon(Icons.refresh,
+                                            color: Colors.orange),
+                                        SizedBox(width: 8),
+                                        Text("Confirm Rework"),
+                                      ],
+                                    ),
+                                    content: const Text(
+                                      "Are you sure you want to send this unit for rework?",
+                                      style: TextStyle(fontSize: 16),
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: const Text(
+                                          "Cancel",
+                                          style: TextStyle(color: Colors.grey),
+                                        ),
+                                      ),
+                                      ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.orange,
+                                          foregroundColor: Colors.white,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                        onPressed: () async {
+                                          Navigator.pop(
+                                              context); // Close dialog first
+                                          await saveReworkData(); // Your API call
+                                        },
+                                        child: const Text("Confirm"),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+                            },
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: const [
+                                Icon(
+                                  Icons.refresh,
+                                  color: Colors.black87,
+                                  size: 20,
+                                ),
+                                SizedBox(width: 8),
+                                Text(
+                                  "REWORK",
+                                  style: TextStyle(
+                                    color: Colors.black87,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -756,6 +819,87 @@ class _OffliningBayPageState extends State<OffliningBayPage> {
       }
     } catch (e) {
       debugPrint("❌ Error occurred during saveData: $e");
+      setState(() {
+        isLoading2 = false;
+      });
+      awesomeTopSnackbar(
+        context,
+        "Something went wrong. Please try again.",
+        iconWithDecoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(),
+          color: Colors.white,
+        ),
+        backgroundColor: Colors.red,
+      );
+    } finally {
+      setState(() {
+        isLoading2 = false;
+      });
+    }
+  }
+
+  Future<void> saveReworkData() async {
+    setState(() {
+      isLoading2 = true;
+    });
+
+    String url = Api.api_url + "moveunitRework";
+
+    var payload = {
+      "shop_id": widget.ShopId,
+      "next_shop_id": 19,
+      "vehicle_id": widget.res['data']['vehicledata']['id'],
+      "model_id": widget.res['data']['vehicledata']['model_id'],
+    };
+
+    try {
+      print("Rework Payload: $payload");
+
+      var response = await httppostwithtoken(
+        url,
+        "${user['data']['token']}",
+        payload,
+        context,
+      );
+
+      log(jsonEncode(response));
+
+      if (response == null || response['success'] == null) {
+        throw Exception("Invalid response from server.");
+      }
+
+      if (response['success']) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => AssemblyStations()),
+          (route) => route.isFirst,
+        );
+
+        awesomeTopSnackbar(
+          context,
+          "${response["msg"]}",
+          iconWithDecoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(),
+            color: Colors.white,
+          ),
+          backgroundColor: Colors.orange,
+        );
+      } else {
+        awesomeTopSnackbar(
+          context,
+          "${response["msg"] ?? "Failed to submit for rework."}",
+          iconWithDecoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(),
+            color: Colors.white,
+          ),
+          backgroundColor: Colors.red,
+        );
+      }
+    } catch (e) {
+      debugPrint("❌ Error occurred during saveReworkData: $e");
       setState(() {
         isLoading2 = false;
       });

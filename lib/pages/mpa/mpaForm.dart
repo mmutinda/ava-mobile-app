@@ -60,14 +60,12 @@ class _AuditChecklistPageState extends State<AuditChecklistPage> {
   bool isLoadingAuditItems = true;
   String auditItemsError = '';
 
-  String? selectedResp = "Prodn";
   String? selectedGroup = "Man";
 
   List<AuditChecklistItem> get filteredItems {
     return auditItems.where((item) {
-      final matchResp = selectedResp == null || item.resp == selectedResp;
       final matchGroup = selectedGroup == null || item.group == selectedGroup;
-      return matchResp && matchGroup;
+      return matchGroup;
     }).toList();
   }
 
@@ -103,10 +101,80 @@ class _AuditChecklistPageState extends State<AuditChecklistPage> {
 
   bool showFilters = false;
 
+  // Helper method to calculate progress
+  int get answeredCount {
+    return auditItems.where((item) => item.rating != null).length;
+  }
+
+  int get totalCount {
+    return auditItems.length;
+  }
+
+  double get progressPercentage {
+    if (totalCount == 0) return 0.0;
+    return answeredCount / totalCount;
+  }
+
+  // Predefined sections list
+  final List<String> predefinedSections = [
+    'TRAINING ACADEMY',
+    'AVA DISPENSARY',
+    'LOGISTICS BAY 1',
+    'MAIN GATE AND PARKING',
+    'MEN\'S CHANGING ROOM',
+    'END OF LINE',
+    'LOGISTICS BAY 3',
+    'ADMIN OFFICE, CANTEEN & SURROUNDING AREA',
+    'CONSUMABLES STORE & PAINT STORE',
+    'TOOLS STORE',
+    'OPERATIONS OFFICE',
+    'SPRAY BOOTH 2, OVEN AND WETDECK',
+    'CARPENTRY',
+    'LADIES\' CHANGING ROOM',
+    'MV TRAINING ROOM',
+    'PAINTSHOP: PRECLEANING + UNDERBODY BOOTH 1',
+    'MAINTENANCE, ENGINEERING, GENERATOR & COMPRESSOR AREA',
+    'CONFERENCE ROOM',
+    'LINE 3',
+    'BODY CONVERSION AREA',
+    'LOGISTICS BAY 2',
+    'CAB TRIM LINE 2 AND BURNTWOOD',
+    'CAB TRIM LINE 1 & BATTERY STORAGE',
+    'COOLANT STORAGE AND SHOWER TEST AREA',
+    'LINE 1',
+    'LINE 2',
+    'CAB TRIM LINE 3 & PILOT AREA',
+    'BUS PROJECT AREA',
+    'GAS STORAGE AREA',
+    'BODYSHOP - JIGSHOP AND METAL LINE',
+    'CHASSIS RIVET BAY 1, 2 & 3',
+    'SPRAY BOOTH 4 AND SURROUNDING',
+    'NEW LOGISTICS YARD',
+    'TUKTUK ASSEMBLY',
+    'JIG AND TROLLEY AREA',
+    'CHASSIS AND TIPPER PAINTING AREA',
+    'BODYSHOP - TIPPER',
+    'OTHER',
+  ];
+
+  String? selectedSection;
+
+  static const List<String> predefinedDepartments = [
+    'Finance and Administration',
+    'Innovation and Technology',
+    'Human Resources',
+    'Technical Service Department',
+    'Business Development',
+    'Production',
+    'Quality',
+  ];
+
+  String? selectedDepartment;
+
   final TextEditingController _sectionController = TextEditingController();
+  final TextEditingController _modelVariantController = TextEditingController();
   final TextEditingController _auditDepartmentController =
       TextEditingController();
-  final TextEditingController _auditSectionController = TextEditingController();
   final TextEditingController _periodDurationController =
       TextEditingController();
   final SingleValueDropDownController _shopController =
@@ -248,11 +316,135 @@ class _AuditChecklistPageState extends State<AuditChecklistPage> {
     );
   }
 
+  Widget _buildSectionDropdown() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: DropdownButtonFormField<String>(
+        value: selectedSection,
+        decoration: InputDecoration(
+          labelText: 'Audit Section/Line',
+          prefixIcon: Container(
+            margin: EdgeInsets.all(8),
+            padding: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: mycolor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(Icons.article, color: mycolor, size: 20),
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: mycolor, width: 2),
+          ),
+          filled: true,
+          fillColor: Colors.grey.shade50,
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        ),
+        items: predefinedSections.map((String section) {
+          return DropdownMenuItem<String>(
+            value: section,
+            child: Text(
+              section,
+              style: TextStyle(fontSize: 14),
+            ),
+          );
+        }).toList(),
+        onChanged: (String? value) {
+          setState(() {
+            selectedSection = value;
+            _sectionController.text = value ?? '';
+          });
+        },
+        validator: (value) =>
+            value == null || value.isEmpty ? 'Please select a section' : null,
+        isExpanded: true,
+        icon: Icon(Icons.keyboard_arrow_down, color: mycolor),
+        dropdownColor: Colors.white,
+        style: TextStyle(
+          color: Colors.grey[800],
+          fontSize: 14,
+        ),
+        menuMaxHeight: 300,
+      ),
+    );
+  }
+
+  Widget _buildDepartmentDropdown() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: DropdownButtonFormField<String>(
+        value: selectedDepartment,
+        decoration: InputDecoration(
+          labelText: 'Audit Department',
+          prefixIcon: Container(
+            margin: EdgeInsets.all(8),
+            padding: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: mycolor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(Icons.person, color: mycolor, size: 20),
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: mycolor, width: 2),
+          ),
+          filled: true,
+          fillColor: Colors.grey.shade50,
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        ),
+        items: predefinedDepartments.map((String department) {
+          return DropdownMenuItem<String>(
+            value: department,
+            child: Text(
+              department,
+              style: TextStyle(fontSize: 14),
+            ),
+          );
+        }).toList(),
+        onChanged: (String? value) {
+          setState(() {
+            selectedDepartment = value;
+            _auditDepartmentController.text = value ?? '';
+          });
+        },
+        validator: (value) => value == null || value.isEmpty
+            ? 'Please select a department'
+            : null,
+        isExpanded: true,
+        icon: Icon(Icons.keyboard_arrow_down, color: mycolor),
+        dropdownColor: Colors.white,
+        style: TextStyle(
+          color: Colors.grey[800],
+          fontSize: 14,
+        ),
+        menuMaxHeight: 300,
+      ),
+    );
+  }
+
   String errorText = '';
   Map<String, dynamic> user = {};
   bool isLoading2 = false;
   List<dynamic> shops = [];
   bool isLoading = true;
+  bool _documentInfoCompleted = false;
 
   @override
   void initState() {
@@ -261,9 +453,25 @@ class _AuditChecklistPageState extends State<AuditChecklistPage> {
       setState(() {
         user = jsonDecode(value);
       });
-      loadShops();
-      loadAuditItems();
+      _loadAllData();
     });
+  }
+
+  Future<void> _loadAllData() async {
+    await Future.wait([
+      loadShops(),
+      loadAuditItems(),
+    ]);
+
+    // Show document information dialog after all data is loaded
+    if (!isLoadingAuditItems &&
+        auditItemsError.isEmpty &&
+        !isLoading &&
+        !_documentInfoCompleted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showDocumentInformationDialog();
+      });
+    }
   }
 
   Future<void> loadAuditItems() async {
@@ -282,12 +490,8 @@ class _AuditChecklistPageState extends State<AuditChecklistPage> {
 
         // Update filter values based on fetched data
         if (auditItems.isNotEmpty) {
-          final uniqueResps = auditItems.map((e) => e.resp).toSet().toList();
           final uniqueGroups = auditItems.map((e) => e.group).toSet().toList();
 
-          if (uniqueResps.isNotEmpty && !uniqueResps.contains(selectedResp)) {
-            selectedResp = uniqueResps.first;
-          }
           if (uniqueGroups.isNotEmpty &&
               !uniqueGroups.contains(selectedGroup)) {
             selectedGroup = uniqueGroups.first;
@@ -329,6 +533,205 @@ class _AuditChecklistPageState extends State<AuditChecklistPage> {
     return await httpget(url, user['data']['token'], context);
   }
 
+  Future<void> _showDocumentInformationDialog() async {
+    // Add a small delay to ensure everything is loaded
+    await Future.delayed(Duration(milliseconds: 500));
+
+    // Pre-fill some default values
+    final now = DateTime.now();
+    _periodDurationController.text =
+        "${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}";
+
+    if (!context.mounted) return;
+
+    // Show document information dialog
+    bool? result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false, // Don't allow dismissing the dialog
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+            builder: (BuildContext context, StateSetter setDialogState) {
+          return AlertDialog(
+            backgroundColor: Colors.white,
+            title: Row(
+              children: [
+                Icon(Icons.description, color: mycolor),
+                SizedBox(width: 8),
+                Expanded(child: Text('Document Information')),
+              ],
+            ),
+            content: Container(
+              width: double.maxFinite,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    buildShopDropdown(),
+                    _buildHeaderField(Icons.article, 'Project Model & Variant',
+                        _modelVariantController),
+                    _buildSectionDropdown(),
+                    _buildDepartmentDropdown(),
+                    // _buildHeaderField(Icons.schedule, 'Period/ Duration',
+                    //     _periodDurationController,
+                    //     isDate: true),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () {
+                  // Validate the form
+                  if (_validateDocumentForm()) {
+                    Navigator.of(dialogContext).pop(true);
+                  }
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: mycolor),
+                child: Text('Continue', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          );
+        });
+      },
+    );
+
+    if (result == true) {
+      setState(() {
+        _documentInfoCompleted = true;
+      });
+      _showSuccessMessage();
+    }
+  }
+
+  bool _validateDocumentForm() {
+    List<String> missingFields = [];
+
+    if (_sectionController.text.trim().isEmpty)
+      missingFields.add('Project Model & Variant');
+    if (selectedSection == null || selectedSection!.isEmpty)
+      missingFields.add('Audit section/ Line');
+    if (selectedDepartment == null || selectedDepartment!.isEmpty)
+      missingFields.add('Audit department');
+
+    if (_shopController.dropDownValue == null)
+      missingFields.add('Shop/Station');
+
+    if (missingFields.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.white),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                    'Please fill in all required fields:\n${missingFields.join('\n')}',
+                    style: TextStyle(fontWeight: FontWeight.w500)),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+      return false;
+    }
+
+    return true;
+  }
+
+  void _showSuccessMessage() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.white, size: 20),
+            SizedBox(width: 8),
+            Text(
+                'Document Information completed! You can now proceed with the audit checklist.'),
+          ],
+        ),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.all(16),
+        duration: Duration(seconds: 3),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDocumentInfoRequiredState() {
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        child: Center(
+          child: Container(
+            margin: EdgeInsets.all(20),
+            padding: EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: mycolor.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.description, size: 48, color: mycolor),
+                ),
+                SizedBox(height: 20),
+                Text(
+                  'Document Information Required',
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey[800]),
+                ),
+                SizedBox(height: 12),
+                Text(
+                  'Please complete the document information form to proceed with the audit checklist.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                ),
+                SizedBox(height: 20),
+                ElevatedButton.icon(
+                  onPressed: _showDocumentInformationDialog,
+                  icon: Icon(Icons.description),
+                  label: Text('Fill Document Information'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: mycolor,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -347,22 +750,12 @@ class _AuditChecklistPageState extends State<AuditChecklistPage> {
                         color: Colors.black26,
                       ),
                     ])),
+            // Progress indicator
+
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text("Resp: ${selectedResp ?? 'All'}",
-                      style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white)),
-                ),
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
@@ -439,7 +832,9 @@ class _AuditChecklistPageState extends State<AuditChecklistPage> {
               ? _buildLoadingState()
               : errorText.isNotEmpty || auditItemsError.isNotEmpty
                   ? _buildErrorState()
-                  : _buildMainContent(),
+                  : !_documentInfoCompleted
+                      ? _buildDocumentInfoRequiredState()
+                      : _buildMainContent(),
         ),
       ),
     );
@@ -450,6 +845,16 @@ class _AuditChecklistPageState extends State<AuditChecklistPage> {
       loadShops(),
       loadAuditItems(),
     ]);
+
+    // Show document information dialog after refresh if not completed
+    if (!isLoadingAuditItems &&
+        auditItemsError.isEmpty &&
+        !isLoading &&
+        !_documentInfoCompleted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showDocumentInformationDialog();
+      });
+    }
   }
 
   Widget _buildLoadingState() {
@@ -687,7 +1092,6 @@ class _AuditChecklistPageState extends State<AuditChecklistPage> {
   }
 
   Widget _buildMainContent() {
-    final uniqueResps = auditItems.map((e) => e.resp).toSet().toList();
     final uniqueGroups = auditItems.map((e) => e.group).toSet().toList();
 
     return Column(
@@ -742,115 +1146,51 @@ class _AuditChecklistPageState extends State<AuditChecklistPage> {
                         ],
                       ),
                       SizedBox(height: 16),
-                      Row(
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Responsibility",
-                                    style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.grey.shade700)),
-                                const SizedBox(height: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        Colors.grey.shade50,
-                                        Colors.white
-                                      ],
-                                    ),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                        color: mycolor.withOpacity(0.3)),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: mycolor.withOpacity(0.1),
-                                        blurRadius: 4,
-                                        offset: Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: DropdownButton<String>(
-                                    isExpanded: true,
-                                    underline: const SizedBox(),
-                                    value: selectedResp,
-                                    hint: const Text("Select RESP"),
-                                    icon: Icon(Icons.arrow_drop_down_rounded,
-                                        color: mycolor),
-                                    items: uniqueResps.map((resp) {
-                                      return DropdownMenuItem<String>(
-                                        value: resp,
-                                        child: Text(resp,
-                                            style: TextStyle(
-                                                fontWeight: FontWeight.w500)),
-                                      );
-                                    }).toList(),
-                                    onChanged: (value) =>
-                                        setState(() => selectedResp = value),
-                                  ),
+                          Text("Category Group",
+                              style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey.shade700)),
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [Colors.grey.shade50, Colors.white],
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              border:
+                                  Border.all(color: mycolor.withOpacity(0.3)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: mycolor.withOpacity(0.1),
+                                  blurRadius: 4,
+                                  offset: Offset(0, 2),
                                 ),
                               ],
                             ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Category Group",
-                                    style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.grey.shade700)),
-                                const SizedBox(height: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        Colors.grey.shade50,
-                                        Colors.white
-                                      ],
-                                    ),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                        color: mycolor.withOpacity(0.3)),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: mycolor.withOpacity(0.1),
-                                        blurRadius: 4,
-                                        offset: Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: DropdownButton<String>(
-                                    isExpanded: true,
-                                    underline: const SizedBox(),
-                                    value: selectedGroup!.isNotEmpty
-                                        ? selectedGroup
-                                        : null,
-                                    hint: const Text("Select Group"),
-                                    icon: Icon(Icons.arrow_drop_down_rounded,
-                                        color: mycolor),
-                                    items: uniqueGroups.map((group) {
-                                      return DropdownMenuItem<String>(
-                                        value: group,
-                                        child: Text(group,
-                                            style: TextStyle(
-                                                fontWeight: FontWeight.w500)),
-                                      );
-                                    }).toList(),
-                                    onChanged: (value) => setState(
-                                        () => selectedGroup = value ?? ''),
-                                  ),
-                                ),
-                              ],
+                            child: DropdownButton<String>(
+                              isExpanded: true,
+                              underline: const SizedBox(),
+                              value: selectedGroup!.isNotEmpty
+                                  ? selectedGroup
+                                  : null,
+                              hint: const Text("Select Group"),
+                              icon: Icon(Icons.arrow_drop_down_rounded,
+                                  color: mycolor),
+                              items: uniqueGroups.map((group) {
+                                return DropdownMenuItem<String>(
+                                  value: group,
+                                  child: Text(group,
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.w500)),
+                                );
+                              }).toList(),
+                              onChanged: (value) =>
+                                  setState(() => selectedGroup = value ?? ''),
                             ),
                           ),
                         ],
@@ -863,6 +1203,127 @@ class _AuditChecklistPageState extends State<AuditChecklistPage> {
           ),
           secondChild: const SizedBox.shrink(),
         ),
+
+        // Progress Card
+        if (auditItems.isNotEmpty)
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Card(
+              color: Colors.white,
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: mycolor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(Icons.assignment_turned_in_outlined,
+                              color: mycolor, size: 20),
+                        ),
+                        SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Overall Progress',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey.shade800,
+                              ),
+                            ),
+                            Text(
+                              filteredItems.length == totalCount
+                                  ? '$answeredCount of $totalCount questions completed'
+                                  : '$answeredCount of $totalCount total questions answered',
+                              style: TextStyle(
+                                // fontSize: 14,
+                                color: Colors.grey.shade600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                        Spacer(),
+                        Container(
+                          padding:
+                              EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: progressPercentage == 1.0
+                                ? Colors.green.withOpacity(0.1)
+                                : mycolor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            '${(progressPercentage * 100).toInt()}%',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: progressPercentage == 1.0
+                                  ? Colors.green
+                                  : mycolor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 12),
+                    Container(
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: FractionallySizedBox(
+                        alignment: Alignment.centerLeft,
+                        widthFactor: progressPercentage,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: progressPercentage == 1.0
+                                  ? [Colors.green, Colors.green.shade400]
+                                  : [mycolor, mycolor.withOpacity(0.8)],
+                            ),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (answeredCount > 0) ...[
+                      SizedBox(height: 8),
+                      Text(
+                        progressPercentage == 1.0
+                            ? '🎉 All questions completed!'
+                            : '${totalCount - answeredCount} questions remaining',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: progressPercentage == 1.0
+                              ? Colors.green
+                              : Colors.grey.shade600,
+                          fontWeight: progressPercentage == 1.0
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
 
         // Checklist
         Expanded(
@@ -982,26 +1443,62 @@ class _AuditChecklistPageState extends State<AuditChecklistPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Container(
-                                  padding: EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        mycolor.withOpacity(0.1),
-                                        mycolor.withOpacity(0.05)
-                                      ],
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            mycolor.withOpacity(0.1),
+                                            mycolor.withOpacity(0.05)
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Text(
+                                        filteredItems.length == totalCount
+                                            ? "Question ${index + 1} of $totalCount"
+                                            : "Question ${index + 1} of ${filteredItems.length} filtered ($totalCount total)",
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: mycolor,
+                                        ),
+                                      ),
                                     ),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                    "Question ${index + 1}",
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: mycolor,
-                                    ),
-                                  ),
+                                    Spacer(),
+                                    if (item.rating != null)
+                                      Container(
+                                        padding: EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.green.withOpacity(0.1),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          border: Border.all(
+                                              color: Colors.green
+                                                  .withOpacity(0.3)),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.check_circle,
+                                                color: Colors.green, size: 14),
+                                            SizedBox(width: 4),
+                                            Text(
+                                              "Answered",
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w600,
+                                                color: Colors.green,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                  ],
                                 ),
                                 const SizedBox(height: 12),
                                 Text(
@@ -1161,16 +1658,37 @@ class _AuditChecklistPageState extends State<AuditChecklistPage> {
                               color: Colors.white.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: const Icon(Icons.send_rounded,
-                                color: Colors.white, size: 20),
-                          ),
-                          label: const Text(
-                            "Submit Audit Checklist",
-                            style: TextStyle(
+                            child: Icon(
+                              progressPercentage == 1.0
+                                  ? Icons.check_circle_rounded
+                                  : Icons.send_rounded,
                               color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                              size: 20,
                             ),
+                          ),
+                          label: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                progressPercentage == 1.0
+                                    ? "Submit Complete Audit"
+                                    : "Submit Partial Audit ($answeredCount/$totalCount)",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              if (progressPercentage < 1.0)
+                                Text(
+                                  "${totalCount - answeredCount} questions not answered",
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.8),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.normal,
+                                  ),
+                                ),
+                            ],
                           ),
                           onPressed: () {
                             final answered = auditItems
@@ -1186,7 +1704,7 @@ class _AuditChecklistPageState extends State<AuditChecklistPage> {
                                       SizedBox(width: 8),
                                       Expanded(
                                         child: Text(
-                                            "Please answer at least one checklist item before submitting.",
+                                            "Please answer at least one question before submitting. Progress: $answeredCount/$totalCount completed.",
                                             style: TextStyle(
                                                 fontWeight: FontWeight.w500)),
                                       ),
@@ -1201,194 +1719,55 @@ class _AuditChecklistPageState extends State<AuditChecklistPage> {
                               );
                               return;
                             }
-                            _showDocumentDialog();
+
+                            // Show confirmation dialog for partial submissions
+                            if (progressPercentage < 1.0) {
+                              showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return AlertDialog(
+                                    title: Row(
+                                      children: [
+                                        Icon(Icons.info_outline,
+                                            color: mycolor),
+                                        SizedBox(width: 8),
+                                        Text('Partial Submission'),
+                                      ],
+                                    ),
+                                    content: Text(
+                                      'You have answered $answeredCount out of $totalCount questions (${(progressPercentage * 100).toInt()}% complete).\n\nDo you want to submit this partial audit?',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.of(context).pop(),
+                                        child: Text('Cancel'),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+                                          submitChecklistData();
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: mycolor,
+                                        ),
+                                        child: Text('Submit Anyway',
+                                            style:
+                                                TextStyle(color: Colors.white)),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+                            } else {
+                              submitChecklistData();
+                            }
                           },
                         ),
                       ),
                     ),
                   )
       ],
-    );
-  }
-
-  void _showDocumentDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            return Dialog(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20)),
-              elevation: 2,
-              backgroundColor: Colors.white,
-              child: Container(
-                constraints: BoxConstraints(
-                    maxHeight: MediaQuery.of(context).size.height * 0.8),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Document Information',
-                                    style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.grey.shade800),
-                                  ),
-                                  Text(
-                                    'Complete the form details',
-                                    style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey.shade600),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-                        buildShopDropdown(),
-                        _buildHeaderField(Icons.article,
-                            'Project Model & Variant', _sectionController),
-                        _buildHeaderField(Icons.person, 'Audit department',
-                            _auditDepartmentController),
-                        _buildHeaderField(Icons.person, 'Audit section/ Line',
-                            _auditSectionController),
-                        _buildHeaderField(Icons.schedule, 'Period/ Duration',
-                            _periodDurationController),
-                        const SizedBox(height: 24),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(12),
-                                  border:
-                                      Border.all(color: Colors.grey.shade300),
-                                ),
-                                child: ElevatedButton.icon(
-                                  onPressed: () => Navigator.pop(context),
-                                  icon: Icon(Icons.close_rounded,
-                                      color: Colors.grey.shade700),
-                                  label: Text("Cancel",
-                                      style: TextStyle(
-                                          color: Colors.grey.shade700)),
-                                  style: ElevatedButton.styleFrom(
-                                    minimumSize: const Size(120, 50),
-                                    backgroundColor: Colors.grey.shade100,
-                                    shadowColor: Colors.transparent,
-                                    shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(12)),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: 16),
-                            Expanded(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [mycolor, mycolor.withOpacity(0.8)],
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                  // boxShadow: [
-                                  //   BoxShadow(
-                                  //     color: mycolor.withOpacity(0.3),
-                                  //     blurRadius: 8,
-                                  //     offset: Offset(0, 4),
-                                  //   ),
-                                  // ],
-                                ),
-                                child: ElevatedButton.icon(
-                                  onPressed: () {
-                                    if (_sectionController.text
-                                            .trim()
-                                            .isEmpty ||
-                                        _auditDepartmentController.text
-                                            .trim()
-                                            .isEmpty ||
-                                        _auditSectionController.text
-                                            .trim()
-                                            .isEmpty ||
-                                        _periodDurationController.text
-                                            .trim()
-                                            .isEmpty ||
-                                        _shopController.dropDownValue == null) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content: Row(
-                                            children: [
-                                              Icon(Icons.warning_amber_rounded,
-                                                  color: Colors.white),
-                                              SizedBox(width: 8),
-                                              Expanded(
-                                                child: Text(
-                                                    "Please fill in all fields before submitting.",
-                                                    style: TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.w500)),
-                                              ),
-                                            ],
-                                          ),
-                                          backgroundColor: Colors.orange,
-                                          behavior: SnackBarBehavior.floating,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                          ),
-                                        ),
-                                      );
-                                      return;
-                                    }
-                                    Navigator.pop(context);
-                                    Future.delayed(Duration.zero, () {
-                                      submitChecklistData();
-                                    });
-                                  },
-                                  icon: Icon(Icons.send_rounded,
-                                      color: Colors.white),
-                                  label: Text("Submit",
-                                      style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold)),
-                                  style: ElevatedButton.styleFrom(
-                                    minimumSize: const Size(120, 50),
-                                    backgroundColor: Colors.transparent,
-                                    shadowColor: Colors.transparent,
-                                    shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(12)),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        )
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
     );
   }
 
@@ -1424,9 +1803,9 @@ class _AuditChecklistPageState extends State<AuditChecklistPage> {
         .toList();
 
     final payload = {
-      "project_model_variant": _sectionController.text,
-      "audit_department": _auditDepartmentController.text,
-      "audit_line": _auditSectionController.text,
+      "project_model_variant": _modelVariantController.text,
+      "audit_department": selectedDepartment ?? '',
+      "audit_line": selectedSection ?? '',
       "station_number": _shopController.dropDownValue!.name.toString(),
       "period": _periodDurationController.text,
       // "document_ref": "AVA.QM.D.021",

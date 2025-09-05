@@ -553,14 +553,14 @@ class _ReceivingFormState extends State<ReceivingForm>
                 hint: 'Enter lot number',
                 icon: FeatherIcons.hash,
               ),
-              const SizedBox(height: 20),
-              _buildStyledTextField(
-                controller: _lotQty,
-                label: 'Lot Quantity',
-                hint: 'Enter lot quantity',
-                icon: FeatherIcons.layers,
-                keyboardType: TextInputType.number,
-              ),
+              // const SizedBox(height: 20),
+              // _buildStyledTextField(
+              //   controller: _lotQty,
+              //   label: 'Lot Quantity',
+              //   hint: 'Enter lot quantity',
+              //   icon: FeatherIcons.layers,
+              //   keyboardType: TextInputType.number,
+              // ),
               const SizedBox(height: 24),
               _buildFileUploadSection(theme),
               const SizedBox(height: 24),
@@ -1114,7 +1114,7 @@ class _ReceivingFormState extends State<ReceivingForm>
         _customerModel.dropDownValue!.value.toString();
     request.fields['unit_model_id'] = _carModel.dropDownValue!.value.toString();
     request.fields['lot_number'] = _lotNo.text;
-    request.fields['lot_qty'] = _lotQty.text;
+    // request.fields['lot_qty'] = _lotQty.text;
     request.fields['packing_list_issue'] = selectedValue;
 
     // Add issue-related fields only if there's a packaging issue
