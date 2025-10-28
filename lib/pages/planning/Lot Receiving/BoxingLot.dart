@@ -7,7 +7,6 @@ import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/models/qc_inpection.dart';
 import 'package:isuze_pqcs/pages/planning/Lot%20Receiving/UnboxingScreen%20.dart';
-import 'package:isuze_pqcs/pages/qc_inspection/chooseComponent.dart';
 import 'package:nb_utils/nb_utils.dart';
 
 class boxingLot extends StatefulWidget {
@@ -171,11 +170,8 @@ class _boxingLotState extends State<boxingLot> {
                     Color categoryColor = colors[index % colors.length];
                     var vin = vehicles[index].vin;
                     var model = vehicles[index].model;
-                    var UnitRemaining = 'All';
                     if (vehicles[index].cabin_cockpit_moved == '1') {
-                      UnitRemaining = 'Chassis';
                     } else if (vehicles[index].chasis_moved == '1') {
-                      UnitRemaining = 'Cabin Or Cockpit';
                     }
 
                     if (searchText.isNotEmpty &&

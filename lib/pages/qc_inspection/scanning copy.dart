@@ -198,6 +198,7 @@ class _ScanningState extends State<Scanning> {
         if (widget.shopId == '19') {
           ReworkList(
             unit_movement_id: res['data']['unit_movement_id'].toString(),
+            vehicle_id: res['data']['vehicledata']['id'].toString(),
           ).launch(
             context,
             pageRouteAnimation: PageRouteAnimation.Slide,
@@ -380,7 +381,7 @@ class _ScanningState extends State<Scanning> {
                                       borderRadius: BorderRadius.circular(16),
                                       onTap: () {
                                         showTapScanToast(context);
-                                        processSKU(car.vin);
+                                        // processSKU(car.vin);
                                       },
                                       child: Padding(
                                         padding: const EdgeInsets.all(16),
@@ -561,8 +562,11 @@ class _ScanningState extends State<Scanning> {
                                     child: InkWell(
                                       borderRadius: BorderRadius.circular(16),
                                       onTap: () {
-                                        showTapScanToast(context);
-                                        processSKU(vehicles[index].vin);
+                                        if (widget.shopId == '16') {
+                                          processSKU(vehicles[index].vin);
+                                        } else {
+                                          showTapScanToast(context);
+                                        }
                                       },
                                       child: Padding(
                                         padding: const EdgeInsets.all(16),
@@ -762,176 +766,178 @@ class _ScanningState extends State<Scanning> {
                             ),
                           ),
                         ),
-                      Container(
-                        margin: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              mycolor,
-                              mycolor.withOpacity(0.8),
-                            ],
-                          ),
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
+                      if (widget.shopId != '16')
+                        Container(
+                          margin: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(16),
-                            onTap: () async {
-                              showInDialog(context,
-                                      contentPadding: EdgeInsets.all(0),
-                                      builder: (context) => QRScanDialog(),
-                                      dialogAnimation: DialogAnimation.SCALE)
-                                  .then((value) {
-                                print(value);
-                                if (value != null) {
-                                  // fetchData();
-                                  EasyLoading.show(
-                                      status: "Loading Categories...",
-                                      maskType: EasyLoadingMaskType.black);
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                mycolor,
+                                mycolor.withOpacity(0.8),
+                              ],
+                            ),
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: () async {
+                                showInDialog(context,
+                                        contentPadding: EdgeInsets.all(0),
+                                        builder: (context) => QRScanDialog(),
+                                        dialogAnimation: DialogAnimation.SCALE)
+                                    .then((value) {
+                                  print(value);
+                                  if (value != null) {
+                                    // fetchData();
+                                    EasyLoading.show(
+                                        status: "Loading Categories...",
+                                        maskType: EasyLoadingMaskType.black);
 
-                                  fetchproduct(value).then((res) {
-                                    EasyLoading.dismiss().whenComplete(() {
-                                      if (res == null || res["data"] == null) {
-                                        // Check if it's a NotFoundHttpException (invalid barcode)
-                                        String errorMessage = "Item not found";
-                                        if (res != null &&
-                                            res["exception"] != null &&
-                                            res["exception"]
-                                                .toString()
-                                                .contains(
-                                                    "NotFoundHttpException")) {
-                                          errorMessage = "Invalid barcode";
-                                        } else if (res != null &&
-                                            res["msg"] != null &&
-                                            res["msg"].toString().isNotEmpty) {
-                                          errorMessage = res["msg"].toString();
-                                        }
+                                    fetchproduct(value).then((res) {
+                                      EasyLoading.dismiss().whenComplete(() {
+                                        if (res == null ||
+                                            res["data"] == null) {
+                                          // Check if it's a NotFoundHttpException (invalid barcode)
+                                          String errorMessage =
+                                              "Item not found";
+                                          if (res != null &&
+                                              res["exception"] != null &&
+                                              res["exception"]
+                                                  .toString()
+                                                  .contains(
+                                                      "NotFoundHttpException")) {
+                                            errorMessage = "Invalid barcode";
+                                          } else if (res != null &&
+                                              res["msg"] != null &&
+                                              res["msg"]
+                                                  .toString()
+                                                  .isNotEmpty) {
+                                            errorMessage =
+                                                res["msg"].toString();
+                                          }
 
-                                        awesomeTopSnackbar(
-                                          context,
-                                          errorMessage,
-                                          iconWithDecoration: BoxDecoration(
-                                              borderRadius:
-                                                  BorderRadius.circular(20),
-                                              border: Border.all(),
-                                              color: Colors.white),
-                                          icon: Icon(
-                                            Icons.close,
-                                            color: Colors.red,
-                                          ),
-                                        );
-                                      } else {
-                                        if (widget.shopId == '16') {
-                                          OffliningBayPage(
-                                            ShopId: widget.shopId,
-                                            res: res,
-                                            shop_name: widget.shopName,
-                                          ).launch(
+                                          awesomeTopSnackbar(
                                             context,
-                                            pageRouteAnimation:
-                                                PageRouteAnimation.Slide,
+                                            errorMessage,
+                                            iconWithDecoration: BoxDecoration(
+                                                borderRadius:
+                                                    BorderRadius.circular(20),
+                                                border: Border.all(),
+                                                color: Colors.white),
+                                            icon: Icon(
+                                              Icons.close,
+                                              color: Colors.red,
+                                            ),
                                           );
-                                        } else if (widget.shopId == '18') {
-                                          SummaryGCP(
-                                            ageing: res['data']['vehicledata']
-                                                ['vin_no'],
-                                            chassis: res['data']['vehicledata']
-                                                ['chassis_no'],
-                                            model: res['data']['vehicledata']
-                                                ['model'],
-                                            unit_movement_id: res['data']
-                                                    ['unit_movement_id']
-                                                .toString(),
-                                          ).launch(
-                                            context,
-                                            pageRouteAnimation:
-                                                PageRouteAnimation.Slide,
-                                          );
-                                        }
-                                        if (widget.shopId == '19') {
-                                          ReworkList(
-                                            unit_movement_id: res['data']
-                                                    ['unit_movement_id']
-                                                .toString(),
-                                          ).launch(
-                                            context,
-                                            pageRouteAnimation:
-                                                PageRouteAnimation.Slide,
-                                          );
-                                          return;
-                                        } else if (widget.shopId == '17') {
-                                          JobCardQuestionsTemplate(
-                                            chasis_no: res['data']
-                                                ['vehicledata']['vin_no'],
-                                            shop_name: 'EOL station',
-                                            station_id: widget.subStationId,
-                                            shop_id: widget.shopId,
-                                            vehicle_id: res['data']
-                                                ['vehicledata']['id'],
-                                            categoryName: widget.shopName,
-                                            vehicle_receiving_item: res['data']
-                                                    ['vehicledata']
-                                                ['vehicle_receiving_item'],
-                                          ).launch(
-                                            context,
-                                            pageRouteAnimation:
-                                                PageRouteAnimation.Slide,
-                                          );
-                                        } else if (res["data"]['unitcheck'] ==
-                                            false) {
-                                          showInDialog(context,
-                                              builder: (context) =>
-                                                  showPosition(
-                                                      errorMessage: res["data"]
-                                                              ['currentposion']
-                                                          .toString()),
-                                              dialogAnimation: DialogAnimation
-                                                  .SLIDE_TOP_BOTTOM);
                                         } else {
-                                          QcCategories(
-                                            ShopId: widget.shopId,
-                                            res: res,
-                                            shop_name: widget.shopName,
-                                          ).launch(context,
+                                          if (widget.shopId == '18') {
+                                            SummaryGCP(
+                                              ageing: res['data']['vehicledata']
+                                                  ['vin_no'],
+                                              chassis: res['data']
+                                                  ['vehicledata']['chassis_no'],
+                                              model: res['data']['vehicledata']
+                                                  ['model'],
+                                              unit_movement_id: res['data']
+                                                      ['unit_movement_id']
+                                                  .toString(),
+                                            ).launch(
+                                              context,
                                               pageRouteAnimation:
-                                                  PageRouteAnimation.Slide);
+                                                  PageRouteAnimation.Slide,
+                                            );
+                                            return;
+                                          }
+                                          if (widget.shopId == '19') {
+                                            ReworkList(
+                                                    unit_movement_id: res[
+                                                                'data']
+                                                            ['unit_movement_id']
+                                                        .toString(),
+                                                    vehicle_id: res['data']
+                                                        ['vehicledata']['id'])
+                                                .launch(
+                                              context,
+                                              pageRouteAnimation:
+                                                  PageRouteAnimation.Slide,
+                                            );
+                                            return;
+                                          } else if (widget.shopId == '17') {
+                                            JobCardQuestionsTemplate(
+                                              chasis_no: res['data']
+                                                  ['vehicledata']['vin_no'],
+                                              shop_name: 'EOL station',
+                                              station_id: widget.subStationId,
+                                              shop_id: widget.shopId,
+                                              vehicle_id: res['data']
+                                                  ['vehicledata']['id'],
+                                              categoryName: widget.shopName,
+                                              vehicle_receiving_item: res[
+                                                      'data']['vehicledata']
+                                                  ['vehicle_receiving_item'],
+                                            ).launch(
+                                              context,
+                                              pageRouteAnimation:
+                                                  PageRouteAnimation.Slide,
+                                            );
+                                            return;
+                                          } else if (res["data"]['unitcheck'] ==
+                                              false) {
+                                            showInDialog(context,
+                                                builder: (context) =>
+                                                    showPosition(
+                                                        errorMessage: res[
+                                                                    "data"][
+                                                                'currentposion']
+                                                            .toString()),
+                                                dialogAnimation: DialogAnimation
+                                                    .SLIDE_TOP_BOTTOM);
+                                          } else {
+                                            QcCategories(
+                                              ShopId: widget.shopId,
+                                              res: res,
+                                              shop_name: widget.shopName,
+                                            ).launch(context,
+                                                pageRouteAnimation:
+                                                    PageRouteAnimation.Slide);
+                                          }
                                         }
-                                      }
+                                      });
                                     });
-                                  });
-                                }
-                              });
-                            },
-                            child: Container(
-                              width: double.infinity,
-                              height: 56,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.qr_code_scanner,
-                                    color: Colors.white,
-                                    size: 28,
-                                  ),
-                                  SizedBox(width: 12),
-                                  Text(
-                                    'SCAN QR CODE',
-                                    style: TextStyle(
+                                  }
+                                });
+                              },
+                              child: Container(
+                                width: double.infinity,
+                                height: 56,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.qr_code_scanner,
                                       color: Colors.white,
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 1.2,
+                                      size: 28,
                                     ),
-                                  ),
-                                ],
+                                    SizedBox(width: 12),
+                                    Text(
+                                      'SCAN QR CODE',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1.2,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
                     ],
                   ),
       ),

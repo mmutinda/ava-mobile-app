@@ -852,9 +852,7 @@ class _UnboxingListState extends State<UnboxingList>
       child: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: allChecklistsDone
-                ? [mycolor.withOpacity(0.8), mycolor]
-                : [Colors.grey.withOpacity(0.8), Colors.grey],
+            colors: [mycolor.withOpacity(0.8), mycolor],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -873,49 +871,53 @@ class _UnboxingListState extends State<UnboxingList>
           color: Colors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(12),
-            onTap: allChecklistsDone
-                ? () async {
-                    final result = await showDialog(
-                      context: context,
-                      barrierDismissible: false,
-                      builder: (_) => LotIssueDialogFinishRacking(
-                        lotId: widget.Id,
-                        user: user['data']['token'],
-                        lotNumber: widget.LotNo,
-                      ),
-                    );
+            onTap:
+                // allChecklistsDone
+                //     ?
+                () async {
+              final result = await showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (_) => LotIssueDialogFinishRacking(
+                  lotId: widget.Id,
+                  user: user['data']['token'],
+                  lotNumber: widget.LotNo,
+                ),
+              );
 
-                    if (result != null) {
-                      print("Push to Planning with: $result");
-                    }
-                  }
-                : () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        margin: const EdgeInsets.all(50),
-                        padding: const EdgeInsets.all(10),
-                        behavior: SnackBarBehavior.floating,
-                        content:
-                            const Text("Racking incomplete for some units."),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  },
+              if (result != null) {
+                print("Push to Planning with: $result");
+              }
+            },
+            // : () {
+            //     ScaffoldMessenger.of(context).showSnackBar(
+            //       SnackBar(
+            //         margin: const EdgeInsets.all(50),
+            //         padding: const EdgeInsets.all(10),
+            //         behavior: SnackBarBehavior.floating,
+            //         content:
+            //             const Text("Racking incomplete for some units."),
+            //         backgroundColor: Colors.red,
+            //       ),
+            //     );
+            //   },
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    allChecklistsDone ? Icons.check_circle : Icons.schedule,
+                    Icons.check_circle,
                     color: Colors.white,
                     size: 20,
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    allChecklistsDone
-                        ? 'FINISH RACKING & SCHEDULE'
-                        : 'RACKING INCOMPLETE',
+                    // allChecklistsDone
+                    //     ?
+                    'FINISH RACKING & SCHEDULE',
+
+                    // : 'RACKING INCOMPLETE',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,

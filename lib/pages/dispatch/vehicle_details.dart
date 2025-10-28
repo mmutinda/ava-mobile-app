@@ -972,7 +972,6 @@ class _VehicleDetailsState extends State<VehicleDetails>
                   ),
 
                   SizedBox(height: 12),
-
                   // Shop Information
                   if (shop != null) ...[
                     Container(

@@ -34,6 +34,8 @@ class SingleQuestion extends StatefulWidget {
   final String? initialImage;
   final ValueChanged<File?> onImageChanged; // Allow null for deletion
   final List<Map<String, String>> users; // List of users with name and email
+  final ValueChanged<Map<String, dynamic>?>?
+      onClaimDataChanged; // Add claim data callback
   const SingleQuestion(
       {super.key,
       required this.id,
@@ -55,6 +57,7 @@ class SingleQuestion extends StatefulWidget {
       this.onDefectCategoryChanged, // Add defect category callback
       this.parts_to_scan, // Add parts to scan parameter
       this.scandata, // Add scandata parameter for comparison
+      this.onClaimDataChanged, // Add claim data callback
       this.instruction}); // Add instruction parameter
 
   @override
@@ -82,6 +85,21 @@ class _SingleQuestionState extends State<SingleQuestion>
   String? _claimType;
   String? _claimClassification;
   File? _claimImage;
+
+  // Initialize claim template with job card format
+  Map<String, dynamic> _initializeClaimTemplate() {
+    return {
+      'question_id': widget.id,
+      'question_text': widget.question,
+      'issue_description': '',
+      'part_number': '',
+      'issue_category': null,
+      'issue_type': null,
+      'defect_classification': null,
+      'image_path': null,
+      'created_at': DateTime.now().toIso8601String(),
+    };
+  }
 
   // Defect categories data
   final List<Map<String, String>> defectCategories = [
@@ -199,8 +217,8 @@ class _SingleQuestionState extends State<SingleQuestion>
             okay = "OK";
             widget.onValueChanged("OK");
           } else {
-            okay = "NOK";
-            widget.onValueChanged("NOK");
+            // okay = "NOK";
+            // widget.onValueChanged("NOK");
           }
         });
       }
@@ -415,8 +433,8 @@ class _SingleQuestionState extends State<SingleQuestion>
                       okay = "OK";
                       widget.onValueChanged("OK");
                     } else {
-                      okay = "NOK";
-                      widget.onValueChanged("NOK");
+                      // okay = "NOK";
+                      // widget.onValueChanged("NOK");
                     }
                   });
                 }
@@ -809,132 +827,288 @@ class _SingleQuestionState extends State<SingleQuestion>
                     ),
                     const SizedBox(width: 12),
                     // OK Radio
-                    Container(
-                      decoration: BoxDecoration(
-                        color: okay == "OK"
-                            ? Colors.green.shade50
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
+                    GestureDetector(
+                      onTap: (widget.initialRadioValue != null ||
+                              (_scanningRequired))
+                          ? null
+                          : () {
+                              setState(() {
+                                okay = "OK";
+                                selectedDefectCategory = null;
+
+                                // Clear all claim data when switching to OK
+                                _claimCaptured = false;
+                                _claimDescription = '';
+                                _claimPartNo = '';
+                                _claimCategory = null;
+                                _claimType = null;
+                                _claimClassification = null;
+                                _claimImage = null;
+                              });
+
+                              // Clear claim data in parent via callback
+                              if (widget.onClaimDataChanged != null) {
+                                widget.onClaimDataChanged!(null);
+                              }
+
+                              widget.onValueChanged(okay!);
+                            },
+                      child: Container(
+                        decoration: BoxDecoration(
                           color: okay == "OK"
-                              ? Colors.green.shade300
-                              : Colors.grey.shade300,
+                              ? Colors.green.shade50
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: okay == "OK"
+                                ? Colors.green.shade300
+                                : Colors.grey.shade300,
+                          ),
                         ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Radio<String>(
-                            value: "OK",
-                            groupValue: okay ?? widget.initialRadioValue,
-                            onChanged: (widget.initialRadioValue != null ||
-                                    (_scanningRequired))
-                                ? null
-                                : (value) {
-                                    setState(() {
-                                      okay = value!;
-                                      selectedDefectCategory = null;
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Radio<String>(
+                              value: "OK",
+                              groupValue: okay ?? widget.initialRadioValue,
+                              onChanged: (widget.initialRadioValue != null ||
+                                      (_scanningRequired))
+                                  ? null
+                                  : (value) {
+                                      setState(() {
+                                        okay = value!;
+                                        selectedDefectCategory = null;
+
+                                        // Clear all claim data when switching to OK
+                                        _claimCaptured = false;
+                                        _claimDescription = '';
+                                        _claimPartNo = '';
+                                        _claimCategory = null;
+                                        _claimType = null;
+                                        _claimClassification = null;
+                                        _claimImage = null;
+                                      });
+
+                                      // Clear claim data in parent via callback
+                                      if (widget.onClaimDataChanged != null) {
+                                        widget.onClaimDataChanged!(null);
+                                      }
+
                                       widget.onValueChanged(okay!);
-                                    });
-                                  },
-                            activeColor: Colors.green,
-                            materialTapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
-                            visualDensity: VisualDensity.compact,
-                          ),
-                          Text(
-                            'OK',
-                            style: TextStyle(
-                              // fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: (_scanningRequired)
-                                  ? Colors.grey.shade400
-                                  : okay == "OK"
-                                      ? Colors.green.shade700
-                                      : Colors.black87,
+                                    },
+                              activeColor: Colors.green,
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.padded,
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                        ],
+                            Text(
+                              'OK',
+                              style: TextStyle(
+                                // fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: (_scanningRequired)
+                                    ? Colors.grey.shade400
+                                    : okay == "OK"
+                                        ? Colors.green.shade700
+                                        : Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
                     // NOK Radio
-                    Container(
-                      decoration: BoxDecoration(
-                        color: okay == "NOK"
-                            ? Colors.red.shade50
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: okay == "NOK"
-                              ? Colors.red.shade300
-                              : Colors.grey.shade300,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Radio<String>(
-                            value: "NOK",
-                            groupValue: okay ?? widget.initialRadioValue,
-                            onChanged: (widget.initialRadioValue != null ||
-                                    (_scanningRequired))
-                                ? null
-                                : (value) async {
-                                    if (value == "NOK") {
-                                      // Show issue dialog
-                                      final result = await showDialog<
-                                          Map<String, dynamic>?>(
-                                        context: context,
-                                        barrierDismissible: true,
-                                        builder: (context) =>
-                                            const IssueDialog(),
-                                      );
+                    GestureDetector(
+                      onTap: (widget.initialRadioValue != null ||
+                              (_scanningRequired))
+                          ? null
+                          : () async {
+                              // Initialize claim template
+                              final claimTemplate = _initializeClaimTemplate();
 
-                                      if (result != null) {
+                              // Show issue dialog with initialized template
+                              final result =
+                                  await showDialog<Map<String, dynamic>?>(
+                                context: context,
+                                barrierDismissible: true,
+                                builder: (context) => IssueDialog(
+                                  initialDescription: _claimDescription,
+                                  initialPartNo: _claimPartNo,
+                                  initialCategory: _claimCategory,
+                                  initialType: _claimType,
+                                  initialClassification: _claimClassification,
+                                  initialImage: _claimImage,
+                                ),
+                              );
+
+                              if (result != null) {
+                                // Merge template with captured data
+                                final completeClaimData = {
+                                  ...claimTemplate,
+                                  'issue_description':
+                                      result['description'] ?? '',
+                                  'part_number': result['partNo'] ?? '',
+                                  'issue_category': result['category'],
+                                  'issue_type': result['type'],
+                                  'defect_classification':
+                                      result['classification'],
+                                  'image': result['image'],
+                                  'updated_at':
+                                      DateTime.now().toIso8601String(),
+                                };
+
+                                setState(() {
+                                  okay = "NOK";
+                                  _claimCaptured = true;
+                                  // Store claim data
+                                  _claimDescription =
+                                      result['description'] ?? '';
+                                  _claimPartNo = result['partNo'] ?? '';
+                                  _claimCategory = result['category'];
+                                  _claimType = result['type'];
+                                  _claimClassification =
+                                      result['classification'];
+                                  _claimImage = result['image'];
+                                });
+
+                                // Send claim data to parent via callback
+                                if (widget.onClaimDataChanged != null) {
+                                  widget.onClaimDataChanged!(completeClaimData);
+                                }
+
+                                widget.onValueChanged(okay!);
+                              } else {
+                                // User cancelled the dialog, don't change the radio button state
+                                // Keep the previous state by not updating 'okay'
+                                print(
+                                    "User cancelled claim dialog, keeping previous radio state");
+                              }
+                            },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: okay == "NOK"
+                              ? Colors.red.shade50
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: okay == "NOK"
+                                ? Colors.red.shade300
+                                : Colors.grey.shade300,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Radio<String>(
+                              value: "NOK",
+                              groupValue: okay ?? widget.initialRadioValue,
+                              onChanged: (widget.initialRadioValue != null ||
+                                      (_scanningRequired))
+                                  ? null
+                                  : (value) async {
+                                      if (value == "NOK") {
+                                        // Initialize claim template
+                                        final claimTemplate =
+                                            _initializeClaimTemplate();
+
+                                        // Show issue dialog with initialized template
+                                        final result = await showDialog<
+                                            Map<String, dynamic>?>(
+                                          context: context,
+                                          barrierDismissible: true,
+                                          builder: (context) => IssueDialog(
+                                            initialDescription:
+                                                _claimDescription,
+                                            initialPartNo: _claimPartNo,
+                                            initialCategory: _claimCategory,
+                                            initialType: _claimType,
+                                            initialClassification:
+                                                _claimClassification,
+                                            initialImage: _claimImage,
+                                          ),
+                                        );
+
+                                        if (result != null) {
+                                          // Merge template with captured data
+                                          final completeClaimData = {
+                                            ...claimTemplate,
+                                            'issue_description':
+                                                result['description'] ?? '',
+                                            'part_number':
+                                                result['partNo'] ?? '',
+                                            'issue_category':
+                                                result['category'],
+                                            'issue_type': result['type'],
+                                            'defect_classification':
+                                                result['classification'],
+                                            'image': result['image'],
+                                            'updated_at': DateTime.now()
+                                                .toIso8601String(),
+                                          };
+
+                                          setState(() {
+                                            okay = value!;
+                                            _claimCaptured = true;
+                                            // Store claim data
+                                            _claimDescription =
+                                                result['description'] ?? '';
+                                            _claimPartNo =
+                                                result['partNo'] ?? '';
+                                            _claimCategory = result['category'];
+                                            _claimType = result['type'];
+                                            _claimClassification =
+                                                result['classification'];
+                                            _claimImage = result['image'];
+                                          });
+
+                                          // Send claim data to parent via callback
+                                          if (widget.onClaimDataChanged !=
+                                              null) {
+                                            widget.onClaimDataChanged!(
+                                                completeClaimData);
+                                          }
+
+                                          widget.onValueChanged(okay!);
+                                        } else {
+                                          // User cancelled the dialog, don't change the radio button state
+                                          // Keep the previous state by not updating 'okay'
+                                          print(
+                                              "User cancelled claim dialog, keeping previous radio state");
+                                        }
+                                      } else {
                                         setState(() {
                                           okay = value!;
-                                          _claimCaptured = true;
-                                          // Store claim data
-                                          _claimDescription =
-                                              result['description'] ?? '';
-                                          _claimPartNo = result['partNo'] ?? '';
-                                          _claimCategory = result['category'];
-                                          _claimType = result['type'];
-                                          _claimClassification =
-                                              result['classification'];
-                                          _claimImage = result['image'];
+                                          _claimCaptured = false;
                                         });
+
+                                        // Clear claim data when switching from NOK
+                                        if (widget.onClaimDataChanged != null) {
+                                          widget.onClaimDataChanged!(null);
+                                        }
+
                                         widget.onValueChanged(okay!);
                                       }
-                                    } else {
-                                      setState(() {
-                                        okay = value!;
-                                        _claimCaptured = false;
-                                      });
-                                      widget.onValueChanged(okay!);
-                                    }
-                                  },
-                            activeColor: Colors.red,
-                            materialTapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
-                            visualDensity: VisualDensity.compact,
-                          ),
-                          Text(
-                            'NOK',
-                            style: TextStyle(
-                              // fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: (_scanningRequired)
-                                  ? Colors.grey.shade400
-                                  : okay == "NOK"
-                                      ? Colors.red.shade700
-                                      : Colors.black87,
+                                    },
+                              activeColor: Colors.red,
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.padded,
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                        ],
+                            Text(
+                              'NOK',
+                              style: TextStyle(
+                                // fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: (_scanningRequired)
+                                    ? Colors.grey.shade400
+                                    : okay == "NOK"
+                                        ? Colors.red.shade700
+                                        : Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -959,6 +1133,21 @@ class _SingleQuestionState extends State<SingleQuestion>
                       );
 
                       if (result != null) {
+                        // Initialize claim template
+                        final claimTemplate = _initializeClaimTemplate();
+
+                        // Merge template with updated data
+                        final updatedClaimData = {
+                          ...claimTemplate,
+                          'issue_description': result['description'] ?? '',
+                          'part_number': result['partNo'] ?? '',
+                          'issue_category': result['category'],
+                          'issue_type': result['type'],
+                          'defect_classification': result['classification'],
+                          'image': result['image'],
+                          'updated_at': DateTime.now().toIso8601String(),
+                        };
+
                         setState(() {
                           // Update stored claim data
                           _claimDescription = result['description'] ?? '';
@@ -968,6 +1157,13 @@ class _SingleQuestionState extends State<SingleQuestion>
                           _claimClassification = result['classification'];
                           _claimImage = result['image'];
                         });
+
+                        // Send updated claim data to parent via callback
+                        if (widget.onClaimDataChanged != null) {
+                          widget.onClaimDataChanged!(updatedClaimData);
+                          print(
+                              "Updated claim data sent to parent: $updatedClaimData");
+                        }
 
                         // Claim updated successfully
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -1049,127 +1245,6 @@ class _SingleQuestionState extends State<SingleQuestion>
                       ),
                     ),
                   ),
-
-                const SizedBox(height: 12),
-
-                // Defect category selection for NOK responses
-                if (widget.initialRadioValue == null && okay == "NOK")
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Defect Category *',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: Colors.red.shade200),
-                        ),
-                        child: DropdownButtonFormField<String>(
-                          value:
-                              _validateDefectCategory(selectedDefectCategory),
-                          decoration: InputDecoration(
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 10,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(6),
-                              borderSide: BorderSide.none,
-                            ),
-                            filled: true,
-                            fillColor: Colors.red.shade50,
-                            hintText: 'Select defect category',
-                            hintStyle: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontSize: 14,
-                            ),
-                          ),
-                          items: defectCategories.map((category) {
-                            return DropdownMenuItem<String>(
-                              value: category['classification'],
-                              child: Text(
-                                category['name']!,
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (String? newValue) {
-                            setState(() {
-                              selectedDefectCategory = newValue;
-                            });
-                            if (newValue != null &&
-                                widget.onDefectCategoryChanged != null) {
-                              widget.onDefectCategoryChanged!(newValue);
-                            }
-                          },
-                          dropdownColor: Colors.white,
-                          icon: Icon(
-                            Icons.arrow_drop_down,
-                            color: Colors.red.shade600,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-                  ),
-
-                // Display existing defect category for answered questions
-                if (widget.initialRadioValue != null &&
-                    widget.initialDefectCategory != null)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 12),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade50,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: Colors.grey.shade200),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Defect Category:',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              defectCategories.firstWhere(
-                                    (cat) =>
-                                        cat['classification'] ==
-                                        widget.initialDefectCategory,
-                                    orElse: () => {
-                                      'name': widget.initialDefectCategory ?? ''
-                                    },
-                                  )['name'] ??
-                                  widget.initialDefectCategory ??
-                                  '',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Colors.black87,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-
                 // Description field for existing answers
                 if (widget.initialRadioValue != null &&
                     widget.initialDecripValue != null)
@@ -1190,83 +1265,6 @@ class _SingleQuestionState extends State<SingleQuestion>
                             color: Colors.black87,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-
-                // Description field for NOK responses
-                if (widget.initialRadioValue == null && okay == "NOK")
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              maxLines: null,
-                              controller: inputController,
-                              style: const TextStyle(fontSize: 14),
-                              decoration: InputDecoration(
-                                labelText: 'Issue Description *',
-                                hintText: 'Describe the problem in detail...',
-                                hintStyle: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 13,
-                                ),
-                                isDense: true,
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 10,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(6),
-                                  borderSide:
-                                      BorderSide(color: Colors.red.shade300),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(6),
-                                  borderSide:
-                                      BorderSide(color: Colors.red.shade200),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(6),
-                                  borderSide: BorderSide(
-                                      color: Colors.red.shade400, width: 2),
-                                ),
-                                filled: false,
-                                fillColor: Colors.red.shade50,
-                                labelStyle: TextStyle(
-                                  color: Colors.red.shade700,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          // Camera button
-                          if (widget.initialImage == null)
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.blue.shade50,
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(color: Colors.blue.shade200),
-                              ),
-                              child: IconButton(
-                                onPressed: _captureImage,
-                                icon: Icon(
-                                  Icons.camera_alt,
-                                  color: Colors.blue.shade700,
-                                  size: 20,
-                                ),
-                                tooltip: 'Capture Photo',
-                                padding: const EdgeInsets.all(8),
-                                constraints: const BoxConstraints(
-                                  minWidth: 36,
-                                  minHeight: 36,
-                                ),
-                              ),
-                            ),
-                        ],
                       ),
                     ],
                   ),

@@ -20,7 +20,6 @@ class QFLIssuesPage extends StatelessWidget {
     }
   }
 
-
   Map<String, List<Map<String, dynamic>>> _groupByShop(
       List<Map<String, dynamic>> items) {
     final Map<String, List<Map<String, dynamic>>> grouped = {};
@@ -422,6 +421,7 @@ class QFLIssuesPage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   _buildDetailSection(
                       'Issue Description', issue['issue'] ?? 'No description'),
@@ -443,6 +443,7 @@ class QFLIssuesPage extends StatelessWidget {
 
   Widget _buildDetailSection(String title, String content) {
     return Container(
+      width: double.infinity,
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(

@@ -1,17 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:isuze_pqcs/common/ApiService.dart';
-import 'package:isuze_pqcs/common/UIHelper.dart';
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
-import 'package:isuze_pqcs/common/loader.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
-import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
 
 class QCChecklist extends StatefulWidget {
   final id;
@@ -102,145 +100,130 @@ class _QCChecklistState extends State<QCChecklist>
   }
 
   Future<void> _submitForm(BuildContext context) async {
-    // Validate if all checklist items are checked
-    bool allAnswered = true;
-    List<String> missingDescriptions = [];
+    try {
+      // ✅ 1. Validate checklist
+      bool allAnswered = true;
+      List<String> missingDescriptions = [];
 
-    for (int i = 0; i < checklist.length; i++) {
-      var query = checklist[i];
-      if (query['checked'] == null || query['checked'].isEmpty) {
-        allAnswered = false;
-        break;
-      }
+      for (int i = 0; i < checklist.length; i++) {
+        final query = checklist[i];
 
-      // Check if NOK items have descriptions
-      if (query['checked'] == 'NOK') {
-        if (query['description'] == null ||
-            query['description'].toString().trim().isEmpty) {
+        if (query['checked'] == null || query['checked'].toString().isEmpty) {
+          allAnswered = false;
+          break;
+        }
+
+        if (query['checked'] == 'NOK' &&
+            (query['description'] == null ||
+                query['description'].toString().trim().isEmpty)) {
           missingDescriptions.add('Item ${i + 1}: ${query['query_name']}');
         }
       }
-    }
 
-    if (!allAnswered) {
-      UIHelper.showErrorMessage(
-        context: context,
-        message:
-            'Please make sure all checklist items are answered (OK or NOK).',
-      );
-      return;
-    }
+      if (!allAnswered) {
+        UIHelper.showErrorMessage(
+          context: context,
+          message: 'Please answer all checklist items (OK or NOK).',
+        );
+        return;
+      }
 
-    if (missingDescriptions.isNotEmpty) {
-      UIHelper.showErrorMessage(
-        context: context,
-        message:
-            'Please provide descriptions for NOK items:\n${missingDescriptions.join('\n')}',
-      );
-      return;
-    }
+      if (missingDescriptions.isNotEmpty) {
+        UIHelper.showErrorMessage(
+          context: context,
+          message:
+              'Please provide descriptions for NOK items:\n${missingDescriptions.join('\n')}',
+        );
+        return;
+      }
 
-    if (!_formKey.currentState!.validate()) return;
+      if (!_formKey.currentState!.validate()) return;
 
-    List<Map<String, dynamic>> checklistData = [];
-    List<List<String>> imageData = []; // Store image data as [qnid, imagepath]
+      // ✅ 2. Prepare checklist data
+      final List<Map<String, dynamic>> checklistData = [];
+      final List<Map<String, dynamic>> imageFiles = [];
 
-    for (int i = 0; i < checklist.length; i++) {
-      var query = checklist[i];
-      Map<String, dynamic> item = {
-        'vehicle_receiving_checklist_id': query['id'],
-        'answer': query['checked'],
-      };
+      for (int i = 0; i < checklist.length; i++) {
+        final query = checklist[i];
+        final item = {
+          'vehicle_receiving_checklist_id': query['id'],
+          'answer': query['checked'],
+          'description':
+              query['checked'] == 'NOK' ? (query['description'] ?? '') : null,
+        };
+        checklistData.add(item);
 
-      // Add description for NOK items
-      if (query['checked'] == 'NOK') {
-        item['description'] = query['description'] ?? '';
-        // Store image data as [question_id, image_path] if image exists
-        if (query['image'] != null) {
-          imageData.add([query['id'].toString(), query['image'].path]);
+        // Collect images for NOK items
+        if (query['checked'] == 'NOK' && query['image'] != null) {
+          imageFiles.add({
+            'id': query['id'],
+            'path': query['image'].path,
+          });
         }
       }
 
-      checklistData.add(item);
-    }
+      // ✅ 3. Build request
+      final uri = Uri.parse('${Api.api_url}postVehicleReceivingChecklist');
+      final request = http.MultipartRequest('POST', uri)
+        ..headers.addAll({
+          'Accept': 'application/json',
+          'Authorization': 'Bearer ${user['data']["token"]}',
+        })
+        ..fields['vehicle_receiving_id'] = widget.id.toString()
+        ..fields['questions'] = jsonEncode(checklistData);
 
-    final uri = Uri.parse('${Api.api_url}postVehicleReceivingChecklist');
-    var request = http.MultipartRequest('POST', uri);
-    request.headers.addAll({
-      'Accept': 'application/json',
-      'Authorization': 'Bearer ${user['data']["token"]}',
-    });
+      // ✅ 4. Attach image files directly (no compression)
+      for (int i = 0; i < imageFiles.length; i++) {
+        final imageInfo = imageFiles[i];
+        final file = File(imageInfo['path']);
+        final multipart = await http.MultipartFile.fromPath(
+          'images[${imageInfo['id']}]', // maps image to question ID
+          file.path,
+        );
+        request.files.add(multipart);
+      }
 
-    request.fields['vehicle_receiving_id'] = widget.id.toString();
-    request.fields['questions'] = jsonEncode(checklistData);
-    request.fields['images'] =
-        jsonEncode(imageData); // Send image data as JSON array
+      // ✅ 5. Show loader
+      UIHelper.showLoader(context, message: 'Submitting checklist...');
 
-    // Add image files to the request
-    for (int i = 0; i < imageData.length; i++) {
-      String imagePath = imageData[i][1];
-
-      var imageFile = await http.MultipartFile.fromPath(
-        'image_$i', // Use index as field name
-        imagePath,
-      );
-      request.files.add(imageFile);
-    }
-
-    final progressDialog = ProgressDialog(context);
-    progressDialog.style(
-      message: 'Submitting ..',
-      child: CustomLoader(),
-      borderRadius: 8,
-      backgroundColor: Colors.white,
-      progressWidget: const SizedBox(
-          width: 20,
-          height: 20,
-          child: Center(child: CircularProgressIndicator())),
-      elevation: 10.0,
-      insetAnimCurve: Curves.easeInOut,
-    );
-
-    progressDialog.show();
-
-    try {
-      var response = await request.send();
-      var responseData = await response.stream.bytesToString();
-      var responseBody = jsonDecode(responseData);
-      print(responseBody);
+      // ✅ 6. Send request
+      final response =
+          await request.send().timeout(const Duration(seconds: 60));
+      final responseBody = jsonDecode(await response.stream.bytesToString());
+      log(jsonEncode(responseBody));
+      // ✅ 7. Handle response
+      UIHelper.hideLoader(context);
 
       if (responseBody['success'] == true) {
-        // ✅ Show success message and pop back
         UIHelper.showSuccessMessage(
           context: context,
           message: responseBody['msg'] ?? 'Submitted successfully!',
         );
+        Navigator.pop(context);
       } else {
-        String errorMessage = responseBody['msg'] ??
+        String message = responseBody['msg'] ??
             responseBody['message'] ??
             "An error occurred";
-
         if (responseBody['errors'] != null) {
           final errors = responseBody['errors'] as Map<String, dynamic>;
-          final errorDetails =
+          final details =
               errors.entries.map((e) => '${e.key}: ${e.value[0]}').join('\n');
-          errorMessage += '\n$errorDetails';
+          message += '\n$details';
         }
-
-        UIHelper.showErrorMessage(context: context, message: errorMessage);
+        UIHelper.showErrorMessage(context: context, message: message);
       }
     } on SocketException {
+      UIHelper.hideLoader(context);
       UIHelper.showErrorMessage(
           context: context, message: "No Internet connection.");
     } on TimeoutException {
+      UIHelper.hideLoader(context);
       UIHelper.showErrorMessage(
           context: context, message: "Request timed out. Please try again.");
     } catch (e) {
-      print("Unexpected Error: $e");
+      UIHelper.hideLoader(context);
       UIHelper.showErrorMessage(
-          context: context, message: 'Failed: ${e.toString()}');
-    } finally {
-      progressDialog.hide();
+          context: context, message: 'Unexpected error: $e');
     }
   }
 
@@ -1059,6 +1042,64 @@ class _QCChecklistState extends State<QCChecklist>
                 ),
               ],
             ),
+    );
+  }
+}
+
+class UIHelper {
+  static void showLoader(BuildContext context, {String? message}) {
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        backgroundColor: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 20),
+              Text(
+                message ?? 'Please wait...',
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static void hideLoader(BuildContext context) {
+    if (Navigator.canPop(context)) Navigator.pop(context);
+  }
+
+  static void showErrorMessage({
+    required BuildContext context,
+    required String message,
+  }) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: const TextStyle(color: Colors.white)),
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  static void showSuccessMessage({
+    required BuildContext context,
+    required String message,
+  }) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: const TextStyle(color: Colors.white)),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 }

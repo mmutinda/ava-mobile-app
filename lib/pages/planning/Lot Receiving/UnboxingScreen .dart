@@ -1,12 +1,9 @@
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:isuze_pqcs/pages/planning/Lot%20Receiving/FinishConfirmationScreen%20.dart';
 import 'package:isuze_pqcs/pages/planning/Lot%20Receiving/chooseComponent.dart';
 import 'package:isuze_pqcs/pages/planning/widget.dart';
-import 'package:isuze_pqcs/pages/qc_inspection/chooseComponent.dart';
 import 'package:nb_utils/nb_utils.dart';
 
 class UnboxingScreen extends StatefulWidget {

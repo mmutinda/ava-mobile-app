@@ -13,8 +13,10 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 class ReworkList extends StatefulWidget {
   final unit_movement_id;
+  final vehicle_id;
 
-  const ReworkList({super.key, required this.unit_movement_id});
+  const ReworkList(
+      {super.key, required this.unit_movement_id, required this.vehicle_id});
   @override
   _ReworkListState createState() => _ReworkListState();
 }
@@ -43,7 +45,7 @@ class _ReworkListState extends State<ReworkList> {
     setState(() {
       isLoading = data.isEmpty ? true : false;
     });
-    var url = "${Api.api_url}qdefects/${widget.unit_movement_id}";
+    var url = "${Api.api_url}qdefects/${widget.vehicle_id}";
     print(url);
 
     try {
@@ -132,7 +134,7 @@ class _ReworkListState extends State<ReworkList> {
       print('Error completing rework: $e');
       awesomeTopSnackbar(
         context,
-        "Network error occurred",
+        "Error completing rework: $e",
         iconWithDecoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           border: Border.all(),
@@ -309,7 +311,7 @@ class _ReworkListState extends State<ReworkList> {
                                           SizedBox(width: 12),
                                           Expanded(
                                             child: Text(
-                                              '${data[index]['getqueryanswer']['answer']} - ${data[index]['defect_name']}',
+                                              '${data[index]['getqueries']['query_name']} - ${data[index]['defect_name']}',
                                               style: TextStyle(
                                                 fontWeight: FontWeight.w600,
                                                 color: Colors.grey[800],

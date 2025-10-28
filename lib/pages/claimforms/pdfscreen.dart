@@ -1,8 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:pdf/pdf.dart';
-import 'package:printing/printing.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:share_plus/share_plus.dart';
 

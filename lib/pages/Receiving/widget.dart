@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
@@ -17,6 +19,76 @@ class ChecklistItemCard extends StatelessWidget {
     required this.checklistItem,
     this.index,
   }) : super(key: key);
+
+  void _showFullScreenImage(BuildContext context, String imagePath) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            // iconTheme: const IconTheme(color: Colors.white),
+            title: const Text(
+              'Evidence Image',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+          body: Center(
+            child: InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: Image.network(
+                '${Api.api_url}$imagePath',
+                fit: BoxFit.contain,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          value: loadingProgress.expectedTotalBytes != null
+                              ? loadingProgress.cumulativeBytesLoaded /
+                                  loadingProgress.expectedTotalBytes!
+                              : null,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Loading image...',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  return const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          color: Colors.white,
+                          size: 48,
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          'Failed to load image',
+                          style: TextStyle(color: Colors.white, fontSize: 16),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,116 +121,287 @@ class ChecklistItemCard extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
-        child: Row(
+        child: Column(
           children: [
-            // Index number with gradient
-            if (index != null)
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: isOK
-                        ? [Colors.green.shade400, Colors.green.shade600]
-                        : [Colors.red.shade400, Colors.red.shade600],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+            Row(
+              children: [
+                // Index number with gradient
+                if (index != null)
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: isOK
+                            ? [Colors.green.shade400, Colors.green.shade600]
+                            : [Colors.red.shade400, Colors.red.shade600],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: (isOK ? Colors.green : Colors.red)
+                              .withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${(index ?? 0) + 1}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
                   ),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color:
-                          (isOK ? Colors.green : Colors.red).withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
+
+                if (index != null) const SizedBox(width: 16),
+
+                // Question text
+                Expanded(
+                  flex: 2,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Question',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        checklistItem['checklist']['query_name'] ??
+                            'Unknown Question',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade800,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(width: 16),
+
+                // Answer badge
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: isOK
+                          ? [Colors.green.shade400, Colors.green.shade600]
+                          : [Colors.red.shade400, Colors.red.shade600],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color:
+                            (isOK ? Colors.green : Colors.red).withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isOK ? Icons.check_circle : Icons.cancel,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        checklistItem['answer'] ?? 'N/A',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            // Show description for NOK items
+            if (!isOK &&
+                checklistItem['description'] != null &&
+                checklistItem['description'].toString().isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.red.shade200,
+                    width: 1,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.description_outlined,
+                          color: Colors.red.shade600,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Issue Description',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.red.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      checklistItem['description'].toString(),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.red.shade800,
+                        height: 1.3,
+                      ),
                     ),
                   ],
                 ),
-                child: Center(
-                  child: Text(
-                    '${(index ?? 0) + 1}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+              ),
+            ],
+
+            // Show image for NOK items if available
+            if (!isOK &&
+                checklistItem['images'] != null &&
+                checklistItem['images'].toString().isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.red.shade200,
+                    width: 1,
                   ),
                 ),
-              ),
-
-            if (index != null) const SizedBox(width: 16),
-
-            // Question text
-            Expanded(
-              flex: 2,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Question',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                      fontWeight: FontWeight.w500,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(8),
+                          topRight: Radius.circular(8),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.image_outlined,
+                            color: Colors.red.shade600,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Evidence Image',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.red.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    checklistItem['checklist']['query_name'] ??
-                        'Unknown Question',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade800,
-                      height: 1.4,
+                    ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(8),
+                        bottomRight: Radius.circular(8),
+                      ),
+                      child: GestureDetector(
+                        onTap: () {
+                          // Show full screen image
+                          // _showFullScreenImage(
+                          //     context, checklistItem['images'].toString());
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                          ),
+                          child: Image.network(
+                            '${Api.qc_image}${checklistItem['images']}',
+                            fit: BoxFit.cover,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Center(
+                                child: CircularProgressIndicator(
+                                  value: loadingProgress.expectedTotalBytes !=
+                                          null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                          loadingProgress.expectedTotalBytes!
+                                      : null,
+                                  color: Colors.red.shade400,
+                                  strokeWidth: 2,
+                                ),
+                              );
+                            },
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                width: double.infinity,
+                                height: 120,
+                                color: Colors.grey.shade200,
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.error_outline,
+                                      color: Colors.grey.shade500,
+                                      size: 24,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Image not available',
+                                      style: TextStyle(
+                                        color: Colors.grey.shade500,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(width: 16),
-
-            // Answer badge
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: isOK
-                      ? [Colors.green.shade400, Colors.green.shade600]
-                      : [Colors.red.shade400, Colors.red.shade600],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+                  ],
                 ),
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: (isOK ? Colors.green : Colors.red).withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    isOK ? Icons.check_circle : Icons.cancel,
-                    color: Colors.white,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    checklistItem['answer'] ?? 'N/A',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            ],
           ],
         ),
       ),
@@ -186,7 +429,6 @@ class LotIssueDialogReceiving extends StatefulWidget {
 
 class _LotIssueDialogReceivingState extends State<LotIssueDialogReceiving>
     with SingleTickerProviderStateMixin {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool hasIssue = false;
   final _processDescriptionController = TextEditingController();
   final _partNoController = TextEditingController();
@@ -204,6 +446,10 @@ class _LotIssueDialogReceivingState extends State<LotIssueDialogReceiving>
   String? _selectedIssueCategory;
   String? _selectedIssueType;
   String? _selectedDefectClassification;
+  String? _selectedPartNumber;
+
+  List<String> _partNumbers = [];
+  bool _loadingPartNumbers = false;
 
   final List<String> _reasonCodes = [
     'WS-Wrong Shipment',
@@ -350,6 +596,11 @@ class _LotIssueDialogReceivingState extends State<LotIssueDialogReceiving>
 
   @override
   Widget build(BuildContext context) {
+    // Initialize part numbers loading if not already done
+    if (_partNumbers.isEmpty && !_loadingPartNumbers) {
+      Future.microtask(() => _loadPartNumbers());
+    }
+
     return ScaleTransition(
       scale: _scaleAnimation,
       child: FadeTransition(
@@ -398,7 +649,7 @@ class _LotIssueDialogReceivingState extends State<LotIssueDialogReceiving>
                         const SizedBox(width: 12),
                         const Expanded(
                           child: Text(
-                            'Lot Issue Confirmation',
+                            'Lot Issue Confirmation - Receiving',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 18,
@@ -745,7 +996,7 @@ class _LotIssueDialogReceivingState extends State<LotIssueDialogReceiving>
       'lot_number': hasIssue ? widget.lotNumber.toString() : null,
       'process_description':
           hasIssue ? _processDescriptionController.text.trim() : null,
-      'part_number': hasIssue ? _partNoController.text.trim() : null,
+      'part_number': hasIssue ? _selectedPartNumber ?? '' : null,
       'issue_description':
           hasIssue ? _issueDescriptionController.text.trim() : null,
       'category': hasIssue ? _selectedIssueCategory ?? '' : null,
@@ -772,6 +1023,144 @@ class _LotIssueDialogReceivingState extends State<LotIssueDialogReceiving>
     );
 
     Navigator.pop(context);
+  }
+
+  Future<void> _loadPartNumbers() async {
+    setState(() => _loadingPartNumbers = true);
+    try {
+      final response = await http.get(
+        Uri.parse('${Api.api_url}loadPartNumber/${widget.lotNumber}'),
+        headers: {'Authorization': 'Bearer ${widget.user}'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true && data['data'] != null) {
+          final List<String> partNumbers = [];
+          for (var item in data['data']) {
+            if (item['part_no'] != null &&
+                item['part_no'].toString().trim().isNotEmpty) {
+              partNumbers.add(item['part_no'].toString().trim());
+            }
+          }
+          setState(() {
+            _partNumbers = partNumbers.toSet().toList(); // Remove duplicates
+            _loadingPartNumbers = false;
+          });
+        } else {
+          setState(() => _loadingPartNumbers = false);
+        }
+      } else {
+        setState(() => _loadingPartNumbers = false);
+      }
+    } catch (e) {
+      setState(() => _loadingPartNumbers = false);
+      print('Error loading part numbers: $e');
+    }
+  }
+
+  Widget _buildPartNumberDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.only(left: 4, bottom: 8),
+          child: Row(
+            children: [
+              Icon(FeatherIcons.hash, size: 16, color: Colors.grey[600]),
+              SizedBox(width: 8),
+              Text(
+                'Part Number',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[700],
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 8,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: DropdownButtonFormField<String>(
+            value: _selectedPartNumber,
+            menuMaxHeight: 300,
+            decoration: InputDecoration(
+              hintText: _loadingPartNumbers
+                  ? 'Loading part numbers...'
+                  : _partNumbers.isEmpty
+                      ? 'No part numbers available'
+                      : 'Select part number',
+              hintStyle: TextStyle(color: Colors.grey[400]),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: Theme.of(context).primaryColor,
+                  width: 2,
+                ),
+              ),
+              filled: true,
+              fillColor: _loadingPartNumbers
+                  ? Colors.grey.shade200
+                  : Colors.grey.shade50,
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              suffixIcon: _loadingPartNumbers
+                  ? Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Theme.of(context).primaryColor,
+                        ),
+                      ),
+                    )
+                  : null,
+            ),
+            items: _partNumbers.map((String partNumber) {
+              return DropdownMenuItem<String>(
+                value: partNumber,
+                child: Text(
+                  partNumber,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[700],
+                  ),
+                ),
+              );
+            }).toList(),
+            onChanged: _loadingPartNumbers || _partNumbers.isEmpty
+                ? null
+                : (String? newValue) {
+                    setState(() {
+                      _selectedPartNumber = newValue;
+                      _partNoController.text = newValue ?? '';
+                    });
+                  },
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildStyledTextField({
@@ -1218,7 +1607,6 @@ class LotIssueDialogFinishRacking extends StatefulWidget {
 class _LotIssueDialogFinishRackingState
     extends State<LotIssueDialogFinishRacking>
     with SingleTickerProviderStateMixin {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool hasIssue = false;
   final _processDescriptionController = TextEditingController();
   final _partNoController = TextEditingController();
@@ -1759,8 +2147,6 @@ class _LotIssueDialogFinishRackingState
       ),
     );
   }
-
-
 
   Widget _buildStyledTextField({
     required TextEditingController controller,

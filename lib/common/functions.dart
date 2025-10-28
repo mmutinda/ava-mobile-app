@@ -8,7 +8,6 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:isuze_pqcs/common/UIHelper.dart';
 import 'package:isuze_pqcs/common/loader.dart';
-import 'package:path/path.dart';
 import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

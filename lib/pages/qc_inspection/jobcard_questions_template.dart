@@ -60,6 +60,8 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
   Map<int, List<dynamic>> multipleValues = {};
   Map<int, List<String>> selectedUsers = {};
   Map<int, File> images = {};
+  Map<int, Map<String, dynamic>> claimData =
+      {}; // Track claim data for NOK answers
   String haserror = '';
   List questions = [];
   var Category = {};
@@ -73,6 +75,20 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
   bool isInitloading = true;
   var jobCardId;
   int? selectedNextStationId; // Changed to int? for better type safety
+
+  // Check if checksheet is already submitted (all questions have previous answers)
+  bool get isChecksheetSubmitted {
+    if (questions.isEmpty) return false;
+
+    for (var question in questions) {
+      var answerGiven = question['answer_given'] ?? '';
+      if (answerGiven.isEmpty) {
+        return false; // Found a question without previous answer
+      }
+    }
+    return true; // All questions have previous answers
+  }
+
   @override
   void initState() {
     super.initState();
@@ -86,15 +102,45 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
   }
 
   final _formKey = GlobalKey<FormState>();
+
+  // Initialize claim template for job card format
+  Map<String, dynamic> initializeClaimTemplate(
+      int questionId, String questionText) {
+    return {
+      'question_id': questionId,
+      'issue_description': '',
+      'part_number': '',
+      'issue_category': null,
+      'issue_type': null,
+      'defect_classification': null,
+      'image_path': null,
+    };
+  }
+
   @override
   void dispose() {
     EasyLoading.dismiss();
     super.dispose();
   }
 
+  // Handle claim data callback from SingleQuestion
+  void handleClaimData(int questionId, Map<String, dynamic>? claimDataResult) {
+    if (claimDataResult != null) {
+      setState(() {
+        claimData[questionId] = claimDataResult;
+        print('Claim data stored for question $questionId: $claimDataResult');
+      });
+    } else {
+      setState(() {
+        claimData.remove(questionId);
+        print('Claim data removed for question $questionId');
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // print('Substation data: $substations');
+    print('Substation data: $claimData');
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -469,6 +515,10 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                           traceableSignature[qid] = value;
                                           print(traceableSignature);
                                         });
+                                      },
+                                      onClaimDataChanged: (Map<String, dynamic>? claimDataResult) {
+                                        var qid = get['id'];
+                                        handleClaimData(qid, claimDataResult);
                                       },
                                       initialRadioValue: answer_given != '' ? answer_given : null,
                                       question: (get['query_name'] ?? 'No question text') as String);
@@ -1235,13 +1285,21 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                       "can_sign": quest['can_sign'],
                                       "answer_given": quest['answer_given'],
                                       "answer": '',
-                                      "defect_description": '',
-                                      "defect_category":
-                                          '', // Add defect category field
+                                      // "defect_description": '',
+                                      // "defect_category":
+                                      //     '', // Add defect category field
                                       "defects": '',
                                       "signature":
                                           traceableSignature[questionId],
                                       "users": selectedUsers[questionId],
+                                      // Claim data fields
+                                      // "issue_description": '',
+                                      "defect_description": '',
+                                      "part_number": '',
+                                      "defect_category": null,
+                                      "issue_type": null,
+                                      "defect_classification": null,
+                                      "has_claim_image": false,
                                     };
 
                                     if (quest["quiz_type"] == "multiple") {
@@ -1256,6 +1314,33 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                       answer["answer"] = value;
                                       answer["defect_category"] =
                                           defectCategory;
+
+                                      // Add claim data if available for NOK answers
+                                      if (value == "NOK" &&
+                                          claimData.containsKey(questionId)) {
+                                        var claimInfo = claimData[questionId];
+
+                                        // Extract specific claim fields to answer
+                                        answer["defect_description"] =
+                                            claimInfo?['issue_description'] ??
+                                                '';
+                                        answer["part_number"] =
+                                            claimInfo?['part_number'] ?? '';
+                                        answer["defect_category"] =
+                                            claimInfo?['issue_category'];
+                                        answer["issue_type"] =
+                                            claimInfo?['issue_type'];
+                                        answer["defect_classification"] =
+                                            claimInfo?['defect_classification'];
+
+                                        // Handle image separately for multipart upload
+                                        if (claimInfo?['image'] != null) {
+                                          // Store claim image in images map with special key for claim
+                                          images[questionId] =
+                                              claimInfo!['image'];
+                                          answer["has_claim_image"] = true;
+                                        }
+                                      }
                                     } else if (quest["quiz_type"] == "single") {
                                       // Retrieve values from SingleQuestion
                                       String? value = singleValues[questionId];
@@ -1268,6 +1353,36 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                       answer["defect_description"] = valueInput;
                                       answer["defect_category"] =
                                           defectCategory;
+
+                                      // Add claim data if available for NOK answers
+                                      if (value == "NOK" &&
+                                          claimData.containsKey(questionId)) {
+                                        var claimInfo = claimData[questionId];
+
+                                        // Extract specific claim fields to answer
+                                        answer["defect_description"] =
+                                            claimInfo?['issue_description'] ??
+                                                '';
+                                        answer["part_number"] =
+                                            claimInfo?['part_number'] ?? '';
+                                        answer["defect_category"] =
+                                            claimInfo?['issue_category'];
+                                        answer["issue_type"] =
+                                            claimInfo?['issue_type'];
+                                        answer["defect_classification"] =
+                                            claimInfo?['defect_classification'];
+
+                                        // Handle image separately for multipart upload
+                                        if (claimInfo?['image'] != null) {
+                                          // Store claim image in images map with special key for claim
+                                          images[questionId] =
+                                              claimInfo!['image'];
+                                          answer["has_claim_image"] = true;
+                                        }
+
+                                        print(
+                                            "Added claim fields for question $questionId: issue_description=${claimInfo?['issue_description']}, part_number=${claimInfo?['part_number']}, category=${claimInfo?['issue_category']}");
+                                      }
                                       // print(
                                       //     "-->${DescipTextValues[questionId]}");
                                     }
@@ -1278,21 +1393,35 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
 
                                   if (answers.isNotEmpty) {
                                     //For normal dialog
-                                    await saveData(answers);
+                                    await saveData(answers, claimData);
                                     // Close loading dialog
                                     Navigator.of(context).pop();
                                   } else {
                                     // Close loading dialog first
                                     Navigator.of(context).pop();
-                                    awesomeTopSnackbar(context,
-                                        "Please Answer at least one question",
-                                        iconWithDecoration: BoxDecoration(
-                                          borderRadius:
-                                              BorderRadius.circular(20),
-                                          border: Border.all(),
-                                          color: Colors.white,
-                                        ),
-                                        backgroundColor: Colors.red);
+
+                                    // Check if checksheet is already submitted
+                                    if (isChecksheetSubmitted) {
+                                      awesomeTopSnackbar(context,
+                                          "Checksheet already submitted",
+                                          iconWithDecoration: BoxDecoration(
+                                            borderRadius:
+                                                BorderRadius.circular(20),
+                                            border: Border.all(),
+                                            color: Colors.white,
+                                          ),
+                                          backgroundColor: Colors.orange);
+                                    } else {
+                                      awesomeTopSnackbar(context,
+                                          "Please Answer at least one question",
+                                          iconWithDecoration: BoxDecoration(
+                                            borderRadius:
+                                                BorderRadius.circular(20),
+                                            border: Border.all(),
+                                            color: Colors.white,
+                                          ),
+                                          backgroundColor: Colors.red);
+                                    }
                                   }
                                 }
                               }
@@ -1335,12 +1464,19 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
     );
   }
 
-  Future<void> saveData(answers) async {
+  Future<void> saveData(answers,
+      [Map<int, Map<String, dynamic>>? claimDataMap]) async {
     if (!_formKey.currentState!.validate()) return;
 
     if (answers.isEmpty) {
-      awesomeTopSnackbar(context, "Please answer at least one question",
-          backgroundColor: Colors.red);
+      // Check if checksheet is already submitted
+      if (isChecksheetSubmitted) {
+        awesomeTopSnackbar(context, "Checksheet already submitted",
+            backgroundColor: Colors.orange);
+      } else {
+        awesomeTopSnackbar(context, "Please answer at least one question",
+            backgroundColor: Colors.red);
+      }
       return;
     }
 
@@ -1356,6 +1492,34 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
       });
       request.fields['answers'] = jsonEncode(answers);
       request.fields['vehicle_id'] = widget.vehicle_id.toString();
+
+      // Add claim data as separate field - always include, null if no claims
+      if (claimDataMap != null && claimDataMap.isNotEmpty) {
+        // Convert claim data map to array format and clean File objects
+        List<Map<String, dynamic>> claimDataArray =
+            claimDataMap.values.map((claimData) {
+          // Create a copy of claim data without the File object
+          Map<String, dynamic> cleanClaimData =
+              Map<String, dynamic>.from(claimData);
+
+          // Remove the File object from claim data (it's handled separately in multipart upload)
+          if (cleanClaimData.containsKey('image')) {
+            // Convert File reference to string path or remove it
+            if (cleanClaimData['image'] != null) {
+              cleanClaimData['image_path'] = cleanClaimData['image'].toString();
+            }
+            cleanClaimData.remove('image'); // Remove the actual File object
+          }
+
+          return cleanClaimData;
+        }).toList();
+
+        request.fields['claim_data'] = jsonEncode(claimDataArray);
+      } else {
+        // Set to null if no claims
+        request.fields['claim_data'] = 'null';
+      }
+
       request.fields['sub_station_id'] =
           widget.station_id != null ? widget.station_id.toString() : '';
       if (selectedNextStationId != null) {
@@ -1371,6 +1535,24 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
       }
       print("=== PAYLOAD DEBUG ===");
       print("Answers: ${jsonEncode(answers)}");
+      if (claimDataMap != null && claimDataMap.isNotEmpty) {
+        // Clean claim data for debug output (same as payload)
+        List<Map<String, dynamic>> claimDataArray =
+            claimDataMap.values.map((claimData) {
+          Map<String, dynamic> cleanClaimData =
+              Map<String, dynamic>.from(claimData);
+          if (cleanClaimData.containsKey('image')) {
+            if (cleanClaimData['image'] != null) {
+              cleanClaimData['image_path'] = cleanClaimData['image'].toString();
+            }
+            cleanClaimData.remove('image');
+          }
+          return cleanClaimData;
+        }).toList();
+        print("Claim Data: ${jsonEncode(claimDataArray)}");
+      } else {
+        print("Claim Data: null");
+      }
       print("Vehicle ID: ${widget.vehicle_id}");
       print("Station ID: ${widget.station_id}");
       print("Next Station ID: $selectedNextStationId");
@@ -1404,6 +1586,9 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
       }
     } catch (e) {
       setState(() => isButtonEnabled = true);
+      print("==============");
+      print(e);
+      print("==============");
       awesomeTopSnackbar(
           context, "Something went wrong. Check your internet connection.",
           backgroundColor: Colors.red);

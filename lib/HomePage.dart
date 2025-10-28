@@ -1,8 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
 import 'package:isuze_pqcs/RunningShopsDashboardWidget.dart';
+import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/slider.dart';
 import 'package:isuze_pqcs/pages/QFL%204/qfl4.dart';
@@ -16,7 +17,6 @@ import 'package:isuze_pqcs/pages/defetects/QCDefectsUnits.dart';
 import 'package:isuze_pqcs/pages/help/help_page.dart';
 import 'package:isuze_pqcs/pages/login/login.dart';
 import 'package:isuze_pqcs/pages/planning/planningHome.dart';
-
 import 'package:isuze_pqcs/pages/profile_screen.dart';
 import 'package:isuze_pqcs/pages/mpa/mpa_list.dart';
 import 'package:isuze_pqcs/pages/tms/TMS_listUnits.dart';
@@ -28,15 +28,157 @@ class HomeScrean extends StatefulWidget {
   _HomeScreanState createState() => _HomeScreanState();
 }
 
-class _HomeScreanState extends State<HomeScrean> {
+class _HomeScreanState extends State<HomeScrean> with TickerProviderStateMixin {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final GlobalKey<RunningShopsDashboardWidgetState> _dashboardKey =
+      GlobalKey<RunningShopsDashboardWidgetState>();
+  late AnimationController _shimmerController;
   int _selectedPage = 0;
   Map<String, dynamic> user = {};
+  Timer? _refreshTimer;
+  bool _isAutoRefreshEnabled = true;
+  static const int _refreshIntervalSeconds =
+      30; // Auto-refresh every 30 seconds
+
+  // Vehicle counts from API
+  Map<String, int> vehicleCounts = {
+    'vehicle_receiving': 0,
+    'planning': 0,
+    'assembly': 0,
+    'dispatch': 0,
+  };
+  bool _isLoadingVehicleCounts = false;
 
   @override
   void initState() {
     super.initState();
+    _shimmerController = AnimationController(
+      duration: Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat();
     _loadUserData();
+    // _fetchVehicleCounts();
+    _startAutoRefresh();
+  }
+
+  @override
+  void dispose() {
+    _shimmerController.dispose();
+    _stopAutoRefresh();
+
+    super.dispose();
+  }
+
+  void _startAutoRefresh() {
+    if (_isAutoRefreshEnabled) {
+      _refreshTimer = Timer.periodic(
+        Duration(seconds: _refreshIntervalSeconds),
+        (timer) {
+          if (mounted) {
+            _refreshDashboard();
+          }
+        },
+      );
+    }
+  }
+
+  void _stopAutoRefresh() {
+    _refreshTimer?.cancel();
+    _refreshTimer = null;
+  }
+
+  void _toggleAutoRefresh() {
+    setState(() {
+      _isAutoRefreshEnabled = !_isAutoRefreshEnabled;
+    });
+
+    if (_isAutoRefreshEnabled) {
+      _startAutoRefresh();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.refresh, color: Colors.white, size: 20),
+              SizedBox(width: 8),
+              Text("Auto-refresh enabled"),
+            ],
+          ),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } else {
+      _stopAutoRefresh();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.pause, color: Colors.white, size: 20),
+              SizedBox(width: 8),
+              Text("Auto-refresh disabled"),
+            ],
+          ),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  void _refreshDashboard() {
+    // Trigger refresh on the dashboard widget
+    if (_dashboardKey.currentState != null) {
+      _dashboardKey.currentState!.refreshData();
+    }
+    // Also refresh vehicle counts
+    // _fetchVehicleCounts();
+  }
+
+  Future<void> _fetchVehicleCounts() async {
+    setState(() {
+      _isLoadingVehicleCounts = true;
+    });
+
+    try {
+      if (user.isEmpty ||
+          user['data'] == null ||
+          user['data']['token'] == null) {
+        print("Error: No valid user token available for vehicle counts");
+        setState(() {
+          _isLoadingVehicleCounts = false;
+        });
+        return;
+      }
+
+      final url = "${Api.api_url}vehicle-counts";
+      final token = user['data']['token'];
+      print("Fetching vehicle counts from: $url");
+
+      final response = await httpget(url, token, context);
+      print("Vehicle counts response: $response");
+
+      if (response != null && response is Map && response['success'] == true) {
+        final data = response['data'] as Map<String, dynamic>;
+        setState(() {
+          vehicleCounts = {
+            'vehicle_receiving': data['vehicle_receiving'] ?? 0,
+            'planning': data['planning'] ?? 0,
+            'assembly': data['assembly'] ?? 0,
+            'dispatch': data['dispatch'] ?? 0,
+          };
+        });
+        print("Vehicle counts updated: $vehicleCounts");
+      } else {
+        print(
+            "Failed to fetch vehicle counts: ${response?['msg'] ?? 'Unknown error'}");
+      }
+    } catch (e) {
+      print("Error fetching vehicle counts: $e");
+    } finally {
+      setState(() {
+        _isLoadingVehicleCounts = false;
+      });
+    }
   }
 
   Future<void> _loadUserData() async {
@@ -49,6 +191,9 @@ class _HomeScreanState extends State<HomeScrean> {
   @override
   Widget build(BuildContext context) {
     ThemeData theme = Theme.of(context);
+    final orientation = MediaQuery.of(context).orientation;
+    final isLandscape = orientation == Orientation.landscape;
+
     final List<Map<String, String>> sliderItems = [
       {
         'image': 'images/pic1.jpg',
@@ -90,19 +235,19 @@ class _HomeScreanState extends State<HomeScrean> {
         ),
         title: Row(
           children: [
-            Container(
-              padding: EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                FeatherIcons.home,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-            SizedBox(width: 12),
+            // Container(
+            //   padding: EdgeInsets.all(8),
+            //   decoration: BoxDecoration(
+            //     color: Colors.white.withOpacity(0.2),
+            //     borderRadius: BorderRadius.circular(12),
+            //   ),
+            //   child: Icon(
+            //     FeatherIcons.home,
+            //     color: Colors.white,
+            //     size: 20,
+            //   ),
+            // ),
+            // SizedBox(width: 12),
             Text(
               "Dashboard",
               style: TextStyle(
@@ -114,6 +259,62 @@ class _HomeScreanState extends State<HomeScrean> {
             ),
           ],
         ),
+        actions: [
+          // Manual refresh button
+          IconButton(
+            onPressed: _refreshDashboard,
+            icon: Icon(
+              Icons.refresh,
+              color: Colors.white,
+              size: 24,
+            ),
+            tooltip: 'Refresh Dashboard',
+          ),
+          // Auto-refresh toggle button
+          IconButton(
+            onPressed: _toggleAutoRefresh,
+            icon: Icon(
+              _isAutoRefreshEnabled ? Icons.autorenew : Icons.pause,
+              color: Colors.white,
+              size: 24,
+            ),
+            tooltip: _isAutoRefreshEnabled
+                ? 'Disable Auto-refresh'
+                : 'Enable Auto-refresh',
+          ),
+          // Online status
+          Container(
+            margin: EdgeInsets.only(right: 16),
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withOpacity(0.3)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                SizedBox(width: 6),
+                Text(
+                  "Online",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
       drawer: Container(
         decoration: BoxDecoration(
@@ -141,7 +342,9 @@ class _HomeScreanState extends State<HomeScrean> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
                 Container(
-                  constraints: BoxConstraints(maxHeight: 300),
+                  constraints: BoxConstraints(
+                    maxHeight: isLandscape ? 200 : 300,
+                  ),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
@@ -163,7 +366,7 @@ class _HomeScreanState extends State<HomeScrean> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          SizedBox(height: 30),
+                          SizedBox(height: isLandscape ? 15 : 30),
                           Row(
                             children: [
                               Container(
@@ -180,12 +383,12 @@ class _HomeScreanState extends State<HomeScrean> {
                                   ],
                                 ),
                                 child: CircleAvatar(
-                                  radius: 25,
+                                  radius: isLandscape ? 20 : 25,
                                   backgroundImage:
                                       AssetImage("images/profile1.jpg"),
                                 ),
                               ),
-                              SizedBox(width: 25),
+                              SizedBox(width: isLandscape ? 15 : 25),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,7 +403,7 @@ class _HomeScreanState extends State<HomeScrean> {
                                       child: Text(
                                         "${user['data']?['name'] ?? 'Welcome User'}",
                                         style: TextStyle(
-                                          fontSize: 14,
+                                          fontSize: isLandscape ? 12 : 14,
                                           fontWeight: FontWeight.w700,
                                           color: Colors.white,
                                         ),
@@ -212,7 +415,7 @@ class _HomeScreanState extends State<HomeScrean> {
                                     Text(
                                       "${user['data']?['email'] ?? 'user@company.com'}",
                                       style: TextStyle(
-                                        fontSize: 11,
+                                        fontSize: isLandscape ? 9 : 11,
                                         color: Colors.white.withOpacity(0.9),
                                         fontWeight: FontWeight.w500,
                                       ),
@@ -224,7 +427,7 @@ class _HomeScreanState extends State<HomeScrean> {
                               ),
                             ],
                           ),
-                          SizedBox(height: 20),
+                          SizedBox(height: isLandscape ? 10 : 20),
                           Container(
                             alignment: Alignment.center,
                             padding: EdgeInsets.symmetric(
@@ -246,7 +449,7 @@ class _HomeScreanState extends State<HomeScrean> {
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w600,
-                                    fontSize: 10,
+                                    fontSize: isLandscape ? 9 : 10,
                                   ),
                                 ),
                               ],
@@ -267,21 +470,43 @@ class _HomeScreanState extends State<HomeScrean> {
                         singleDrawerItem(
                             FeatherIcons.home, "Dashboard", 0, theme),
                         _buildSectionDivider("OPERATIONS", theme),
-                        singleDrawerItem(
-                            FeatherIcons.truck, "Vehicle Receiving", 5, theme),
-                        singleDrawerItem(
-                            FeatherIcons.send, "Dispatch", 17, theme),
-                        singleDrawerItem(
-                            FeatherIcons.calendar, "Planning", 1, theme),
-                        singleDrawerItem(
-                            FeatherIcons.calendar, "Assembly", 16, theme),
+                        singleDrawerItemWithBadge(
+                            FeatherIcons.truck,
+                            "Vehicle Receiving",
+                            5,
+                            theme,
+                            vehicleCounts['vehicle_receiving']?.toString() ??
+                                "0",
+                            isLoading: _isLoadingVehicleCounts),
+
+                        singleDrawerItemWithBadge(
+                            FeatherIcons.calendar,
+                            "Planning",
+                            1,
+                            theme,
+                            vehicleCounts['planning']?.toString() ?? "0",
+                            isLoading: _isLoadingVehicleCounts),
+                        singleDrawerItemWithBadge(
+                            FeatherIcons.calendar,
+                            "Assembly",
+                            16,
+                            theme,
+                            vehicleCounts['assembly']?.toString() ?? "0",
+                            isLoading: _isLoadingVehicleCounts),
+                        singleDrawerItemWithBadge(
+                            FeatherIcons.send,
+                            "Dispatch",
+                            17,
+                            theme,
+                            vehicleCounts['dispatch']?.toString() ?? "0",
+                            isLoading: _isLoadingVehicleCounts),
                         _buildSectionDivider("QUALITY", theme),
                         singleDrawerItem(
                             FeatherIcons.folder, "QFL 3/TMS", 2, theme),
                         singleDrawerItem(
                             FeatherIcons.folderPlus, "QFL 4", 3, theme),
-                        singleDrawerItem(
-                            FeatherIcons.folderPlus, "QFL 5/6", 56, theme),
+                        // singleDrawerItem(
+                        //     FeatherIcons.folderPlus, "QFL 5/6", 56, theme),
                         singleDrawerItem(
                             FeatherIcons.folderPlus, "MPA", 33, theme),
                         _buildSectionDivider("Claims and Defects", theme),
@@ -312,169 +537,25 @@ class _HomeScreanState extends State<HomeScrean> {
           ),
         ),
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.grey.shade50,
-              Colors.white,
-            ],
+      body: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.grey.shade50,
+                  Colors.white,
+                ],
+              ),
+            ),
+            child: isLandscape
+                ? _buildLandscapeLayout(theme, sliderItems)
+                : _buildPortraitLayout(theme, sliderItems),
           ),
-        ),
-        child: Column(
-          children: [
-            // Welcome Card
-            Container(
-              margin: EdgeInsets.all(16),
-              padding: EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    theme.primaryColor.withOpacity(0.1),
-                    theme.primaryColor.withOpacity(0.05),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: theme.primaryColor.withOpacity(0.2)),
-                boxShadow: [
-                  BoxShadow(
-                    color: theme.primaryColor.withOpacity(0.1),
-                    blurRadius: 15,
-                    offset: Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(15),
-                    decoration: BoxDecoration(
-                      color: theme.primaryColor,
-                      borderRadius: BorderRadius.circular(15),
-                      boxShadow: [
-                        BoxShadow(
-                          color: theme.primaryColor.withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      FeatherIcons.zap,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                  ),
-                  SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Welcome to InfoPulse",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: theme.primaryColor,
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          "Quality Control & Management System",
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.green.withOpacity(0.3)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: Colors.green,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        SizedBox(width: 6),
-                        Text(
-                          "Online",
-                          style: TextStyle(
-                            color: Colors.green[700],
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Image Slider
-            Container(
-              margin: EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 15,
-                    offset: Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: BeautySlider(items: sliderItems),
-              ),
-            ),
-            SizedBox(height: 16),
-            // Dashboard Content
-            Expanded(
-              child: Container(
-                margin: EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(25),
-                    topRight: Radius.circular(25),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: Offset(0, -5),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(25),
-                    topRight: Radius.circular(25),
-                  ),
-                  child: RunningShopsDashboardWidget(),
-                ),
-              ),
-            ),
-          ],
-        ),
+          // Auto-refresh status indicator
+        ],
       ),
       floatingActionButton: Container(
         decoration: BoxDecoration(
@@ -487,45 +568,63 @@ class _HomeScreanState extends State<HomeScrean> {
             ),
           ],
         ),
-        child: FloatingActionButton.extended(
-          onPressed: () {
-            // Show quick actions bottom sheet
-            _showQuickActionsBottomSheet(context, theme);
-          },
-          backgroundColor: theme.primaryColor,
-          elevation: 0,
-          icon: Container(
-            padding: EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              FeatherIcons.zap,
-              color: Colors.white,
-              size: 20,
-            ),
-          ),
-          label: Text(
-            "Quick Actions",
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-            ),
-          ),
-        ),
+        child: isLandscape
+            ? FloatingActionButton(
+                onPressed: () {
+                  // Show quick actions bottom sheet
+                  _showQuickActionsBottomSheet(context, theme);
+                },
+                backgroundColor: theme.primaryColor,
+                elevation: 0,
+                child: Container(
+                  padding: EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    FeatherIcons.zap,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                ),
+              )
+            : FloatingActionButton(
+                onPressed: () {
+                  // Show quick actions bottom sheet
+                  _showQuickActionsBottomSheet(context, theme);
+                },
+                backgroundColor: theme.primaryColor,
+                elevation: 0,
+                child: Container(
+                  padding: EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    FeatherIcons.zap,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+              ),
       ),
     );
   }
 
   void _showQuickActionsBottomSheet(BuildContext context, ThemeData theme) {
+    final orientation = MediaQuery.of(context).orientation;
+    final isLandscape = orientation == Orientation.landscape;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.6,
+        height: isLandscape
+            ? MediaQuery.of(context).size.height * 0.8
+            : MediaQuery.of(context).size.height * 0.6,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.only(
@@ -583,10 +682,10 @@ class _HomeScreanState extends State<HomeScrean> {
               child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: 20),
                 child: GridView.count(
-                  crossAxisCount: 2,
+                  crossAxisCount: isLandscape ? 4 : 2,
                   crossAxisSpacing: 16,
                   mainAxisSpacing: 16,
-                  childAspectRatio: 1.2,
+                  childAspectRatio: isLandscape ? 1.0 : 1.2,
                   children: [
                     _buildQuickActionCard(
                       FeatherIcons.truck,
@@ -850,6 +949,207 @@ class _HomeScreanState extends State<HomeScrean> {
     );
   }
 
+  Widget _buildShimmerBadge() {
+    return AnimatedBuilder(
+      animation: _shimmerController,
+      builder: (context, child) {
+        return Container(
+          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            gradient: LinearGradient(
+              begin: Alignment(-1.0, 0.0),
+              end: Alignment(1.0, 0.0),
+              colors: [
+                Colors.grey.shade300,
+                Colors.grey.shade100,
+                Colors.grey.shade300,
+              ],
+              stops: [
+                0.0,
+                _shimmerController.value,
+                1.0,
+              ],
+            ),
+          ),
+          child: Container(
+            width: 16,
+            height: 12,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget singleDrawerItemWithBadge(IconData iconData, String title,
+      int position, ThemeData theme, String badgeNumber,
+      {bool isLoading = false}) {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 8, vertical: 1),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        color: _selectedPage == position
+            ? theme.primaryColor.withOpacity(0.1)
+            : Colors.transparent,
+      ),
+      child: ListTile(
+        dense: true,
+        contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+        minVerticalPadding: 0,
+        leading: Container(
+          padding: EdgeInsets.all(5),
+          decoration: BoxDecoration(
+            color: _selectedPage == position
+                ? theme.primaryColor
+                : Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Icon(
+            iconData,
+            color: _selectedPage == position ? Colors.white : Colors.grey[600],
+            size: 16,
+          ),
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontWeight:
+                _selectedPage == position ? FontWeight.w700 : FontWeight.w500,
+            color: _selectedPage == position
+                ? theme.primaryColor
+                : Colors.grey[800],
+            fontSize: 12,
+          ),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            isLoading
+                ? _buildShimmerBadge()
+                : Container(
+                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: theme.primaryColor,
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: theme.primaryColor.withOpacity(0.3),
+                          blurRadius: 4,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      badgeNumber,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+            if (_selectedPage == position) ...[
+              SizedBox(width: 8),
+              Icon(FeatherIcons.chevronRight,
+                  color: theme.primaryColor, size: 14),
+            ],
+          ],
+        ),
+        onTap: () {
+          setState(() {
+            _selectedPage = position;
+          });
+          // Navigate based on selected position
+          switch (position) {
+            case 0:
+              _scaffoldKey.currentState!.closeDrawer();
+              break;
+            case 1:
+              PlanningHome().launch(context,
+                  pageRouteAnimation: PageRouteAnimation.Slide);
+              break;
+            case 56:
+              QFLPage().launch(context,
+                  pageRouteAnimation: PageRouteAnimation.Slide);
+              break;
+            case 2:
+              TMSUnits().launch(context,
+                  pageRouteAnimation: PageRouteAnimation.Slide);
+              break;
+            case 33:
+              QFLThreeList().launch(context,
+                  pageRouteAnimation: PageRouteAnimation.Slide);
+              break;
+            case 3:
+              QFL4().launch(context,
+                  pageRouteAnimation: PageRouteAnimation.Slide);
+              break;
+            case 5:
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => DisplayVehicles()),
+              );
+              break;
+            case 11:
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ProfileTab()),
+              );
+              break;
+            case 12:
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => DocumentListPage()),
+              );
+              break;
+            case 13:
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => NearMissListPage()),
+              );
+              break;
+            case 14:
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => DefectsUnit()),
+              );
+              break;
+            case 15:
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ClaimHome()),
+              );
+              break;
+            case 16:
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => AssemblyStations()),
+              );
+              break;
+            case 17:
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => DispatchHome()),
+              );
+              break;
+            case 133:
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => HelpPage()),
+              );
+              break;
+            case 99:
+              _showLogoutDialog(context);
+              break;
+          }
+        },
+      ),
+    );
+  }
+
   void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -987,5 +1287,114 @@ class _HomeScreanState extends State<HomeScrean> {
         ),
       );
     }
+  }
+
+  // Portrait layout - original vertical layout
+  Widget _buildPortraitLayout(
+      ThemeData theme, List<Map<String, String>> sliderItems) {
+    return Column(
+      children: [
+        // Image Slider
+        Container(
+          margin: EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 15,
+                offset: Offset(0, 5),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: BeautySlider(items: sliderItems),
+          ),
+        ),
+        SizedBox(height: 16),
+        // Dashboard Content
+        Expanded(
+          child: Container(
+            margin: EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(25),
+                topRight: Radius.circular(25),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: Offset(0, -5),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(25),
+                topRight: Radius.circular(25),
+              ),
+              child: RunningShopsDashboardWidget(key: _dashboardKey),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Landscape layout - side by side layout
+  Widget _buildLandscapeLayout(
+      ThemeData theme, List<Map<String, String>> sliderItems) {
+    return Padding(
+      padding: EdgeInsets.all(16),
+      child: Row(
+        children: [
+          // Left side - Image Slider
+          Expanded(
+            flex: 2,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 15,
+                    offset: Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: BeautySlider(items: sliderItems),
+              ),
+            ),
+          ),
+          SizedBox(width: 16),
+          // Right side - Dashboard Content
+          Expanded(
+            flex: 3,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(25),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(25),
+                child: RunningShopsDashboardWidget(key: _dashboardKey),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -10,7 +10,6 @@ import 'package:isuze_pqcs/common/loader.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/pages/assembly/assembly_stations.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/QcViewlistDefects.dart';
-import 'package:isuze_pqcs/pages/claimforms/RaiseClaim.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/jobcard_questions_template.dart';
 import 'package:nb_utils/nb_utils.dart';
 import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
@@ -88,6 +87,28 @@ class _QcCategoriesState extends State<QcCategories> {
                         .then((val) {
                       fetchCategories2(widget.ShopId);
                     });
+                  },
+                ),
+                SpeedDialChild(
+                  backgroundColor: Colors.green.shade600,
+                  foregroundColor: Colors.white,
+                  labelStyle: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                    fontSize: 14,
+                  ),
+                  labelBackgroundColor: Colors.white,
+                  child: Icon(Icons.check_circle_outline, size: 24),
+                  label: 'Raise Issue',
+                  onTap: () {
+                    // QCDefectsPage(
+                    //   vehileId: widget.res['data']['vehicledata']['id'],
+                    // )
+                    //     .launch(context,
+                    //         pageRouteAnimation: PageRouteAnimation.Slide)
+                    //     .then((val) {
+                    //   fetchCategories2(widget.ShopId);
+                    // });
                   },
                 ),
               ],

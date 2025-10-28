@@ -753,7 +753,7 @@ class _ReceivingFormState extends State<ReceivingForm>
         ),
         SizedBox(height: 16),
         _buildFileUploadCard(
-          label: 'Geology Data (Excel)',
+          label: 'Geneology Data (Excel)',
           controller: _fileController2,
           onUpload: () => _pickFile(1),
           icon: FeatherIcons.database,

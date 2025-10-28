@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
+import 'package:isuze_pqcs/pages/assembly/assembly_stations.dart';
 import 'package:isuze_pqcs/pages/claimforms/FiveSForm.dart';
 import 'package:isuze_pqcs/pages/claimforms/fiveSdetails.dart';
 
@@ -212,7 +213,7 @@ class _DocumentListPageState extends State<DocumentListPage> {
             ),
           ],
         ),
-        child: FloatingActionButton.extended(
+        child: FloatingActionButton(
           onPressed: () {
             Navigator.push(
               context,
@@ -229,14 +230,7 @@ class _DocumentListPageState extends State<DocumentListPage> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          icon: const Icon(Icons.add_circle_outline, size: 20),
-          label: const Text(
-            'New Audit',
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-            ),
-          ),
+          child: Icon(Icons.add_circle_outline, size: 20),
         ),
       ),
       appBar: AppBar(
@@ -701,11 +695,15 @@ class _DocumentListPageState extends State<DocumentListPage> {
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: theme.primaryColor,
-                        foregroundColor: Colors.white,
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.black,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
+                        ),
+                        side: BorderSide(
+                          color: theme.primaryColor.withOpacity(0.8),
+                          width: 1,
                         ),
                         elevation: 0,
                       ),
@@ -816,79 +814,162 @@ class _DocumentListPageState extends State<DocumentListPage> {
     // Get previous month name
     String monthName = _getMonthName(lastMonth.month);
 
-    return Card(
-      elevation: 1,
-      color: Colors.white,
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              // color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.emoji_events,
-              // color: Colors.white,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Top Performer',
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    // color: Colors.white,
-                  ),
+    return Container(
+      margin: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20), color: mycolor),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Stack(
+          children: [
+            // Decorative pattern
+            Positioned(
+              right: -20,
+              top: -20,
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(50),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  '$topSection - $monthName ${lastMonth.year}',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    // color: Colors.white.withOpacity(0.9),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.3),
-                width: 1,
               ),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.star,
-                  color: Colors.white,
-                  size: 14,
+            Positioned(
+              right: 20,
+              bottom: -10,
+              child: Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(30),
                 ),
-                const SizedBox(width: 4),
-                Text(
-                  '${maxCount} audits',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-        ],
+            // Main content
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  // Trophy icon with glow effect
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.orange.withOpacity(0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.emoji_events_rounded,
+                      color: Color(0xFFFF8F00),
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+
+                  // Text content
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.star_rounded,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'TOP PERFORMER',
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.25),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '$topSection',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '$monthName ${lastMonth.year}',
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            color: Colors.white.withOpacity(0.9),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Achievement badge
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.orange.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '$maxCount',
+                          style: GoogleFonts.poppins(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFFFF8F00),
+                          ),
+                        ),
+                        Text(
+                          maxCount == 1 ? 'audit' : 'audits',
+                          style: GoogleFonts.poppins(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFFFF8F00).withOpacity(0.8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

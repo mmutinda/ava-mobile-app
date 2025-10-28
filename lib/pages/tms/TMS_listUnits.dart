@@ -245,8 +245,6 @@ class _TMSUnitsState extends State<TMSUnits> with TickerProviderStateMixin {
                       padding: EdgeInsets.all(16),
                       itemCount: vehicles.length,
                       itemBuilder: (context, index) {
-                        LinearGradient cardGradient =
-                            gradients[index % gradients.length];
                         Color categoryColor = colors[index % colors.length];
                         var vin = vehicles[index].vin;
                         var model = vehicles[index].model;

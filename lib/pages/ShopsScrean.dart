@@ -6,7 +6,8 @@ import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/models/shops.dart';
-import 'package:isuze_pqcs/pages/qc_inspection/scanning.dart';
+import 'package:isuze_pqcs/pages/qc_inspection/scanning%20copy.dart';
+// import 'package:isuze_pqcs/pages/qc_inspection/scanning.txt';
 import 'package:isuze_pqcs/services/sqlite_db_helper.dart';
 import 'package:isuze_pqcs/widgets/shops.dart';
 

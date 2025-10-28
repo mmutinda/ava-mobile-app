@@ -40,7 +40,7 @@ class ShopItems extends StatelessWidget {
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
-                      fontSize: 14,
+                      fontSize: 15,
                     ),
                   ),
                 ),
@@ -60,7 +60,7 @@ class ShopItems extends StatelessWidget {
                   "$name",
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 12,
+                    fontSize: 15,
                   ),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 2,

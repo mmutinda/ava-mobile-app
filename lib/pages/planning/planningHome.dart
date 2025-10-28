@@ -21,7 +21,8 @@ class _PlanningHomeState extends State<PlanningHome>
 
   final List<Map<String, dynamic>> options = [
     {
-      'title': 'Scheduled Lots',
+      // 'title': 'Scheduled Lots',
+      'title': 'Schedule for Unboxing',
       'subtitle': 'View and manage scheduled production lots',
       'icon': FeatherIcons.calendar,
       'color': Colors.blue,
@@ -35,7 +36,7 @@ class _PlanningHomeState extends State<PlanningHome>
       'gradient': [Colors.orange.shade400, Colors.orange.shade600],
     },
     {
-      'title': 'Schedule to Assembly',
+      'title': 'Schedule for Assembly',
       'subtitle': 'Schedule units for assembly line production',
       'icon': FeatherIcons.settings,
       'color': Colors.green,

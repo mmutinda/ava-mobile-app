@@ -1,14 +1,10 @@
 import 'dart:convert';
-import 'dart:developer';
 
-import 'package:awesome_top_snackbar/awesome_top_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:isuze_pqcs/common/api.dart';
-import 'package:isuze_pqcs/common/confirmationDialog.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
-import 'package:isuze_pqcs/common/loader.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/scanning%20copy.dart';
 // import 'package:isuze_pqcs/pages/assembly/assembly_stations.dart';
 

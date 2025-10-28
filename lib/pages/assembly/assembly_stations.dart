@@ -10,7 +10,6 @@ import 'package:isuze_pqcs/models/shops.dart';
 import 'package:isuze_pqcs/pages/planning/EOL/EOLScreen.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/scanning%20copy.dart';
 // import 'package:isuze_pqcs/pages/qc_inspection/scanning.dart';
-import 'package:isuze_pqcs/widgets/shops.dart';
 
 import 'package:nb_utils/nb_utils.dart';
 
@@ -44,62 +43,6 @@ class _AssemblyStationsState extends State<AssemblyStations> {
       fetchData();
     });
   }
-
-  // Future<void> fetchData() async {
-  //   try {
-  //     // Optional: show EasyLoading ONLY when NOT refreshing:
-  //     if (!mounted || !_isRefreshing) {
-  //       EasyLoading.show(
-  //         status: "Loading Shops...",
-  //         maskType: EasyLoadingMaskType.black,
-  //       );
-  //     }
-
-  //     // Load cached shops first
-  //     List<shops> cachedShops = await DBHelper.getCachedShops();
-  //     if (cachedShops.isNotEmpty) {
-  //       setState(() {
-  //         shop = cachedShops;
-  //         message = '';
-  //       });
-  //     }
-
-  //     var url = "${Api.api_url}home";
-  //     var response = await httpget(url, user['data']['token'], context);
-
-  //     if (response != null && response['success'] && response['data'] != null) {
-  //       List<dynamic> responseData = response['data']['shop'];
-  //       List<shops> fetchedShops = responseData.map((shopData) {
-  //         return shops.fromJson(shopData);
-  //       }).toList();
-
-  //       if (fetchedShops.isNotEmpty) {
-  //         setState(() {
-  //           shop = fetchedShops;
-  //           message = '';
-  //         });
-  //         await DBHelper.insertShops(fetchedShops);
-  //       } else {
-  //         setState(() {
-  //           message = "No Shops Found";
-  //         });
-  //       }
-  //     } else {
-  //       setState(() {
-  //         message = response['msg'] ?? "Failed to fetch data";
-  //       });
-  //     }
-  //   } catch (e) {
-  //     print("Error: $e");
-  //     setState(() {
-  //       message = "Network Problem";
-  //     });
-  //   } finally {
-  //     if (!mounted || !_isRefreshing) {
-  //       EasyLoading.dismiss();
-  //     }
-  //   }
-  // }
 
   Future<void> fetchData() async {
     print("Fetching Data...");
@@ -141,7 +84,6 @@ class _AssemblyStationsState extends State<AssemblyStations> {
             message = '';
             _isRefreshing == false;
           });
-          // await DBHelper.insertShops(fetchedShops); // Update SQLite
         } else {
           setState(() {
             message = "No Shops Found";
@@ -255,7 +197,7 @@ class _AssemblyStationsState extends State<AssemblyStations> {
                         ),
                         SizedBox(height: 8),
                         Text(
-                          '${shop.length}',
+                          '${shop.where((station) => int.parse(station.number) > 0).length}',
                           style: TextStyle(
                             color: mycolor,
                             fontSize: 28,
