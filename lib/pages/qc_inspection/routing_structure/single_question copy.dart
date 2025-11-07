@@ -897,7 +897,7 @@ class _SingleQuestionState extends State<SingleQuestion>
                                           okay = value!;
                                           _claimCaptured = true;
                                           // Store claim data
-                                          
+
                                           _claimDescription =
                                               result['description'] ?? '';
                                           _claimPartNo = result['partNo'] ?? '';
@@ -1856,7 +1856,7 @@ class _IssueDialogState extends State<IssueDialog>
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'Report Issue',
+                              'Report Issue-->',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 16,

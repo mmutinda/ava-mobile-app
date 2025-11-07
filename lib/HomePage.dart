@@ -56,16 +56,18 @@ class _HomeScreanState extends State<HomeScrean> with TickerProviderStateMixin {
       duration: Duration(milliseconds: 1500),
       vsync: this,
     )..repeat();
-    _loadUserData();
-    // _fetchVehicleCounts();
-    _startAutoRefresh();
+
+    // Load user data first so we have a valid token, then fetch counts and start auto-refresh
+    _loadUserData().then((_) {
+      _fetchVehicleCounts();
+      _startAutoRefresh();
+    });
   }
 
   @override
   void dispose() {
     _shimmerController.dispose();
     _stopAutoRefresh();
-
     super.dispose();
   }
 
@@ -260,29 +262,6 @@ class _HomeScreanState extends State<HomeScrean> with TickerProviderStateMixin {
           ],
         ),
         actions: [
-          // Manual refresh button
-          IconButton(
-            onPressed: _refreshDashboard,
-            icon: Icon(
-              Icons.refresh,
-              color: Colors.white,
-              size: 24,
-            ),
-            tooltip: 'Refresh Dashboard',
-          ),
-          // Auto-refresh toggle button
-          IconButton(
-            onPressed: _toggleAutoRefresh,
-            icon: Icon(
-              _isAutoRefreshEnabled ? Icons.autorenew : Icons.pause,
-              color: Colors.white,
-              size: 24,
-            ),
-            tooltip: _isAutoRefreshEnabled
-                ? 'Disable Auto-refresh'
-                : 'Enable Auto-refresh',
-          ),
-          // Online status
           Container(
             margin: EdgeInsets.only(right: 16),
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -1027,30 +1006,32 @@ class _HomeScreanState extends State<HomeScrean> with TickerProviderStateMixin {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            isLoading
-                ? _buildShimmerBadge()
-                : Container(
-                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: theme.primaryColor,
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                          color: theme.primaryColor.withOpacity(0.3),
-                          blurRadius: 4,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
+            // Show shimmer while loading, or badge only if count > 0
+            if (isLoading)
+              _buildShimmerBadge()
+            else if (badgeNumber != '0' && badgeNumber.isNotEmpty)
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: theme.primaryColor,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.primaryColor.withOpacity(0.3),
+                      blurRadius: 4,
+                      offset: Offset(0, 2),
                     ),
-                    child: Text(
-                      badgeNumber,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                  ],
+                ),
+                child: Text(
+                  badgeNumber,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
                   ),
+                ),
+              ),
             if (_selectedPage == position) ...[
               SizedBox(width: 8),
               Icon(FeatherIcons.chevronRight,

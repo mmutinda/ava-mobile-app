@@ -74,6 +74,7 @@ class Vehicle2 {
   final String chasis_moved;
   final unitRemaining;
   final ageing;
+  final String created_at;
 
   Vehicle2({
     required this.model,
@@ -85,6 +86,7 @@ class Vehicle2 {
     required this.chasis_moved,
     required this.unitRemaining,
     required this.ageing,
+    required this.created_at,
   });
 
   factory Vehicle2.fromJson(Map<String, dynamic> json) {
@@ -98,6 +100,7 @@ class Vehicle2 {
       chasis_moved: json['vehicle']['chasis_moved'].toString(),
       unitRemaining: json['vehicle']['component_moved'].toString(),
       ageing: calculateAgeing(json['created_at'].toString()),
+      created_at: json['created_at'].toString(),
     );
   }
 }

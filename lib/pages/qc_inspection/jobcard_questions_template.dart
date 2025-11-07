@@ -76,17 +76,48 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
   var jobCardId;
   int? selectedNextStationId; // Changed to int? for better type safety
 
-  // Check if checksheet is already submitted (all questions have previous answers)
-  bool get isChecksheetSubmitted {
+  // Check if there are any changes made to the current answers
+  bool get hasChangesToSave {
     if (questions.isEmpty) return false;
 
     for (var question in questions) {
-      var answerGiven = question['answer_given'] ?? '';
-      if (answerGiven.isEmpty) {
-        return false; // Found a question without previous answer
+      final int questionId = question["id"];
+      var previousAnswer = question['answer_given'] ?? '';
+
+      if (question["quiz_type"] == "multiple") {
+        String? currentAnswer = multipleValue[questionId];
+        if (currentAnswer != null && currentAnswer != previousAnswer) {
+          return true; // Found a changed answer
+        }
+      } else if (question["quiz_type"] == "single") {
+        String? currentAnswer = singleValues[questionId];
+        if (currentAnswer != null && currentAnswer != previousAnswer) {
+          return true; // Found a changed answer
+        }
       }
     }
-    return true; // All questions have previous answers
+    return false; // No changes detected
+  }
+
+  // Check if all required questions are answered (for validation)
+  bool get areAllQuestionsAnswered {
+    if (questions.isEmpty) return false;
+
+    for (var question in questions) {
+      final int questionId = question["id"];
+      bool hasAnswer = false;
+
+      if (question["quiz_type"] == "multiple") {
+        hasAnswer = multipleValue[questionId] != null;
+      } else if (question["quiz_type"] == "single") {
+        hasAnswer = singleValues[questionId] != null;
+      }
+
+      if (!hasAnswer) {
+        return false; // Found an unanswered question
+      }
+    }
+    return true; // All questions are answered
   }
 
   @override
@@ -608,30 +639,28 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                               if (_formKey.currentState!.validate()) {
                                 // For EOL checks (when station_id is not null), validate all questions are answered
                                 if (widget.station_id != null) {
-                                  bool allAnswered = true;
-                                  List<String> unansweredQuestions = [];
+                                  if (!areAllQuestionsAnswered) {
+                                    List<String> unansweredQuestions = [];
 
-                                  for (int i = 0; i < questions.length; i++) {
-                                    var quest = questions[i];
-                                    final int questionId = quest["id"];
-                                    bool hasAnswer = false;
+                                    for (int i = 0; i < questions.length; i++) {
+                                      var quest = questions[i];
+                                      final int questionId = quest["id"];
+                                      bool hasAnswer = false;
 
-                                    if (quest["quiz_type"] == "multiple") {
-                                      hasAnswer =
-                                          multipleValue[questionId] != null;
-                                    } else if (quest["quiz_type"] == "single") {
-                                      hasAnswer =
-                                          singleValues[questionId] != null;
+                                      if (quest["quiz_type"] == "multiple") {
+                                        hasAnswer =
+                                            multipleValue[questionId] != null;
+                                      } else if (quest["quiz_type"] ==
+                                          "single") {
+                                        hasAnswer =
+                                            singleValues[questionId] != null;
+                                      }
+
+                                      if (!hasAnswer) {
+                                        unansweredQuestions
+                                            .add("Question ${i + 1}");
+                                      }
                                     }
-
-                                    if (!hasAnswer) {
-                                      allAnswered = false;
-                                      unansweredQuestions
-                                          .add("Question ${i + 1}");
-                                    }
-                                  }
-
-                                  if (!allAnswered) {
                                     // Show error dialog for unanswered questions
                                     await showDialog(
                                       context: context,
@@ -1386,7 +1415,22 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                       // print(
                                       //     "-->${DescipTextValues[questionId]}");
                                     }
-                                    if (answer["answer"] != null) {
+
+                                    // Include answer if:
+                                    // 1. There's a current answer, OR
+                                    // 2. There's a previous answer (for re-saving), OR
+                                    // 3. There are changes to save
+                                    if (answer["answer"] != null ||
+                                        quest['answer_given'] != null &&
+                                            quest['answer_given'] != '' ||
+                                        hasChangesToSave) {
+                                      // If no current answer but has previous answer, use previous answer
+                                      if (answer["answer"] == null &&
+                                          quest['answer_given'] != null &&
+                                          quest['answer_given'] != '') {
+                                        answer["answer"] =
+                                            quest['answer_given'];
+                                      }
                                       answers.add(answer);
                                     }
                                   }
@@ -1400,10 +1444,10 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                     // Close loading dialog first
                                     Navigator.of(context).pop();
 
-                                    // Check if checksheet is already submitted
-                                    if (isChecksheetSubmitted) {
-                                      awesomeTopSnackbar(context,
-                                          "Checksheet already submitted",
+                                    // Check if there are changes to save
+                                    if (!hasChangesToSave) {
+                                      awesomeTopSnackbar(
+                                          context, "No changes to save",
                                           iconWithDecoration: BoxDecoration(
                                             borderRadius:
                                                 BorderRadius.circular(20),
@@ -1443,7 +1487,9 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                   Text(
                                     widget.station_id != null
                                         ? 'COMPLETE CHECKLIST'
-                                        : 'SAVE ANSWERS',
+                                        : hasChangesToSave
+                                            ? 'SAVE CHANGES'
+                                            : 'SAVE ANSWERS',
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 16,
@@ -1469,9 +1515,9 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
     if (!_formKey.currentState!.validate()) return;
 
     if (answers.isEmpty) {
-      // Check if checksheet is already submitted
-      if (isChecksheetSubmitted) {
-        awesomeTopSnackbar(context, "Checksheet already submitted",
+      // Check if there are any changes to save
+      if (!hasChangesToSave) {
+        awesomeTopSnackbar(context, "No changes to save",
             backgroundColor: Colors.orange);
       } else {
         awesomeTopSnackbar(context, "Please answer at least one question",
@@ -1626,6 +1672,26 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
         Category = dataMain["category"] ?? {};
         substations = dataMain["substation"] ?? [];
         print('Substation data: $substations');
+
+        // Initialize previous answers for re-editing
+        for (var question in questions) {
+          final int questionId = question["id"];
+          var previousAnswer = question['answer_given'] ?? '';
+
+          if (previousAnswer.isNotEmpty) {
+            if (question["quiz_type"] == "multiple") {
+              multipleValue[questionId] = previousAnswer;
+            } else if (question["quiz_type"] == "single") {
+              singleValues[questionId] = previousAnswer;
+            }
+          }
+
+          // Initialize description values if available
+          var previousDescription = question['defect_description'] ?? '';
+          if (previousDescription.isNotEmpty) {
+            DescipTextValues[questionId] = previousDescription;
+          }
+        }
 
         // Debug: Print substations structure
         for (int i = 0; i < substations.length; i++) {

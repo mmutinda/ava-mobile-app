@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:intl/intl.dart';
 
 import 'package:awesome_top_snackbar/awesome_top_snackbar.dart';
 import 'package:flutter/material.dart';
@@ -262,6 +263,28 @@ class _ScanningState extends State<Scanning> {
   TextEditingController searchController = TextEditingController();
   String searchText = '';
 
+  String _formatTimeAgo(String? createdAt) {
+    if (createdAt == null || createdAt.isEmpty) return 'Unknown';
+
+    try {
+      final DateTime createdDate = DateTime.parse(createdAt);
+      final DateTime now = DateTime.now();
+      final Duration difference = now.difference(createdDate);
+
+      if (difference.inDays > 0) {
+        return '${difference.inDays}d ago';
+      } else if (difference.inHours > 0) {
+        return '${difference.inHours}h ago';
+      } else if (difference.inMinutes > 0) {
+        return '${difference.inMinutes}m ago';
+      } else {
+        return 'Just now';
+      }
+    } catch (e) {
+      return 'Unknown';
+    }
+  }
+
   @override
   void dispose() {
     if (isLoading) {
@@ -466,6 +489,44 @@ class _ScanningState extends State<Scanning> {
                                                             overflow:
                                                                 TextOverflow
                                                                     .ellipsis,
+                                                          ),
+                                                        ),
+                                                        const Spacer(),
+                                                        Container(
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                            horizontal: 6,
+                                                            vertical: 2,
+                                                          ),
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            color: Colors.blue
+                                                                .withOpacity(
+                                                                    0.1),
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        4),
+                                                            border: Border.all(
+                                                              color: Colors.blue
+                                                                  .withOpacity(
+                                                                      0.3),
+                                                              width: 1,
+                                                            ),
+                                                          ),
+                                                          child: Text(
+                                                            _formatTimeAgo(
+                                                                car.created_at),
+                                                            style:
+                                                                const TextStyle(
+                                                              fontSize: 10,
+                                                              color:
+                                                                  Colors.blue,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                            ),
                                                           ),
                                                         ),
                                                       ],
@@ -734,6 +795,45 @@ class _ScanningState extends State<Scanning> {
                                                             color: mycolor,
                                                             fontWeight:
                                                                 FontWeight.w600,
+                                                          ),
+                                                        ),
+                                                        const Spacer(),
+                                                        Container(
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                            horizontal: 6,
+                                                            vertical: 2,
+                                                          ),
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            color: Colors.blue
+                                                                .withOpacity(
+                                                                    0.1),
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        4),
+                                                            border: Border.all(
+                                                              color: Colors.blue
+                                                                  .withOpacity(
+                                                                      0.3),
+                                                              width: 1,
+                                                            ),
+                                                          ),
+                                                          child: Text(
+                                                            _formatTimeAgo(
+                                                                vehicles[index]
+                                                                    .created_at),
+                                                            style:
+                                                                const TextStyle(
+                                                              fontSize: 10,
+                                                              color:
+                                                                  Colors.blue,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                            ),
                                                           ),
                                                         ),
                                                       ],

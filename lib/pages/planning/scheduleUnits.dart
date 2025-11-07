@@ -8,6 +8,7 @@ import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/models/qc_inpection.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/chooseComponent.dart';
+import 'package:intl/intl.dart';
 
 class SCheduleUnits extends StatefulWidget {
   final view;
@@ -29,6 +30,8 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
   String message = '';
   String selectedLine = 'All'; // Track selected line tab
   List<String> vehicleLines = ['All']; // List of available vehicle lines
+  String selectedLot = 'All'; // Track selected lot tab
+  List<String> vehicleLots = ['All']; // List of available vehicle lots
 
   @override
   void initState() {
@@ -81,6 +84,7 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
           isLoading = false;
           message = '';
           _updateVehicleLines();
+          _updateVehicleLots();
         });
         if (vehicles.isEmpty) {
           setState(() {
@@ -126,13 +130,39 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
     }
   }
 
-  // Method to get filtered vehicles by selected line
+  // Method to update vehicle lots for tabs
+  void _updateVehicleLots() {
+    Set<String> lots = {'All'};
+    for (Vehicle vehicle in vehicles) {
+      if (vehicle.lot.isNotEmpty) {
+        lots.add(vehicle.lot);
+      }
+    }
+    vehicleLots = lots.toList()
+      ..sort((a, b) {
+        if (a == 'All') return -1;
+        if (b == 'All') return 1;
+        return a.compareTo(b);
+      });
+
+    // Reset selected lot if it no longer exists
+    if (!vehicleLots.contains(selectedLot)) {
+      selectedLot = 'All';
+    }
+  }
+
+  // Method to get filtered vehicles by selected line and lot
   List<Vehicle> _getFilteredVehicles() {
     List<Vehicle> filtered = vehicles;
 
     // Filter by selected line
     if (selectedLine != 'All') {
-      filtered = vehicles.where((v) => v.vehicle_line == selectedLine).toList();
+      filtered = filtered.where((v) => v.vehicle_line == selectedLine).toList();
+    }
+
+    // Filter by selected lot
+    if (selectedLot != 'All') {
+      filtered = filtered.where((v) => v.lot == selectedLot).toList();
     }
 
     // Filter by search text
@@ -140,12 +170,51 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
       filtered = filtered.where((vehicle) {
         String vin = vehicle.vin.toLowerCase();
         String model = vehicle.model.toLowerCase();
+        String lot = vehicle.lot.toLowerCase();
         String searchLower = searchText.toLowerCase();
-        return vin.contains(searchLower) || model.contains(searchLower);
+        return vin.contains(searchLower) ||
+            model.contains(searchLower) ||
+            lot.contains(searchLower);
       }).toList();
     }
 
     return filtered;
+  }
+
+  // Method to get dynamic filter header text
+
+  // Method to get dynamic empty state message
+  String _getEmptyStateMessage() {
+    if (selectedLine != 'All' && selectedLot != 'All') {
+      return 'No vehicles in Line $selectedLine - Lot $selectedLot';
+    } else if (selectedLine != 'All') {
+      return 'No vehicles in Line $selectedLine';
+    } else if (selectedLot != 'All') {
+      return 'No vehicles in Lot $selectedLot';
+    } else {
+      return 'No vehicles available';
+    }
+  }
+
+  // Method to format created_at as human readable time
+  String _formatTimeAgo(String createdAt) {
+    try {
+      DateTime createdTime = DateTime.parse(createdAt);
+      DateTime now = DateTime.now();
+      Duration difference = now.difference(createdTime);
+
+      if (difference.inDays > 0) {
+        return '${difference.inDays} day${difference.inDays > 1 ? 's' : ''} ago';
+      } else if (difference.inHours > 0) {
+        return '${difference.inHours} hour${difference.inHours > 1 ? 's' : ''} ago';
+      } else if (difference.inMinutes > 0) {
+        return '${difference.inMinutes} min${difference.inMinutes > 1 ? 's' : ''} ago';
+      } else {
+        return 'Just now';
+      }
+    } catch (e) {
+      return 'Unknown';
+    }
   }
 
   TextEditingController searchController = TextEditingController();
@@ -169,7 +238,7 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
           });
         },
         decoration: InputDecoration(
-          hintText: 'Search by VIN or Model...',
+          hintText: 'Search by VIN, Model, or Lot...',
           border: InputBorder.none,
           hintStyle: TextStyle(color: Colors.white70, fontSize: 14),
           prefixIcon: Icon(Icons.search, color: Colors.white70),
@@ -306,176 +375,282 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
                     children: [
                       // Vehicle Line Tabs
                       if (vehicleLines.length > 1)
-                        Container(
-                          margin:
-                              EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          height: 50,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: vehicleLines.length,
-                            itemBuilder: (context, index) {
-                              String line = vehicleLines[index];
-                              bool isSelected = selectedLine == line;
-                              int lineCount = line == 'All'
-                                  ? vehicles.length
-                                  : vehicles
-                                      .where((v) => v.vehicle_line == line)
-                                      .length;
-
-                              return Container(
-                                margin: EdgeInsets.only(right: 8),
-                                child: Material(
-                                  color: Colors.transparent,
-                                  child: InkWell(
-                                    borderRadius: BorderRadius.circular(8),
-                                    onTap: () {
-                                      setState(() {
-                                        selectedLine = line;
-                                      });
-                                    },
-                                    child: Container(
-                                      padding: EdgeInsets.symmetric(
-                                          horizontal: 16, vertical: 8),
-                                      decoration: BoxDecoration(
-                                        color:
-                                            isSelected ? mycolor : Colors.white,
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color: isSelected
-                                              ? mycolor
-                                              : Colors.grey.shade300,
-                                          width: 1,
-                                        ),
-                                        boxShadow: isSelected
-                                            ? [
-                                                BoxShadow(
-                                                  color:
-                                                      mycolor.withOpacity(0.3),
-                                                  blurRadius: 8,
-                                                  offset: Offset(0, 2),
-                                                ),
-                                              ]
-                                            : [],
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            line == 'All'
-                                                ? Icons.view_module
-                                                : Icons.linear_scale,
-                                            size: 16,
-                                            color: isSelected
-                                                ? Colors.white
-                                                : mycolor,
-                                          ),
-                                          SizedBox(width: 6),
-                                          Text(
-                                            line,
-                                            style: TextStyle(
-                                              color: isSelected
-                                                  ? Colors.white
-                                                  : mycolor,
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                          SizedBox(width: 6),
-                                          Container(
-                                            padding: EdgeInsets.symmetric(
-                                                horizontal: 6, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: isSelected
-                                                  ? Colors.white
-                                                      .withOpacity(0.2)
-                                                  : mycolor.withOpacity(0.1),
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                            ),
-                                            child: Text(
-                                              '$lineCount',
-                                              style: TextStyle(
-                                                color: isSelected
-                                                    ? Colors.white
-                                                    : mycolor,
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-
-                      // Header with stats
-                      Container(
-                        margin:
-                            EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        padding: EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: Colors.grey.shade300,
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    selectedLine == 'All'
-                                        ? 'Total Units'
-                                        : 'Line $selectedLine Units',
-                                    style: TextStyle(
-                                      color: Colors.grey[600],
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  SizedBox(height: 2),
-                                  Text(
-                                    '${_getFilteredVehicles().length}',
-                                    style: TextStyle(
-                                      color: mycolor,
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
+                            Padding(
+                              padding:
+                                  EdgeInsets.only(left: 16, top: 8, bottom: 4),
+                              child: Text(
+                                'Filter by Vehicle Line',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                             Container(
-                              padding: EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: mycolor.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
-                                  color: mycolor.withOpacity(0.3),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Icon(
-                                selectedLine == 'All'
-                                    ? Icons.directions_car
-                                    : Icons.linear_scale,
-                                color: mycolor,
-                                size: 20,
+                              margin: EdgeInsets.symmetric(horizontal: 12),
+                              height: 50,
+                              child: ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: vehicleLines.length,
+                                itemBuilder: (context, index) {
+                                  String line = vehicleLines[index];
+                                  bool isSelected = selectedLine == line;
+                                  int lineCount = line == 'All'
+                                      ? vehicles.length
+                                      : vehicles
+                                          .where((v) => v.vehicle_line == line)
+                                          .length;
+
+                                  return Container(
+                                    margin: EdgeInsets.only(right: 8),
+                                    child: Material(
+                                      color: Colors.transparent,
+                                      child: InkWell(
+                                        borderRadius: BorderRadius.circular(8),
+                                        onTap: () {
+                                          setState(() {
+                                            selectedLine = line;
+                                          });
+                                        },
+                                        child: Container(
+                                          padding: EdgeInsets.symmetric(
+                                              horizontal: 16, vertical: 8),
+                                          decoration: BoxDecoration(
+                                            color: isSelected
+                                                ? mycolor
+                                                : Colors.white,
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                            border: Border.all(
+                                              color: isSelected
+                                                  ? mycolor
+                                                  : Colors.grey.shade300,
+                                              width: 1,
+                                            ),
+                                            boxShadow: isSelected
+                                                ? [
+                                                    BoxShadow(
+                                                      color: mycolor
+                                                          .withOpacity(0.3),
+                                                      blurRadius: 8,
+                                                      offset: Offset(0, 2),
+                                                    ),
+                                                  ]
+                                                : [],
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                line == 'All'
+                                                    ? Icons.view_module
+                                                    : Icons.linear_scale,
+                                                size: 16,
+                                                color: isSelected
+                                                    ? Colors.white
+                                                    : mycolor,
+                                              ),
+                                              SizedBox(width: 6),
+                                              Text(
+                                                line,
+                                                style: TextStyle(
+                                                  color: isSelected
+                                                      ? Colors.white
+                                                      : mycolor,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                              SizedBox(width: 6),
+                                              Container(
+                                                padding: EdgeInsets.symmetric(
+                                                    horizontal: 6, vertical: 2),
+                                                decoration: BoxDecoration(
+                                                  color: isSelected
+                                                      ? Colors.white
+                                                          .withOpacity(0.2)
+                                                      : mycolor
+                                                          .withOpacity(0.1),
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                ),
+                                                child: Text(
+                                                  '$lineCount',
+                                                  style: TextStyle(
+                                                    color: isSelected
+                                                        ? Colors.white
+                                                        : mycolor,
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
                             ),
                           ],
                         ),
-                      ),
 
+                      // Vehicle Lot Tabs
+                      if (vehicleLots.length > 1)
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding:
+                                  EdgeInsets.only(left: 16, top: 8, bottom: 4),
+                              child: Text(
+                                'Filter by Lot',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            Container(
+                              margin: EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 4),
+                              height: 50,
+                              child: ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: vehicleLots.length,
+                                itemBuilder: (context, index) {
+                                  String lot = vehicleLots[index];
+                                  bool isSelected = selectedLot == lot;
+
+                                  // Calculate count based on current line filter
+                                  int lotCount;
+                                  if (lot == 'All') {
+                                    lotCount = selectedLine == 'All'
+                                        ? vehicles.length
+                                        : vehicles
+                                            .where((v) =>
+                                                v.vehicle_line == selectedLine)
+                                            .length;
+                                  } else {
+                                    lotCount = selectedLine == 'All'
+                                        ? vehicles
+                                            .where((v) => v.lot == lot)
+                                            .length
+                                        : vehicles
+                                            .where((v) =>
+                                                v.lot == lot &&
+                                                v.vehicle_line == selectedLine)
+                                            .length;
+                                  }
+
+                                  return Container(
+                                    margin: EdgeInsets.only(right: 8),
+                                    child: Material(
+                                      color: Colors.transparent,
+                                      child: InkWell(
+                                        borderRadius: BorderRadius.circular(8),
+                                        onTap: () {
+                                          setState(() {
+                                            selectedLot = lot;
+                                          });
+                                        },
+                                        child: Container(
+                                          padding: EdgeInsets.symmetric(
+                                              horizontal: 16, vertical: 8),
+                                          decoration: BoxDecoration(
+                                            color: isSelected
+                                                ? Colors.orange.shade600
+                                                : Colors.white,
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                            border: Border.all(
+                                              color: isSelected
+                                                  ? Colors.orange.shade600
+                                                  : Colors.grey.shade300,
+                                              width: 1,
+                                            ),
+                                            boxShadow: isSelected
+                                                ? [
+                                                    BoxShadow(
+                                                      color: Colors
+                                                          .orange.shade600
+                                                          .withOpacity(0.3),
+                                                      blurRadius: 8,
+                                                      offset: Offset(0, 2),
+                                                    ),
+                                                  ]
+                                                : [],
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                lot == 'All'
+                                                    ? Icons.inventory_2
+                                                    : Icons.inventory,
+                                                size: 16,
+                                                color: isSelected
+                                                    ? Colors.white
+                                                    : Colors.orange.shade600,
+                                              ),
+                                              SizedBox(width: 6),
+                                              Text(
+                                                lot == 'All'
+                                                    ? 'All Lots'
+                                                    : 'Lot $lot',
+                                                style: TextStyle(
+                                                  color: isSelected
+                                                      ? Colors.white
+                                                      : Colors.orange.shade600,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                              SizedBox(width: 6),
+                                              Container(
+                                                padding: EdgeInsets.symmetric(
+                                                    horizontal: 6, vertical: 2),
+                                                decoration: BoxDecoration(
+                                                  color: isSelected
+                                                      ? Colors.white
+                                                          .withOpacity(0.2)
+                                                      : Colors.orange.shade600
+                                                          .withOpacity(0.1),
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                ),
+                                                child: Text(
+                                                  '$lotCount',
+                                                  style: TextStyle(
+                                                    color: isSelected
+                                                        ? Colors.white
+                                                        : Colors
+                                                            .orange.shade600,
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      SizedBox(height: 8),
+                      // Filter Header
                       // List
                       Expanded(
                         child: Builder(
@@ -504,7 +679,7 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
                                     Text(
                                       searchText.isNotEmpty
                                           ? 'No vehicles found matching "$searchText"'
-                                          : 'No vehicles in this line',
+                                          : _getEmptyStateMessage(),
                                       style: TextStyle(
                                         color: Colors.grey.shade600,
                                         fontSize: 16,
@@ -669,6 +844,54 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
                                                           fontSize: 12,
                                                           fontWeight:
                                                               FontWeight.w600,
+                                                        ),
+                                                      ),
+                                                      Spacer(),
+                                                      // Time ago display
+                                                      Container(
+                                                        padding: EdgeInsets
+                                                            .symmetric(
+                                                                horizontal: 6,
+                                                                vertical: 2),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color: Colors
+                                                              .blue.shade50,
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(4),
+                                                          border: Border.all(
+                                                            color: Colors
+                                                                .blue.shade200,
+                                                            width: 0.5,
+                                                          ),
+                                                        ),
+                                                        child: Row(
+                                                          mainAxisSize:
+                                                              MainAxisSize.min,
+                                                          children: [
+                                                            Icon(
+                                                              Icons.access_time,
+                                                              size: 10,
+                                                              color: Colors.blue
+                                                                  .shade600,
+                                                            ),
+                                                            SizedBox(width: 3),
+                                                            Text(
+                                                              _formatTimeAgo(
+                                                                  vehicle
+                                                                      .created_at),
+                                                              style: TextStyle(
+                                                                color: Colors
+                                                                    .blue
+                                                                    .shade600,
+                                                                fontSize: 9,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w600,
+                                                              ),
+                                                            ),
+                                                          ],
                                                         ),
                                                       ),
                                                     ],
