@@ -9,7 +9,7 @@ Future<void> main() async {
   configLoading();
 }
 
-class MyApp extends StatelessWidget { 
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
   // This widget is the root of your application.
   @override
@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
         pageTransitionsTheme: PageTransitionsTheme(
           builders: {
             TargetPlatform.android: CustomPageTransitionBuilder(),
-            TargetPlatform.iOS: CustomPageTransitionBuilder(),  
+            TargetPlatform.iOS: CustomPageTransitionBuilder(),
           },
         ),
         // scaffoldBackgroundColor: bgColor,
@@ -43,8 +43,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
-void 
-configLoading() {
+void configLoading() {
   EasyLoading.instance
     // ..indicatorType = EasyLoadingIndicatorType.cubeGrid
     ..loadingStyle = EasyLoadingStyle.dark

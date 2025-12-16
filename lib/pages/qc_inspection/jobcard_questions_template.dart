@@ -644,7 +644,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                         var qid = get['id'];
                                         handleClaimData(qid, claimDataResult);
                                       },
-                                      initialStaffNo: user['data'] != null ? user['data']['staff_no'] : '',
+                                      initialStaffNo: (user['data'] != null && user['data']['staff_no'] != null && user['data']['staff_no'].toString().trim().isNotEmpty) ? user['data']['staff_no'].toString() : '',
                                       onStaffNoChanged: (String value) {
                                         var qid = get['id'];
                                         setState(() {
@@ -921,6 +921,172 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                         backgroundColor: Colors.orange);
                                     return;
                                   }
+
+                                  // Validate staff_no for all answered questions
+                                  List<String> questionsWithoutStaffNo = [];
+                                  for (int i = 0; i < questions.length; i++) {
+                                    var quest = questions[i];
+                                    final int questionId = quest["id"];
+                                    bool hasAnswer = false;
+                                    String? answerValue;
+
+                                    if (quest["quiz_type"] == "multiple") {
+                                      answerValue = multipleValue[questionId];
+                                      hasAnswer = answerValue != null &&
+                                          answerValue.isNotEmpty;
+                                    } else if (quest["quiz_type"] == "single") {
+                                      answerValue = singleValues[questionId];
+                                      hasAnswer = answerValue != null &&
+                                          answerValue.isNotEmpty;
+                                    }
+
+                                    // If question is answered, check if staff_no exists and is valid
+                                    if (hasAnswer) {
+                                      // Try to get staff number from staffNumbers map first
+                                      String? staffNo =
+                                          staffNumbers[questionId];
+
+                                      // If not found or empty, try user data
+                                      if (staffNo == null ||
+                                          staffNo.trim().isEmpty) {
+                                        if (user['data'] != null &&
+                                            user['data']['staff_no'] != null &&
+                                            user['data']['staff_no']
+                                                .toString()
+                                                .trim()
+                                                .isNotEmpty) {
+                                          staffNo = user['data']['staff_no']
+                                              .toString();
+                                        } else {
+                                          staffNo = '';
+                                        }
+                                      }
+
+                                      print(
+                                          'Question ${i + 1} (ID: $questionId): Answer=$answerValue, StaffNo="$staffNo"');
+
+                                      // Check if staff_no is null, empty, or whitespace
+                                      if (staffNo.trim().isEmpty) {
+                                        questionsWithoutStaffNo.add(
+                                            "Question ${i + 1}: ${quest['query_name']}");
+                                        print(
+                                            '  >>> MISSING STAFF NUMBER for Question ${i + 1}');
+                                      }
+                                    }
+                                  }
+
+                                  // Show error if any answered questions are missing staff_no
+                                  if (questionsWithoutStaffNo.isNotEmpty) {
+                                    await showDialog(
+                                      context: context,
+                                      builder: (BuildContext context) {
+                                        return Dialog(
+                                          backgroundColor: Colors.transparent,
+                                          child: Container(
+                                            padding: EdgeInsets.all(20),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
+                                            ),
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(
+                                                  Icons.badge_outlined,
+                                                  color: Colors.red,
+                                                  size: 48,
+                                                ),
+                                                SizedBox(height: 16),
+                                                Text(
+                                                  'Staff Number Required',
+                                                  style: TextStyle(
+                                                    fontSize: 18,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.grey[800],
+                                                  ),
+                                                ),
+                                                SizedBox(height: 8),
+                                                Text(
+                                                  'Please provide staff number for the following questions:',
+                                                  style: TextStyle(
+                                                    fontSize: 14,
+                                                    color: Colors.grey[600],
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                ),
+                                                SizedBox(height: 12),
+                                                Container(
+                                                  padding: EdgeInsets.all(12),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.red.shade50,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            8),
+                                                    border: Border.all(
+                                                        color: Colors
+                                                            .red.shade200),
+                                                  ),
+                                                  child: Text(
+                                                    questionsWithoutStaffNo
+                                                        .join(", "),
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      color:
+                                                          Colors.red.shade700,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                    ),
+                                                    textAlign: TextAlign.center,
+                                                  ),
+                                                ),
+                                                SizedBox(height: 20),
+                                                Container(
+                                                  width: double.infinity,
+                                                  decoration: BoxDecoration(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            8),
+                                                    color: mycolor,
+                                                  ),
+                                                  child: Material(
+                                                    color: Colors.transparent,
+                                                    child: InkWell(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              8),
+                                                      onTap: () {
+                                                        Navigator.of(context)
+                                                            .pop();
+                                                      },
+                                                      child: Container(
+                                                        padding: EdgeInsets
+                                                            .symmetric(
+                                                                vertical: 12),
+                                                        child: Text(
+                                                          'OK',
+                                                          style: TextStyle(
+                                                            color: Colors.white,
+                                                            fontSize: 16,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                          ),
+                                                          textAlign:
+                                                              TextAlign.center,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    );
+                                    return; // Don't proceed with save
+                                  }
+
                                   // Show loading dialog
                                   showDialog(
                                     context: context,

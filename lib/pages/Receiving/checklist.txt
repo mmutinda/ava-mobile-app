@@ -1,165 +1,1409 @@
- Text(
-                                  'Checklist',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.blue,
-                                  ),
+import 'dart:async';
+import 'dart:convert';
+import 'dart:developer';
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
+import 'package:isuze_pqcs/common/ApiService.dart';
+import 'package:isuze_pqcs/common/api.dart';
+import 'package:isuze_pqcs/common/constants.dart';
+import 'package:isuze_pqcs/common/functions.dart';
+import 'package:isuze_pqcs/common/widgets.dart';
+import 'package:isuze_pqcs/pages/qc_inspection/routing_structure/issuedialog.dart';
+
+class QCChecklist extends StatefulWidget {
+  final id;
+  final title;
+  final sku;
+
+  const QCChecklist({super.key, this.id, this.title, this.sku});
+
+  @override
+  State<QCChecklist> createState() => _QCChecklistState();
+}
+
+class _QCChecklistState extends State<QCChecklist>
+    with SingleTickerProviderStateMixin {
+  var user = {};
+  var errorText = '';
+  late List<dynamic> checklist = [];
+  bool isLoading = true;
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+
+  // Controllers for text fields
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
+  String selectedValue = 'NO';
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+
+    getuserdata().then((value) {
+      setState(() {
+        user = jsonDecode(value);
+      });
+      _fetchData();
+    });
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  // Fetch checklist data
+  Future<void> _fetchData() async {
+    await ApiHelper.fetchMultipleData(
+      context: context,
+      requests: [fetchChecklist()],
+      setLoading: (val) => setState(() => isLoading = val),
+      onSuccess: (results) {
+        setState(() {
+          checklist = results[0]["data"] as List;
+        });
+        _animationController.forward();
+      },
+      onError: (message) {
+        setState(() {
+          errorText = message;
+        });
+      },
+    );
+  }
+  // Initialize claim template with job card format
+  Map<String, dynamic> _initializeClaimTemplate() {
+    return {
+      'question_id': widget.id,
+      'issue_description': '',
+      'part_number': '',
+      'issue_category': null,
+      'issue_type': null,
+      'defect_classification': null,
+      'image_path': null,
+      'created_at': DateTime.now().toIso8601String(),
+    };
+  }
+  Future fetchChecklist() async {
+    String url = Api.api_url + "loadVehicleReceivingChecklist";
+    var responsedata = await httpget(url, user['data']['token'], context);
+    print(responsedata);
+    return responsedata;
+  }
+
+  // Capture an image using the camera
+  Future<void> _captureImage(int index) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.camera);
+    if (pickedFile != null) {
+      setState(() {
+        checklist[index]['image'] = File(pickedFile.path);
+      });
+    }
+  }
+
+  Future<void> _submitForm(BuildContext context) async {
+    try {
+      // ✅ 1. Validate checklist
+      bool allAnswered = true;
+      List<String> missingDescriptions = [];
+
+      for (int i = 0; i < checklist.length; i++) {
+        final query = checklist[i];
+
+        if (query['checked'] == null || query['checked'].toString().isEmpty) {
+          allAnswered = false;
+          break;
+        }
+
+        if (query['checked'] == 'NOK' &&
+            (query['description'] == null ||
+                query['description'].toString().trim().isEmpty)) {
+          missingDescriptions.add('Item ${i + 1}: ${query['query_name']}');
+        }
+      }
+
+      if (!allAnswered) {
+        UIHelper.showErrorMessage(
+          context: context,
+          message: 'Please answer all checklist items (OK or NOK).',
+        );
+        return;
+      }
+
+      if (missingDescriptions.isNotEmpty) {
+        UIHelper.showErrorMessage(
+          context: context,
+          message:
+              'Please provide descriptions for NOK items:\n${missingDescriptions.join('\n')}',
+        );
+        return;
+      }
+
+      if (!_formKey.currentState!.validate()) return;
+
+      // ✅ 2. Prepare checklist data
+      final List<Map<String, dynamic>> checklistData = [];
+      final List<Map<String, dynamic>> imageFiles = [];
+
+      for (int i = 0; i < checklist.length; i++) {
+        final query = checklist[i];
+        final item = {
+          'vehicle_receiving_checklist_id': query['id'],
+          'answer': query['checked'],
+          'description':
+              query['checked'] == 'NOK' ? (query['description'] ?? '') : null,
+        };
+        checklistData.add(item);
+
+        // Collect images for NOK items
+        if (query['checked'] == 'NOK' && query['image'] != null) {
+          imageFiles.add({
+            'id': query['id'],
+            'path': query['image'].path,
+          });
+        }
+      }
+
+      // ✅ 3. Build request
+      final uri = Uri.parse('${Api.api_url}postVehicleReceivingChecklist');
+      final request = http.MultipartRequest('POST', uri)
+        ..headers.addAll({
+          'Accept': 'application/json',
+          'Authorization': 'Bearer ${user['data']["token"]}',
+        })
+        ..fields['vehicle_receiving_id'] = widget.id.toString()
+        ..fields['questions'] = jsonEncode(checklistData);
+
+      // ✅ 4. Attach image files directly (no compression)
+      for (int i = 0; i < imageFiles.length; i++) {
+        final imageInfo = imageFiles[i];
+        final file = File(imageInfo['path']);
+        final multipart = await http.MultipartFile.fromPath(
+          'images[${imageInfo['id']}]', // maps image to question ID
+          file.path,
+        );
+        request.files.add(multipart);
+      }
+
+      // ✅ 5. Show loader
+      UIHelper.showLoader(context, message: 'Submitting checklist...');
+
+      // ✅ 6. Send request
+      final response =
+          await request.send().timeout(const Duration(seconds: 60));
+      final responseBody = jsonDecode(await response.stream.bytesToString());
+      log(jsonEncode(responseBody));
+      // ✅ 7. Handle response
+      UIHelper.hideLoader(context);
+
+      if (responseBody['success'] == true) {
+        UIHelper.showSuccessMessage(
+          context: context,
+          message: responseBody['msg'] ?? 'Submitted successfully!',
+        );
+        Navigator.pop(context);
+      } else {
+        String message = responseBody['msg'] ??
+            responseBody['message'] ??
+            "An error occurred";
+        if (responseBody['errors'] != null) {
+          final errors = responseBody['errors'] as Map<String, dynamic>;
+          final details =
+              errors.entries.map((e) => '${e.key}: ${e.value[0]}').join('\n');
+          message += '\n$details';
+        }
+        UIHelper.showErrorMessage(context: context, message: message);
+      }
+    } on SocketException {
+      UIHelper.hideLoader(context);
+      UIHelper.showErrorMessage(
+          context: context, message: "No Internet connection.");
+    } on TimeoutException {
+      UIHelper.hideLoader(context);
+      UIHelper.showErrorMessage(
+          context: context, message: "Request timed out. Please try again.");
+    } catch (e) {
+      UIHelper.hideLoader(context);
+      UIHelper.showErrorMessage(
+          context: context, message: 'Unexpected error: $e');
+    }
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(60),
+              border: Border.all(
+                color: Colors.grey.shade300,
+                width: 2,
+              ),
+            ),
+            child: Icon(
+              Icons.assignment_outlined,
+              size: 60,
+              color: Colors.grey.shade400,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'No Checklist Available',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'There are no inspection items\navailable for this vehicle.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade500,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 32),
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: mycolor.withOpacity(0.3),
+                width: 1.5,
+              ),
+            ),
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: mycolor,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: _fetchData,
+              icon: const Icon(Icons.refresh, size: 20),
+              label: const Text(
+                'Refresh',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Go Back',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [mycolor.withOpacity(0.8), mycolor],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        foregroundColor: Colors.white,
+        centerTitle: false,
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.checklist, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Receiving Inspection',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    'Chassis: ${widget.sku}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                      color: Colors.white70,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      body: isLoading
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(mycolor),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Loading inspection checklist...',
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : Column(
+              children: [
+                // Progress indicator header - only show if checklist has data
+                if (checklist.isNotEmpty)
+                  Container(
+                    margin: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: mycolor.withOpacity(0.2),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: mycolor,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.assignment_turned_in,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Inspection Progress',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey.shade600,
+                                  fontWeight: FontWeight.w500,
                                 ),
-                                const SizedBox(height: 8),
-                                Column(
-                                  children: checklist.map((query) {
-                                    return Column(
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${checklist.where((item) => item['checked'] != null && item['checked'].isNotEmpty).length}/${checklist.length}',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: mycolor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        CircularProgressIndicator(
+                          value: checklist.isEmpty
+                              ? 0
+                              : checklist
+                                      .where((item) =>
+                                          item['checked'] != null &&
+                                          item['checked'].isNotEmpty)
+                                      .length /
+                                  checklist.length,
+                          backgroundColor: mycolor.withOpacity(0.2),
+                          valueColor: AlwaysStoppedAnimation<Color>(mycolor),
+                          strokeWidth: 4,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: errorText.isNotEmpty
+                        ? ErrorMessageWidget(
+                            errorMessage: errorText, onRetry: _fetchData)
+                        : checklist.isEmpty
+                            ? _buildEmptyState()
+                            : FadeTransition(
+                                opacity: _fadeAnimation,
+                                child: SingleChildScrollView(
+                                  child: Form(
+                                    key: _formKey,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Expanded(
-                                              // Ensures text wraps if long
-                                              child: Text(
-                                                query['query_name']
-                                                        ?.toString() ??
-                                                    'Unknown',
-                                                style: TextStyle(fontSize: 16),
+                                        const SizedBox(height: 8),
+                                        ...checklist
+                                            .asMap()
+                                            .entries
+                                            .map((entry) {
+                                          int index = entry.key;
+                                          var query = entry.value;
+                                          bool isAnswered =
+                                              query['checked'] != null &&
+                                                  query['checked'].isNotEmpty;
+                                          bool isOK = query['checked'] == 'OK';
+
+                                          return Container(
+                                            margin: const EdgeInsets.only(
+                                                bottom: 12),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              border: Border.all(
+                                                color: isAnswered
+                                                    ? (isOK
+                                                        ? Colors.green.shade300
+                                                        : Colors.red.shade300)
+                                                    : Colors.grey.shade200,
+                                                width: 1,
                                               ),
                                             ),
-                                            Row(
+                                            child: Padding(
+                                              padding: const EdgeInsets.all(16),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Row(
+                                                    children: [
+                                                      Container(
+                                                        width: 32,
+                                                        height: 32,
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color: isAnswered
+                                                              ? (isOK
+                                                                  ? Colors.green
+                                                                      .shade500
+                                                                  : Colors.red
+                                                                      .shade500)
+                                                              : Colors.grey
+                                                                  .shade400,
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                        ),
+                                                        child: Center(
+                                                          child: Text(
+                                                            '${index + 1}',
+                                                            style:
+                                                                const TextStyle(
+                                                              color:
+                                                                  Colors.white,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              fontSize: 14,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 12),
+                                                      Expanded(
+                                                        child: Text(
+                                                          query['query_name']
+                                                                  ?.toString() ??
+                                                              'Unknown',
+                                                          style: TextStyle(
+                                                            fontSize: 15,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                            color: Colors
+                                                                .grey.shade800,
+                                                            height: 1.3,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  const SizedBox(height: 16),
+                                                  Row(
+                                                    children: [
+                                                      Expanded(
+                                                        child: GestureDetector(
+                                                          onTap: () {
+                                                            setState(() {
+                                                              query['checked'] =
+                                                                  'OK';
+                                                            });
+                                                          },
+                                                          child: Container(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .symmetric(
+                                                                    vertical:
+                                                                        10,
+                                                                    horizontal:
+                                                                        16),
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              color: query[
+                                                                          'checked'] ==
+                                                                      'OK'
+                                                                  ? Colors.green
+                                                                      .shade500
+                                                                  : Colors.grey
+                                                                      .shade100,
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          8),
+                                                              border:
+                                                                  Border.all(
+                                                                color: query[
+                                                                            'checked'] ==
+                                                                        'OK'
+                                                                    ? Colors
+                                                                        .green
+                                                                        .shade500
+                                                                    : Colors
+                                                                        .grey
+                                                                        .shade300,
+                                                                width: 1,
+                                                              ),
+                                                            ),
+                                                            child: Row(
+                                                              mainAxisAlignment:
+                                                                  MainAxisAlignment
+                                                                      .center,
+                                                              children: [
+                                                                Icon(
+                                                                  Icons
+                                                                      .check_circle,
+                                                                  color: query[
+                                                                              'checked'] ==
+                                                                          'OK'
+                                                                      ? Colors
+                                                                          .white
+                                                                      : Colors
+                                                                          .green
+                                                                          .shade600,
+                                                                  size: 18,
+                                                                ),
+                                                                const SizedBox(
+                                                                    width: 6),
+                                                                Text(
+                                                                  'OK',
+                                                                  style:
+                                                                      TextStyle(
+                                                                    color: query['checked'] ==
+                                                                            'OK'
+                                                                        ? Colors
+                                                                            .white
+                                                                        : Colors
+                                                                            .green
+                                                                            .shade600,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w600,
+                                                                    fontSize:
+                                                                        14,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 12),
+                                                      Expanded(
+                                                        child: GestureDetector(
+                                                          onTap: () {
+                                                            setState(() {
+                                                              query['checked'] =
+                                                                  'NOK';
+                                                            });
+                                                          },
+                                                          child: Container(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .symmetric(
+                                                                    vertical:
+                                                                        10,
+                                                                    horizontal:
+                                                                        16),
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              color: query[
+                                                                          'checked'] ==
+                                                                      'NOK'
+                                                                  ? Colors.red
+                                                                      .shade500
+                                                                  : Colors.grey
+                                                                      .shade100,
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          8),
+                                                              border:
+                                                                  Border.all(
+                                                                color: query[
+                                                                            'checked'] ==
+                                                                        'NOK'
+                                                                    ? Colors.red
+                                                                        .shade500
+                                                                    : Colors
+                                                                        .grey
+                                                                        .shade300,
+                                                                width: 1,
+                                                              ),
+                                                            ),
+                                                            child: Row(
+                                                              mainAxisAlignment:
+                                                                  MainAxisAlignment
+                                                                      .center,
+                                                              children: [
+                                                                Icon(
+                                                                  Icons.cancel,
+                                                                  color: query[
+                                                                              'checked'] ==
+                                                                          'NOK'
+                                                                      ? Colors
+                                                                          .white
+                                                                      : Colors
+                                                                          .red
+                                                                          .shade600,
+                                                                  size: 18,
+                                                                ),
+                                                                const SizedBox(
+                                                                    width: 6),
+                                                                Text(
+                                                                  'NOK',
+                                                                  style:
+                                                                      TextStyle(
+                                                                    color: query['checked'] ==
+                                                                            'NOK'
+                                                                        ? Colors
+                                                                            .white
+                                                                        : Colors
+                                                                            .red
+                                                                            .shade600,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w600,
+                                                                    fontSize:
+                                                                        14,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                                  // NOK Radio
+                                                      GestureDetector(
+                                                        onTap:  () async {
+                                                                // Initialize claim template
+                                                                final claimTemplate =
+                                                                    _initializeClaimTemplate();
+
+                                                                // Show issue dialog as bottom sheet with initialized template
+                                                                final result =
+                                                                    await showModalBottomSheet<
+                                                                        Map<String,
+                                                                            dynamic>?>(
+                                                                  context:
+                                                                      context,
+                                                                  isScrollControlled:
+                                                                      true,
+                                                                  backgroundColor:
+                                                                      Colors
+                                                                          .transparent,
+                                                                  builder:
+                                                                      (context) =>
+                                                                          Container(
+                                                                    height: MediaQuery.of(context)
+                                                                            .size
+                                                                            .height *
+                                                                        0.9,
+                                                                    child:
+                                                                        IssueDialog(
+                                                                      lotNo: widget
+                                                                          .lotNo,
+                                                                      initialDescription:
+                                                                          _claimDescription,
+                                                                      initialPartNo:
+                                                                          _claimPartNo,
+                                                                      initialCategory:
+                                                                          _claimCategory,
+                                                                      initialType:
+                                                                          _claimType,
+                                                                      initialClassification:
+                                                                          _claimClassification,
+                                                                      initialImage:
+                                                                          _claimImage,
+                                                                    ),
+                                                                  ),
+                                                                );
+
+                                                                if (result !=
+                                                                    null) {
+                                                                  // Merge template with captured data
+                                                                  final completeClaimData =
+                                                                      {
+                                                                    ...claimTemplate,
+                                                                    'issue_description':
+                                                                        result['description'] ??
+                                                                            '',
+                                                                    'part_number':
+                                                                        result['partNo'] ??
+                                                                            '',
+                                                                    'issue_category':
+                                                                        result[
+                                                                            'category'],
+                                                                    'issue_type':
+                                                                        result[
+                                                                            'type'],
+                                                                    'defect_classification':
+                                                                        result[
+                                                                            'classification'],
+                                                                    'image': result[
+                                                                        'image'],
+                                                                    'updated_at':
+                                                                        DateTime.now()
+                                                                            .toIso8601String(),
+                                                                  };
+
+                                                                  setState(() {
+                                                                    okay =
+                                                                        "NOK";
+                                                                    _claimCaptured =
+                                                                        true;
+                                                                    // Store claim data
+                                                                    _claimDescription =
+                                                                        result['description'] ??
+                                                                            '';
+                                                                    _claimPartNo =
+                                                                        result['partNo'] ??
+                                                                            '';
+                                                                    _claimCategory =
+                                                                        result[
+                                                                            'category'];
+                                                                    _claimType =
+                                                                        result[
+                                                                            'type'];
+                                                                    _claimClassification =
+                                                                        result[
+                                                                            'classification'];
+                                                                    _claimImage =
+                                                                        result[
+                                                                            'image'];
+                                                                  });
+
+                                                                  // Send claim data to parent via callback
+                                                                  if (widget
+                                                                          .onClaimDataChanged !=
+                                                                      null) {
+                                                                    widget.onClaimDataChanged!(
+                                                                        completeClaimData);
+                                                                  }
+
+                                                                  widget
+                                                                      .onValueChanged(
+                                                                          okay!);
+                                                                } else {
+                                                                  // User cancelled the dialog, don't change the radio button state
+                                                                  // Keep the previous state by not updating 'okay'
+                                                                  print(
+                                                                      "User cancelled claim dialog, keeping previous radio state");
+                                                                }
+                                                              },
+                                                        child: Container(
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            color: okay == "NOK"
+                                                                ? Colors
+                                                                    .red.shade50
+                                                                : Colors
+                                                                    .transparent,
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        20),
+                                                            border: Border.all(
+                                                              color: okay ==
+                                                                      "NOK"
+                                                                  ? Colors.red
+                                                                      .shade300
+                                                                  : Colors.grey
+                                                                      .shade300,
+                                                            ),
+                                                          ),
+                                                          child: Row(
+                                                            mainAxisSize:
+                                                                MainAxisSize
+                                                                    .min,
+                                                            children: [
+                                                              Radio<String>(
+                                                                value: "NOK",
+                                                                groupValue: okay ??
+                                                                    widget
+                                                                        .initialRadioValue,
+                                                                onChanged: (widget.initialRadioValue !=
+                                                                            null ||
+                                                                        (_scanningRequired &&
+                                                                            (!_isScanned ||
+                                                                                !_scanMatched)))
+                                                                    ? null
+                                                                    : (value) async {
+                                                                        if (value ==
+                                                                            "NOK") {
+                                                                          // Initialize claim template
+                                                                          final claimTemplate =
+                                                                              _initializeClaimTemplate();
+
+                                                                          // Show issue dialog as bottom sheet with initialized template
+                                                                          final result =
+                                                                              await showModalBottomSheet<Map<String, dynamic>?>(
+                                                                            context:
+                                                                                context,
+                                                                            isScrollControlled:
+                                                                                true,
+                                                                            backgroundColor:
+                                                                                Colors.transparent,
+                                                                            builder: (context) =>
+                                                                                Container(
+                                                                              height: MediaQuery.of(context).size.height * 0.9,
+                                                                              child: IssueDialog(
+                                                                                lotNo: widget.lotNo,
+                                                                                initialDescription: _claimDescription,
+                                                                                initialPartNo: _claimPartNo,
+                                                                                initialCategory: _claimCategory,
+                                                                                initialType: _claimType,
+                                                                                initialClassification: _claimClassification,
+                                                                                initialImage: _claimImage,
+                                                                              ),
+                                                                            ),
+                                                                          );
+
+                                                                          if (result !=
+                                                                              null) {
+                                                                            // Merge template with captured data
+                                                                            final completeClaimData =
+                                                                                {
+                                                                              ...claimTemplate,
+                                                                              'issue_description': result['description'] ?? '',
+                                                                              'part_number': result['partNo'] ?? '',
+                                                                              'issue_category': result['category'],
+                                                                              'issue_type': result['type'],
+                                                                              'defect_classification': result['classification'],
+                                                                              'image': result['image'],
+                                                                              'updated_at': DateTime.now().toIso8601String(),
+                                                                            };
+
+                                                                            setState(() {
+                                                                              okay = value!;
+                                                                              _claimCaptured = true;
+                                                                              // Store claim data
+                                                                              _claimDescription = result['description'] ?? '';
+                                                                              _claimPartNo = result['partNo'] ?? '';
+                                                                              _claimCategory = result['category'];
+                                                                              _claimType = result['type'];
+                                                                              _claimClassification = result['classification'];
+                                                                              _claimImage = result['image'];
+                                                                            });
+
+                                                                            // Send claim data to parent via callback
+                                                                            if (widget.onClaimDataChanged !=
+                                                                                null) {
+                                                                              widget.onClaimDataChanged!(completeClaimData);
+                                                                            }
+
+                                                                            widget.onValueChanged(okay!);
+                                                                          } else {
+                                                                            // User cancelled the dialog, don't change the radio button state
+                                                                            // Keep the previous state by not updating 'okay'
+                                                                            print("User cancelled claim dialog, keeping previous radio state");
+                                                                          }
+                                                                        } else {
+                                                                          setState(
+                                                                              () {
+                                                                            okay =
+                                                                                value!;
+                                                                            _claimCaptured =
+                                                                                false;
+                                                                          });
+
+                                                                          // Clear claim data when switching from NOK
+                                                                          if (widget.onClaimDataChanged !=
+                                                                              null) {
+                                                                            widget.onClaimDataChanged!(null);
+                                                                          }
+
+                                                                          widget
+                                                                              .onValueChanged(okay!);
+                                                                        }
+                                                                      },
+                                                                activeColor:
+                                                                    Colors.red,
+                                                                materialTapTargetSize:
+                                                                    MaterialTapTargetSize
+                                                                        .padded,
+                                                              ),
+                                                              Text(
+                                                                'NOK',
+                                                                style:
+                                                                    TextStyle(
+                                                                  // fontSize: 14,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w500,
+                                                                  color: (_scanningRequired &&
+                                                                          (!_isScanned ||
+                                                                              !_scanMatched))
+                                                                      ? Colors
+                                                                          .grey
+                                                                          .shade400
+                                                                      : okay ==
+                                                                              "NOK"
+                                                                          ? Colors
+                                                                              .red
+                                                                              .shade700
+                                                                          : Colors
+                                                                              .black87,
+                                                                ),
+                                                              ),
+                                                              const SizedBox(
+                                                                  width: 8),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  // Show description and image capture for NOK items
+                                                  if (query['checked'] ==
+                                                      'NOK') ...[
+                                                    const SizedBox(height: 16),
+                                                    Container(
+                                                      decoration: BoxDecoration(
+                                                        color:
+                                                            Colors.red.shade50,
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(8),
+                                                        border: Border.all(
+                                                          color: Colors
+                                                              .red.shade200,
+                                                          width: 1,
+                                                        ),
+                                                      ),
+                                                      child: Theme(
+                                                        data: Theme.of(context)
+                                                            .copyWith(
+                                                                dividerColor: Colors
+                                                                    .transparent),
+                                                        child: ExpansionTile(
+                                                          initiallyExpanded:
+                                                              false,
+                                                          tilePadding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  horizontal:
+                                                                      14,
+                                                                  vertical: 4),
+                                                          childrenPadding:
+                                                              const EdgeInsets
+                                                                  .fromLTRB(14,
+                                                                  0, 14, 14),
+                                                          title: Text(
+                                                            'Issue Description',
+                                                            style: TextStyle(
+                                                              fontSize: 13,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              color: Colors
+                                                                  .red.shade700,
+                                                            ),
+                                                          ),
+                                                          iconColor: Colors
+                                                              .red.shade700,
+                                                          collapsedIconColor:
+                                                              Colors
+                                                                  .red.shade700,
+                                                          children: [
+                                                            TextFormField(
+                                                              initialValue:
+                                                                  query['description'] ??
+                                                                      '',
+                                                              onChanged:
+                                                                  (value) {
+                                                                query['description'] =
+                                                                    value;
+                                                              },
+                                                              maxLines: null,
+                                                              decoration:
+                                                                  InputDecoration(
+                                                                hintText:
+                                                                    'Describe the issue found...',
+                                                                hintStyle:
+                                                                    TextStyle(
+                                                                  color: Colors
+                                                                      .grey
+                                                                      .shade500,
+                                                                  fontSize: 14,
+                                                                ),
+                                                                border:
+                                                                    OutlineInputBorder(
+                                                                  borderRadius:
+                                                                      BorderRadius
+                                                                          .circular(
+                                                                              8),
+                                                                  borderSide:
+                                                                      BorderSide(
+                                                                    color: Colors
+                                                                        .grey
+                                                                        .shade300,
+                                                                  ),
+                                                                ),
+                                                                focusedBorder:
+                                                                    OutlineInputBorder(
+                                                                  borderRadius:
+                                                                      BorderRadius
+                                                                          .circular(
+                                                                              8),
+                                                                  borderSide:
+                                                                      BorderSide(
+                                                                    color: Colors
+                                                                        .red
+                                                                        .shade400,
+                                                                    width: 2,
+                                                                  ),
+                                                                ),
+                                                                filled: true,
+                                                                fillColor:
+                                                                    Colors
+                                                                        .white,
+                                                                contentPadding:
+                                                                    const EdgeInsets
+                                                                        .all(
+                                                                        12),
+                                                              ),
+                                                              validator:
+                                                                  (value) {
+                                                                if (query['checked'] ==
+                                                                        'NOK' &&
+                                                                    (value ==
+                                                                            null ||
+                                                                        value
+                                                                            .trim()
+                                                                            .isEmpty)) {
+                                                                  return 'Description is required for NOK items';
+                                                                }
+                                                                return null;
+                                                              },
+                                                            ),
+                                                            const SizedBox(
+                                                                height: 12),
+                                                            Row(
+                                                              children: [
+                                                                Text(
+                                                                  'Capture Evidence',
+                                                                  style:
+                                                                      TextStyle(
+                                                                    fontSize:
+                                                                        13,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w600,
+                                                                    color: Colors
+                                                                        .red
+                                                                        .shade700,
+                                                                  ),
+                                                                ),
+                                                                const Spacer(),
+                                                                GestureDetector(
+                                                                  onTap: () =>
+                                                                      _captureImage(
+                                                                          index),
+                                                                  child:
+                                                                      Container(
+                                                                    padding:
+                                                                        const EdgeInsets
+                                                                            .all(
+                                                                            10),
+                                                                    decoration:
+                                                                        BoxDecoration(
+                                                                      color: query['image'] !=
+                                                                              null
+                                                                          ? Colors
+                                                                              .green
+                                                                              .shade100
+                                                                          : Colors
+                                                                              .grey
+                                                                              .shade100,
+                                                                      borderRadius:
+                                                                          BorderRadius.circular(
+                                                                              6),
+                                                                      border:
+                                                                          Border
+                                                                              .all(
+                                                                        color: query['image'] !=
+                                                                                null
+                                                                            ? Colors.green.shade300
+                                                                            : Colors.grey.shade300,
+                                                                        width:
+                                                                            1,
+                                                                      ),
+                                                                    ),
+                                                                    child: Row(
+                                                                      mainAxisSize:
+                                                                          MainAxisSize
+                                                                              .min,
+                                                                      children: [
+                                                                        Icon(
+                                                                          query['image'] != null
+                                                                              ? Icons.check_circle
+                                                                              : Icons.camera_alt,
+                                                                          color: query['image'] != null
+                                                                              ? Colors.green.shade600
+                                                                              : Colors.grey.shade600,
+                                                                          size:
+                                                                              18,
+                                                                        ),
+                                                                        const SizedBox(
+                                                                            width:
+                                                                                6),
+                                                                        Text(
+                                                                          query['image'] != null
+                                                                              ? 'Captured'
+                                                                              : 'Camera',
+                                                                          style:
+                                                                              TextStyle(
+                                                                            color: query['image'] != null
+                                                                                ? Colors.green.shade600
+                                                                                : Colors.grey.shade600,
+                                                                            fontSize:
+                                                                                13,
+                                                                            fontWeight:
+                                                                                FontWeight.w500,
+                                                                          ),
+                                                                        ),
+                                                                      ],
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                            if (query[
+                                                                    'image'] !=
+                                                                null) ...[
+                                                              const SizedBox(
+                                                                  height: 10),
+                                                              Container(
+                                                                height: 80,
+                                                                width: double
+                                                                    .infinity,
+                                                                decoration:
+                                                                    BoxDecoration(
+                                                                  borderRadius:
+                                                                      BorderRadius
+                                                                          .circular(
+                                                                              6),
+                                                                  border: Border
+                                                                      .all(
+                                                                    color: Colors
+                                                                        .grey
+                                                                        .shade300,
+                                                                  ),
+                                                                ),
+                                                                child:
+                                                                    ClipRRect(
+                                                                  borderRadius:
+                                                                      BorderRadius
+                                                                          .circular(
+                                                                              6),
+                                                                  child: Image
+                                                                      .file(
+                                                                    query[
+                                                                        'image'],
+                                                                    fit: BoxFit
+                                                                        .cover,
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ],
+                                              ),
+                                            ),
+                                          );
+                                        }),
+                                        const SizedBox(height: 24),
+                                        // Enhanced Save Button
+                                        Container(
+                                          width: double.infinity,
+                                          child: ElevatedButton(
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: mycolor,
+                                              foregroundColor: Colors.white,
+                                              elevation: 0,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      vertical: 14),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                            ),
+                                            onPressed: () =>
+                                                _submitForm(context),
+                                            child: const Row(
                                               mainAxisAlignment:
-                                                  MainAxisAlignment.start,
+                                                  MainAxisAlignment.center,
                                               children: [
-                                                ChoiceChip(
-                                                  iconTheme: IconThemeData(
-                                                    color: Colors.white,
-                                                  ),
-                                                  label: Text('OK'),
-                                                  selected:
-                                                      query['checked'] == 'OK',
-                                                  selectedColor: Colors.green,
-                                                  onSelected: (selected) {
-                                                    setState(() {
-                                                      query['checked'] = 'OK';
-                                                      storeChecklist();
-                                                    });
-                                                  },
-                                                  labelStyle: TextStyle(
-                                                    color:
-                                                        query['checked'] == 'OK'
-                                                            ? Colors.white
-                                                            : Colors.black,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
+                                                Icon(
+                                                  Icons.save_rounded,
+                                                  color: Colors.white,
+                                                  size: 20,
                                                 ),
-                                                SizedBox(width: 10),
-                                                ChoiceChip(
-                                                  label: Text('NOK'),
-                                                  selected:
-                                                      query['checked'] == 'NOK',
-                                                  selectedColor: Colors.red,
-                                                  onSelected: (selected) {
-                                                    setState(() {
-                                                      query['checked'] = 'NOK';
-                                                      storeChecklist();
-                                                    });
-                                                  },
-                                                  labelStyle: TextStyle(
-                                                    color: query['checked'] ==
-                                                            'NOK'
-                                                        ? Colors.white
-                                                        : Colors.black,
-                                                    fontWeight: FontWeight.bold,
+                                                SizedBox(width: 8),
+                                                Text(
+                                                  'SAVE INSPECTION',
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 15,
+                                                    fontWeight: FontWeight.w600,
+                                                    letterSpacing: 0.5,
                                                   ),
                                                 ),
                                               ],
                                             ),
-                                          ],
+                                          ),
                                         ),
-                                        Divider(
-                                          color: Colors.grey.shade300,
-                                          thickness: 1,
-                                          height: 20,
-                                          indent: 10,
-                                          endIndent: 10,
-                                        ), // Add a divider after each question
+                                        const SizedBox(height: 24),
                                       ],
-                                    );
-                                  }).toList(),
-                                ),
-
-
-
-
-                                  if (selectedValue == 'YES') ...[
-                                  // CustomTextFormField(
-                                  //   label: 'Part No',
-                                  //   hint: 'Enter part number',
-                                  //   controller: _partNoController,
-                                  //   validator: (value) {
-                                  //     if (value == null || value.isEmpty) {
-                                  //       return '*Required';
-                                  //     }
-                                  //     return null;
-                                  //   },
-                                  // ),
-                                  // const SizedBox(height: 10),
-                                  // CustomTextFormField(
-                                  //   label: 'Issue Category',
-                                  //   hint: 'Category',
-                                  //   controller: _partNoController,
-                                  //   validator: (value) {
-                                  //     if (value == null || value.isEmpty) {
-                                  //       return '*Required';
-                                  //     }
-                                  //     return null;
-                                  //   },
-                                  // ),
-                                  // const SizedBox(height: 10),
-                                  // CustomTextFormField(
-                                  //   label: 'Defect Classification',
-                                  //   hint: 'Classification',
-                                  //   controller: _partNoController,
-                                  //   validator: (value) {
-                                  //     if (value == null || value.isEmpty) {
-                                  //       return '*Required';
-                                  //     }
-                                  //     return null;
-                                  //   },
-                                  // ),
-                                  Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: const SizedBox(height: 10),
-                                  ),
-                                  GestureDetector(
-                                    onTap: _captureImage,
-                                    child: Container(
-                                      width: double.infinity,
-                                      height: 180,
-                                      decoration: BoxDecoration(
-                                        border: Border.all(color: Colors.grey),
-                                        borderRadius: BorderRadius.circular(8),
-                                        image: _imageFile != null
-                                            ? DecorationImage(
-                                                image: FileImage(_imageFile!),
-                                                fit: BoxFit.cover)
-                                            : null,
-                                      ),
-                                      child: _imageFile == null
-                                          ? Center(
-                                              child: Column(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                children: [
-                                                  Icon(Icons.camera_alt,
-                                                      size: 40,
-                                                      color: Colors.grey),
-                                                  SizedBox(height: 8),
-                                                  Text("Tap to capture",
-                                                      style: TextStyle(
-                                                          color: Colors.grey)),
-                                                ],
-                                              ),
-                                            )
-                                          : null,
                                     ),
                                   ),
-                                ],
+                                ),
+                              ),
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+}
+
+class UIHelper {
+  static void showLoader(BuildContext context, {String? message}) {
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        backgroundColor: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 20),
+              Text(
+                message ?? 'Please wait...',
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static void hideLoader(BuildContext context) {
+    if (Navigator.canPop(context)) Navigator.pop(context);
+  }
+
+  static void showErrorMessage({
+    required BuildContext context,
+    required String message,
+  }) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: const TextStyle(color: Colors.white)),
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  static void showSuccessMessage({
+    required BuildContext context,
+    required String message,
+  }) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: const TextStyle(color: Colors.white)),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+}

@@ -193,13 +193,13 @@ class _SingleQuestionState extends State<SingleQuestion>
     TextEditingController dialogController =
         TextEditingController(text: staffNoController.text);
 
-    String? errorMessage;
-
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
+            String? errorMessage;
+
             return Dialog(
               backgroundColor: Colors.transparent,
               child: Container(
@@ -294,7 +294,8 @@ class _SingleQuestionState extends State<SingleQuestion>
                               // Validate staff number is not empty
                               if (dialogController.text.trim().isEmpty) {
                                 setDialogState(() {
-                                  errorMessage = 'Staff number cannot be empty';
+                                  errorMessage =
+                                      'Staff number cannot be empty';
                                 });
                                 return;
                               }

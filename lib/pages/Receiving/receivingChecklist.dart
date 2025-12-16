@@ -10,13 +10,16 @@ import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
+import 'package:isuze_pqcs/pages/qc_inspection/routing_structure/issuedialog.dart';
 
 class QCChecklist extends StatefulWidget {
   final id;
   final title;
   final sku;
+  final lotNO;
 
-  const QCChecklist({super.key, this.id, this.title, this.sku});
+  const QCChecklist(
+      {super.key, this.id, this.title, this.sku, required this.lotNO});
 
   @override
   State<QCChecklist> createState() => _QCChecklistState();
@@ -28,6 +31,7 @@ class _QCChecklistState extends State<QCChecklist>
   var errorText = '';
   late List<dynamic> checklist = [];
   bool isLoading = true;
+  bool isSubmitting = false;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
@@ -70,6 +74,32 @@ class _QCChecklistState extends State<QCChecklist>
       onSuccess: (results) {
         setState(() {
           checklist = results[0]["data"] as List;
+
+          // Initialize each checklist item with proper structure
+          for (var item in checklist) {
+            // Initialize checked field if answer exists from API
+            if (item['answer'] != null &&
+                item['answer'].toString().isNotEmpty) {
+              item['checked'] = item['answer'];
+            } else {
+              item['checked'] = null;
+            }
+
+            // Initialize description if exists
+            if (item['description'] == null) {
+              item['description'] = '';
+            }
+
+            // Initialize image if exists
+            if (item['image'] == null) {
+              item['image'] = null;
+            }
+
+            // Initialize nokData to store dialog data
+            if (item['nokData'] == null) {
+              item['nokData'] = null;
+            }
+          }
         });
         _animationController.forward();
       },
@@ -79,6 +109,20 @@ class _QCChecklistState extends State<QCChecklist>
         });
       },
     );
+  }
+
+  // Initialize claim template with job card format
+  Map<String, dynamic> _initializeClaimTemplate() {
+    return {
+      'question_id': widget.id,
+      'issue_description': '',
+      'part_number': '',
+      'issue_category': null,
+      'issue_type': null,
+      'defect_classification': null,
+      'image_path': null,
+      'created_at': DateTime.now().toIso8601String(),
+    };
   }
 
   Future fetchChecklist() async {
@@ -96,6 +140,244 @@ class _QCChecklistState extends State<QCChecklist>
       setState(() {
         checklist[index]['image'] = File(pickedFile.path);
       });
+    }
+  }
+
+  // Show confirmation dialog before submitting
+  Future<void> _showConfirmDialog(BuildContext context) async {
+    // Count OK and NOK items
+    int okCount = checklist.where((item) => item['checked'] == 'OK').length;
+    int nokCount = checklist.where((item) => item['checked'] == 'NOK').length;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          elevation: 8,
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              // gradient: LinearGradient(
+              //   begin: Alignment.topLeft,
+              //   end: Alignment.bottomRight,
+              //   colors: [
+              //     Colors.white,
+              //     mycolor.withOpacity(0.05),
+              //   ],
+              // ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icon
+                Container(
+                  width: 70,
+                  height: 70,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [mycolor.withOpacity(0.8), mycolor],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(35),
+                    boxShadow: [
+                      BoxShadow(
+                        color: mycolor.withOpacity(0.3),
+                        blurRadius: 15,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.assignment_turned_in,
+                    color: Colors.white,
+                    size: 35,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Title
+                Text(
+                  'Confirm Submission',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey.shade800,
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Description
+                Text(
+                  'Are you sure you want to submit this inspection?',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Summary
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.grey.shade200,
+                      width: 1,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Total Items:',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                          Text(
+                            '${checklist.length}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: mycolor,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.check_circle,
+                                  color: Colors.green.shade600, size: 16),
+                              const SizedBox(width: 6),
+                              Text(
+                                'OK Items:',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey.shade700,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            '$okCount',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.cancel,
+                                  color: Colors.red.shade600, size: 16),
+                              const SizedBox(width: 6),
+                              Text(
+                                'NOK Items:',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey.shade700,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            '$nokCount',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.red.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(false),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            side: BorderSide(
+                              color: Colors.grey.shade300,
+                              width: 1,
+                            ),
+                          ),
+                        ),
+                        child: Text(
+                          'Cancel',
+                          style: TextStyle(
+                            color: Colors.grey.shade700,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: mycolor,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text(
+                          'Confirm',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      _submitForm(context);
     }
   }
 
@@ -163,7 +445,7 @@ class _QCChecklistState extends State<QCChecklist>
       }
 
       // ✅ 3. Build request
-      final uri = Uri.parse('${Api.api_url}postVehicleReceivingChecklist');
+      final uri = Uri.parse('${Api.api_url}postVehicleReceivingChecklistt');
       final request = http.MultipartRequest('POST', uri)
         ..headers.addAll({
           'Accept': 'application/json',
@@ -183,7 +465,10 @@ class _QCChecklistState extends State<QCChecklist>
         request.files.add(multipart);
       }
 
-      // ✅ 5. Show loader
+      // ✅ 5. Set submitting state and show loader
+      setState(() {
+        isSubmitting = true;
+      });
       UIHelper.showLoader(context, message: 'Submitting checklist...');
 
       // ✅ 6. Send request
@@ -193,6 +478,9 @@ class _QCChecklistState extends State<QCChecklist>
       log(jsonEncode(responseBody));
       // ✅ 7. Handle response
       UIHelper.hideLoader(context);
+      setState(() {
+        isSubmitting = false;
+      });
 
       if (responseBody['success'] == true) {
         UIHelper.showSuccessMessage(
@@ -214,14 +502,23 @@ class _QCChecklistState extends State<QCChecklist>
       }
     } on SocketException {
       UIHelper.hideLoader(context);
+      setState(() {
+        isSubmitting = false;
+      });
       UIHelper.showErrorMessage(
           context: context, message: "No Internet connection.");
     } on TimeoutException {
       UIHelper.hideLoader(context);
+      setState(() {
+        isSubmitting = false;
+      });
       UIHelper.showErrorMessage(
           context: context, message: "Request timed out. Please try again.");
     } catch (e) {
       UIHelper.hideLoader(context);
+      setState(() {
+        isSubmitting = false;
+      });
       UIHelper.showErrorMessage(
           context: context, message: 'Unexpected error: $e');
     }
@@ -357,7 +654,7 @@ class _QCChecklistState extends State<QCChecklist>
                     ),
                   ),
                   Text(
-                    'Chassis: ${widget.sku}',
+                    'Chassis: ${widget.lotNO}',
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w400,
@@ -655,20 +952,83 @@ class _QCChecklistState extends State<QCChecklist>
                                                       const SizedBox(width: 12),
                                                       Expanded(
                                                         child: GestureDetector(
-                                                          onTap: () {
-                                                            setState(() {
-                                                              query['checked'] =
-                                                                  'NOK';
-                                                            });
+                                                          onTap: () async {
+                                                            // Show issue dialog when NOK is tapped
+                                                            final result =
+                                                                await showModalBottomSheet<
+                                                                    Map<String,
+                                                                        dynamic>?>(
+                                                              context: context,
+                                                              isScrollControlled:
+                                                                  true,
+                                                              backgroundColor:
+                                                                  Colors
+                                                                      .transparent,
+                                                              builder:
+                                                                  (context) =>
+                                                                      Container(
+                                                                height: MediaQuery.of(
+                                                                            context)
+                                                                        .size
+                                                                        .height *
+                                                                    0.9,
+                                                                child:
+                                                                    IssueDialog(
+                                                                  lotNo: widget
+                                                                          .lotNO ??
+                                                                      '',
+                                                                  initialDescription:
+                                                                      query['nokData']
+                                                                          ?[
+                                                                          'description'],
+                                                                  initialPartNo:
+                                                                      query['nokData']
+                                                                          ?[
+                                                                          'partNo'],
+                                                                  initialCategory:
+                                                                      query['nokData']
+                                                                          ?[
+                                                                          'category'],
+                                                                  initialType:
+                                                                      query['nokData']
+                                                                          ?[
+                                                                          'type'],
+                                                                  initialClassification:
+                                                                      query['nokData']
+                                                                          ?[
+                                                                          'classification'],
+                                                                  initialImage:
+                                                                      query['nokData']
+                                                                          ?[
+                                                                          'image'],
+                                                                ),
+                                                              ),
+                                                            );
+
+                                                            if (result !=
+                                                                null) {
+                                                              // User completed the dialog with data
+                                                              setState(() {
+                                                                query['checked'] =
+                                                                    'NOK';
+                                                                query['nokData'] =
+                                                                    result;
+                                                                query['description'] =
+                                                                    result[
+                                                                        'description'];
+                                                                query['image'] =
+                                                                    result[
+                                                                        'image'];
+                                                              });
+                                                            }
                                                           },
                                                           child: Container(
                                                             padding:
                                                                 const EdgeInsets
                                                                     .symmetric(
-                                                                    vertical:
-                                                                        10,
-                                                                    horizontal:
-                                                                        16),
+                                                              vertical: 10,
+                                                              horizontal: 16,
+                                                            ),
                                                             decoration:
                                                                 BoxDecoration(
                                                               color: query[
@@ -1008,9 +1368,13 @@ class _QCChecklistState extends State<QCChecklist>
                                           width: double.infinity,
                                           child: ElevatedButton(
                                             style: ElevatedButton.styleFrom(
-                                              backgroundColor: mycolor,
+                                              backgroundColor: isSubmitting
+                                                  ? Colors.grey.shade400
+                                                  : mycolor,
                                               foregroundColor: Colors.white,
-                                              elevation: 0,
+                                              elevation: isSubmitting ? 0 : 2,
+                                              shadowColor:
+                                                  mycolor.withOpacity(0.3),
                                               padding:
                                                   const EdgeInsets.symmetric(
                                                       vertical: 14),
@@ -1019,29 +1383,64 @@ class _QCChecklistState extends State<QCChecklist>
                                                     BorderRadius.circular(8),
                                               ),
                                             ),
-                                            onPressed: () =>
-                                                _submitForm(context),
-                                            child: const Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: [
-                                                Icon(
-                                                  Icons.save_rounded,
-                                                  color: Colors.white,
-                                                  size: 20,
-                                                ),
-                                                SizedBox(width: 8),
-                                                Text(
-                                                  'SAVE INSPECTION',
-                                                  style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 15,
-                                                    fontWeight: FontWeight.w600,
-                                                    letterSpacing: 0.5,
+                                            onPressed: isSubmitting
+                                                ? null
+                                                : () =>
+                                                    _showConfirmDialog(context),
+                                            child: isSubmitting
+                                                ? Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                    children: [
+                                                      SizedBox(
+                                                        width: 20,
+                                                        height: 20,
+                                                        child:
+                                                            CircularProgressIndicator(
+                                                          strokeWidth: 2,
+                                                          valueColor:
+                                                              const AlwaysStoppedAnimation<
+                                                                      Color>(
+                                                                  Colors.white),
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 12),
+                                                      const Text(
+                                                        'SUBMITTING...',
+                                                        style: TextStyle(
+                                                          color: Colors.white,
+                                                          fontSize: 15,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          letterSpacing: 0.5,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  )
+                                                : const Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                    children: [
+                                                      Icon(
+                                                        Icons.save_rounded,
+                                                        color: Colors.white,
+                                                        size: 20,
+                                                      ),
+                                                      SizedBox(width: 8),
+                                                      Text(
+                                                        'SAVE INSPECTION',
+                                                        style: TextStyle(
+                                                          color: Colors.white,
+                                                          fontSize: 15,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          letterSpacing: 0.5,
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
-                                                ),
-                                              ],
-                                            ),
                                           ),
                                         ),
                                         const SizedBox(height: 24),
@@ -1063,22 +1462,78 @@ class UIHelper {
     showDialog(
       barrierDismissible: false,
       context: context,
+      barrierColor: Colors.black54,
       builder: (_) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        backgroundColor: Colors.white,
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const CircularProgressIndicator(),
-              const SizedBox(height: 20),
-              Text(
-                message ?? 'Please wait...',
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        elevation: 8,
+        backgroundColor: Colors.transparent,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
               ),
             ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(32.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Animated Container with gradient
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [mycolor.withOpacity(0.8), mycolor],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(40),
+                    boxShadow: [
+                      BoxShadow(
+                        color: mycolor.withOpacity(0.3),
+                        blurRadius: 15,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      valueColor:
+                          const AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  message ?? 'Please wait...',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade800,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Processing your request',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey.shade500,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

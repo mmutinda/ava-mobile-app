@@ -379,7 +379,12 @@ class _IssueDialogState extends State<IssueDialog> {
                       errorText: _categoryError,
                       onChanged: (value) {
                         setState(() {
-                          _selectedIssueCategory = value?.value;
+                          // Handle both DropDownValueModel and String (when cleared)
+                          if (value is DropDownValueModel) {
+                            _selectedIssueCategory = value.value;
+                          } else {
+                            _selectedIssueCategory = null;
+                          }
                           _categoryError = null;
                           _updateIssueTypes(_selectedIssueCategory);
                         });
@@ -395,7 +400,12 @@ class _IssueDialogState extends State<IssueDialog> {
                         errorText: _typeError,
                         onChanged: (value) {
                           setState(() {
-                            _selectedIssueType = value?.value;
+                            // Handle both DropDownValueModel and String (when cleared)
+                            if (value is DropDownValueModel) {
+                              _selectedIssueType = value.value;
+                            } else {
+                              _selectedIssueType = null;
+                            }
                             _typeError = null;
                           });
                         },
@@ -410,7 +420,12 @@ class _IssueDialogState extends State<IssueDialog> {
                       errorText: _classificationError,
                       onChanged: (value) {
                         setState(() {
-                          _selectedDefectClassification = value?.value;
+                          // Handle both DropDownValueModel and String (when cleared)
+                          if (value is DropDownValueModel) {
+                            _selectedDefectClassification = value.value;
+                          } else {
+                            _selectedDefectClassification = null;
+                          }
                           _classificationError = null;
                         });
                       },
@@ -657,8 +672,12 @@ class _IssueDialogState extends State<IssueDialog> {
                 dropDownList: _partNumbers,
                 onChanged: (value) {
                   setState(() {
-                    // Update the controller for backwards compatibility
-                    _partNoController.text = value?.value ?? '';
+                    // Handle both DropDownValueModel and String (when cleared)
+                    if (value is DropDownValueModel) {
+                      _partNoController.text = value.value ?? '';
+                    } else {
+                      _partNoController.text = '';
+                    }
                     _partNoError = null;
                   });
                 },

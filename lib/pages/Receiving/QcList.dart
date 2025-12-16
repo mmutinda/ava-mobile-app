@@ -415,6 +415,8 @@ class _QClistState extends State<QClist> with SingleTickerProviderStateMixin {
                                                                   chassis_number,
                                                               sku:
                                                                   chassis_number,
+                                                              lotNO:
+                                                                  widget.LotNo,
                                                             ),
                                                           ),
                                                         ).then((_) =>
@@ -484,6 +486,7 @@ class _QClistState extends State<QClist> with SingleTickerProviderStateMixin {
                                                         MaterialPageRoute(
                                                           builder: (_) =>
                                                               QCChecklist(
+                                                            lotNO: widget.LotNo,
                                                             id: vehicle['id'],
                                                             title:
                                                                 chassis_number,
