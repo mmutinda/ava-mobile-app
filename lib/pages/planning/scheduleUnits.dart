@@ -8,7 +8,6 @@ import 'package:isuze_pqcs/common/functions.dart';
 import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/models/qc_inpection.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/chooseComponent.dart';
-import 'package:intl/intl.dart';
 
 class SCheduleUnits extends StatefulWidget {
   final view;
@@ -186,11 +185,11 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
   // Method to get dynamic empty state message
   String _getEmptyStateMessage() {
     if (selectedLine != 'All' && selectedLot != 'All') {
-      return 'No vehicles in Line $selectedLine - Lot $selectedLot';
+      return 'No vehicles in $selectedLine - $selectedLot';
     } else if (selectedLine != 'All') {
-      return 'No vehicles in Line $selectedLine';
+      return 'No vehicles in $selectedLine';
     } else if (selectedLot != 'All') {
-      return 'No vehicles in Lot $selectedLot';
+      return 'No vehicles in $selectedLot';
     } else {
       return 'No vehicles available';
     }
@@ -220,6 +219,748 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
   TextEditingController searchController = TextEditingController();
   String searchText = '';
   bool _isSearching = false;
+
+  // Check if any filters are active
+  bool get _hasActiveFilters {
+    return selectedLine != 'All' || selectedLot != 'All';
+  }
+
+  // Get active filters count
+  int get _activeFiltersCount {
+    int count = 0;
+    if (selectedLine != 'All') count++;
+    if (selectedLot != 'All') count++;
+    return count;
+  }
+
+  // Build filter subtitle for app bar
+  String _buildFilterSubtitle() {
+    List<String> filters = [];
+    if (selectedLine != 'All') filters.add('Line: $selectedLine');
+    if (selectedLot != 'All') filters.add('Lot: $selectedLot');
+    return filters.join(' • ');
+  }
+
+  // Method to show filter bottom sheet
+  void _showFilterBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return DraggableScrollableSheet(
+              initialChildSize: 0.65,
+              minChildSize: 0.4,
+              maxChildSize: 0.85,
+              builder: (context, scrollController) {
+                return Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.white,
+                        Colors.grey.shade50,
+                      ],
+                    ),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(25),
+                      topRight: Radius.circular(25),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 20,
+                        offset: Offset(0, -5),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      // Enhanced Handle bar
+                      Container(
+                        width: 50,
+                        height: 5,
+                        margin: EdgeInsets.only(top: 15, bottom: 10),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              mycolor.withOpacity(0.3),
+                              mycolor.withOpacity(0.7)
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      ),
+
+                      // Enhanced Header with modern design
+                      Container(
+                        margin:
+                            EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              mycolor,
+                              mycolor.withOpacity(0.8),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: mycolor.withOpacity(0.3),
+                              blurRadius: 12,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.25),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.3),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Icon(
+                                Icons.tune_rounded,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                            ),
+                            SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Filter & Sort',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                  SizedBox(height: 2),
+                                  Text(
+                                    'Customize your view',
+                                    style: TextStyle(
+                                      color: Colors.white.withOpacity(0.9),
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: IconButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                icon: Icon(Icons.close_rounded,
+                                    color: Colors.white, size: 22),
+                                padding: EdgeInsets.all(8),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Content - Scrollable
+                      Expanded(
+                        child: SingleChildScrollView(
+                          controller: scrollController,
+                          padding: EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Vehicle Line Filter Section
+                              Text(
+                                'Vehicle Line',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey[800],
+                                ),
+                              ),
+                              SizedBox(height: 12),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: vehicleLines.map((line) {
+                                  bool isSelected = selectedLine == line;
+                                  int lineCount = line == 'All'
+                                      ? vehicles.length
+                                      : vehicles
+                                          .where((v) => v.vehicle_line == line)
+                                          .length;
+
+                                  return InkWell(
+                                    onTap: () {
+                                      setModalState(() {
+                                        selectedLine = line;
+                                      });
+                                      setState(() {
+                                        selectedLine = line;
+                                      });
+                                    },
+                                    child: Container(
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? mycolor
+                                            : Colors.grey[100],
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(
+                                          color: isSelected
+                                              ? mycolor
+                                              : Colors.grey[300]!,
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            line == 'All'
+                                                ? Icons.view_module
+                                                : Icons.linear_scale,
+                                            size: 16,
+                                            color: isSelected
+                                                ? Colors.white
+                                                : Colors.grey[600],
+                                          ),
+                                          SizedBox(width: 6),
+                                          Text(
+                                            line,
+                                            style: TextStyle(
+                                              color: isSelected
+                                                  ? Colors.white
+                                                  : Colors.grey[800],
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          SizedBox(width: 6),
+                                          Container(
+                                            padding: EdgeInsets.symmetric(
+                                                horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: isSelected
+                                                  ? Colors.white
+                                                      .withOpacity(0.2)
+                                                  : Colors.grey[300],
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                            ),
+                                            child: Text(
+                                              '$lineCount',
+                                              style: TextStyle(
+                                                color: isSelected
+                                                    ? Colors.white
+                                                    : Colors.grey[600],
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+
+                              SizedBox(height: 24),
+
+                              // Vehicle Lot Filter Section
+                              Text(
+                                'Vehicle Lot',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey[800],
+                                ),
+                              ),
+                              SizedBox(height: 12),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: vehicleLots.map((lot) {
+                                  bool isSelected = selectedLot == lot;
+                                  // Calculate count based on current line filter
+                                  int lotCount;
+                                  if (lot == 'All') {
+                                    lotCount = selectedLine == 'All'
+                                        ? vehicles.length
+                                        : vehicles
+                                            .where((v) =>
+                                                v.vehicle_line == selectedLine)
+                                            .length;
+                                  } else {
+                                    lotCount = selectedLine == 'All'
+                                        ? vehicles
+                                            .where((v) => v.lot == lot)
+                                            .length
+                                        : vehicles
+                                            .where((v) =>
+                                                v.lot == lot &&
+                                                v.vehicle_line == selectedLine)
+                                            .length;
+                                  }
+
+                                  return InkWell(
+                                    onTap: () {
+                                      setModalState(() {
+                                        selectedLot = lot;
+                                      });
+                                      setState(() {
+                                        selectedLot = lot;
+                                      });
+                                    },
+                                    child: Container(
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? Colors.orange[600]
+                                            : Colors.grey[100],
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(
+                                          color: isSelected
+                                              ? Colors.orange[600]!
+                                              : Colors.grey[300]!,
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            lot == 'All'
+                                                ? Icons.inventory_2
+                                                : Icons.inventory,
+                                            size: 16,
+                                            color: isSelected
+                                                ? Colors.white
+                                                : Colors.grey[600],
+                                          ),
+                                          SizedBox(width: 6),
+                                          Text(
+                                            lot == 'All'
+                                                ? 'All Lots'
+                                                : 'Lot $lot',
+                                            style: TextStyle(
+                                              color: isSelected
+                                                  ? Colors.white
+                                                  : Colors.grey[800],
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          SizedBox(width: 6),
+                                          Container(
+                                            padding: EdgeInsets.symmetric(
+                                                horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: isSelected
+                                                  ? Colors.white
+                                                      .withOpacity(0.2)
+                                                  : Colors.grey[300],
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                            ),
+                                            child: Text(
+                                              '$lotCount',
+                                              style: TextStyle(
+                                                color: isSelected
+                                                    ? Colors.white
+                                                    : Colors.grey[600],
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+
+                              SizedBox(height: 20),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Footer - Reset and Apply buttons
+                      Container(
+                        padding: EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(20),
+                            bottomRight: Radius.circular(20),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 5,
+                              offset: Offset(0, -1),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () {
+                                  setModalState(() {
+                                    selectedLine = 'All';
+                                    selectedLot = 'All';
+                                  });
+                                  setState(() {
+                                    selectedLine = 'All';
+                                    selectedLot = 'All';
+                                  });
+                                },
+                                style: OutlinedButton.styleFrom(
+                                  padding: EdgeInsets.symmetric(vertical: 16),
+                                  side: BorderSide(color: mycolor),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: Text(
+                                  'Reset',
+                                  style: TextStyle(
+                                    color: mycolor,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 16),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: mycolor,
+                                  foregroundColor: Colors.white,
+                                  padding: EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  elevation: 2,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.check, size: 20),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Apply',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // Method to show unit details bottom sheet
+  void _showUnitDetailsDialog(Vehicle vehicle) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  // Handle bar
+                  Container(
+                    width: 40,
+                    height: 4,
+                    margin: EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  // Content - Scrollable
+                  Expanded(
+                    child: SingleChildScrollView(
+                      controller: scrollController,
+                      padding: EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // VIN Section
+                          _buildDetailRow(
+                            'VIN Number',
+                            vehicle.vin,
+                            Icons.qr_code_2,
+                            Colors.blue,
+                          ),
+                          SizedBox(height: 16),
+
+                          // Model Section
+                          _buildDetailRow(
+                            'Model',
+                            vehicle.model,
+                            Icons.directions_car,
+                            Colors.orange,
+                          ),
+                          SizedBox(height: 16),
+
+                          // Client Section
+                          _buildDetailRow(
+                            'Client',
+                            vehicle.customer_name ?? 'N/A',
+                            Icons.business,
+                            Colors.green,
+                          ),
+                          SizedBox(height: 16),
+
+                          // Route Section
+                          _buildDetailRow(
+                            'Route',
+                            'Route ${vehicle.route}',
+                            Icons.route,
+                            Colors.purple,
+                          ),
+                          SizedBox(height: 16),
+
+                          // Vehicle Line Section
+                          _buildDetailRow(
+                            'Vehicle Line',
+                            vehicle.vehicle_line,
+                            Icons.linear_scale,
+                            Colors.teal,
+                          ),
+                          SizedBox(height: 16),
+
+                          // LOT Section
+                          _buildDetailRow(
+                            'LOT Number',
+                            vehicle.lot,
+                            Icons.inventory_2,
+                            Colors.amber,
+                          ),
+
+                          // Show additional fields if available from backend
+                          if (vehicle.engine_no != null) ...[
+                            SizedBox(height: 16),
+                            _buildDetailRow(
+                              'Engine Number',
+                              vehicle.engine_no!,
+                              Icons.engineering,
+                              Colors.red,
+                            ),
+                          ],
+
+                          if (vehicle.production_start_date != null) ...[
+                            SizedBox(height: 16),
+                            _buildDetailRow(
+                              'Production Start Date',
+                              vehicle.production_start_date!,
+                              Icons.calendar_today,
+                              Colors.pink,
+                            ),
+                          ],
+
+                          if (vehicle.current_shop != null) ...[
+                            SizedBox(height: 16),
+                            _buildDetailRow(
+                              'Current Shop',
+                              vehicle.current_shop!,
+                              Icons.factory,
+                              Colors.brown,
+                            ),
+                          ],
+
+                          if (vehicle.status != null) ...[
+                            SizedBox(height: 16),
+                            _buildDetailRow(
+                              'Status',
+                              vehicle.status == 0 ? 'In Progress' : 'Completed',
+                              Icons.info,
+                              vehicle.status == 0
+                                  ? Colors.orange
+                                  : Colors.green,
+                            ),
+                          ],
+
+                          // Add some padding at the bottom
+                          SizedBox(height: 20),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Footer - Static Close Button
+                  Container(
+                    padding: EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.only(
+                        bottomLeft: Radius.circular(20),
+                        bottomRight: Radius.circular(20),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 5,
+                          offset: Offset(0, -1),
+                        ),
+                      ],
+                    ),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: mycolor,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 2,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.check_circle_outline, size: 20),
+                            SizedBox(width: 8),
+                            Text(
+                              'Close',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // Helper method to build detail rows
+  Widget _buildDetailRow(
+      String label, String value, IconData icon, Color color) {
+    return Container(
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: color.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Icon(
+              icon,
+              color: color,
+              size: 20,
+            ),
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  value,
+                  style: TextStyle(
+                    color: Colors.black87,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -298,22 +1039,13 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
         elevation: 0,
         backgroundColor: mycolor,
         foregroundColor: Colors.white,
+        centerTitle: false,
         title: _isSearching
             ? _buildSearchField()
-            : Row(
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    padding: EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      widget.view != null ? Icons.factory : Icons.schedule,
-                      size: 20,
-                    ),
-                  ),
-                  SizedBox(width: 12),
                   Text(
                     widget.view != null ? 'Units at Line' : 'Scheduled Units',
                     style: TextStyle(
@@ -321,6 +1053,15 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+                  if (_hasActiveFilters)
+                    Text(
+                      _buildFilterSubtitle(),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.white.withOpacity(0.9),
+                      ),
+                    ),
                 ],
               ),
         actions: [
@@ -346,18 +1087,53 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
               },
             ),
           ),
-          if (!_isSearching)
-            Container(
-              margin: EdgeInsets.only(right: 16),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: IconButton(
-                icon: Icon(Icons.refresh, size: 20),
-                onPressed: fetchData,
-              ),
+          Container(
+            margin: EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: _hasActiveFilters
+                  ? Colors.orange.withOpacity(0.9)
+                  : Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
             ),
+            child: Stack(
+              children: [
+                IconButton(
+                  icon: Icon(
+                    Icons.filter_list,
+                    size: 20,
+                    color: _hasActiveFilters ? Colors.white : Colors.white,
+                  ),
+                  onPressed: _showFilterBottomSheet,
+                ),
+                if (_hasActiveFilters)
+                  Positioned(
+                    right: 6,
+                    top: 6,
+                    child: Container(
+                      padding: EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.white, width: 1),
+                      ),
+                      constraints: BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      child: Text(
+                        '$_activeFiltersCount',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ],
       ),
       body: Container(
@@ -373,284 +1149,90 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
                   ) // Show message for success or failure
                 : Column(
                     children: [
-                      // Vehicle Line Tabs
-                      if (vehicleLines.length > 1)
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding:
-                                  EdgeInsets.only(left: 16, top: 8, bottom: 4),
-                              child: Text(
-                                'Filter by Vehicle Line',
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
+                      // Active filters indicator banner
+                      if (_hasActiveFilters)
+                        Container(
+                          margin:
+                              EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.orange.shade100,
+                                Colors.orange.shade50
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.orange.shade200),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange.shade600,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  Icons.filter_alt,
+                                  color: Colors.white,
+                                  size: 16,
                                 ),
                               ),
-                            ),
-                            Container(
-                              margin: EdgeInsets.symmetric(horizontal: 12),
-                              height: 50,
-                              child: ListView.builder(
-                                scrollDirection: Axis.horizontal,
-                                itemCount: vehicleLines.length,
-                                itemBuilder: (context, index) {
-                                  String line = vehicleLines[index];
-                                  bool isSelected = selectedLine == line;
-                                  int lineCount = line == 'All'
-                                      ? vehicles.length
-                                      : vehicles
-                                          .where((v) => v.vehicle_line == line)
-                                          .length;
-
-                                  return Container(
-                                    margin: EdgeInsets.only(right: 8),
-                                    child: Material(
-                                      color: Colors.transparent,
-                                      child: InkWell(
-                                        borderRadius: BorderRadius.circular(8),
-                                        onTap: () {
-                                          setState(() {
-                                            selectedLine = line;
-                                          });
-                                        },
-                                        child: Container(
-                                          padding: EdgeInsets.symmetric(
-                                              horizontal: 16, vertical: 8),
-                                          decoration: BoxDecoration(
-                                            color: isSelected
-                                                ? mycolor
-                                                : Colors.white,
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                            border: Border.all(
-                                              color: isSelected
-                                                  ? mycolor
-                                                  : Colors.grey.shade300,
-                                              width: 1,
-                                            ),
-                                            boxShadow: isSelected
-                                                ? [
-                                                    BoxShadow(
-                                                      color: mycolor
-                                                          .withOpacity(0.3),
-                                                      blurRadius: 8,
-                                                      offset: Offset(0, 2),
-                                                    ),
-                                                  ]
-                                                : [],
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Icon(
-                                                line == 'All'
-                                                    ? Icons.view_module
-                                                    : Icons.linear_scale,
-                                                size: 16,
-                                                color: isSelected
-                                                    ? Colors.white
-                                                    : mycolor,
-                                              ),
-                                              SizedBox(width: 6),
-                                              Text(
-                                                line,
-                                                style: TextStyle(
-                                                  color: isSelected
-                                                      ? Colors.white
-                                                      : mycolor,
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                              SizedBox(width: 6),
-                                              Container(
-                                                padding: EdgeInsets.symmetric(
-                                                    horizontal: 6, vertical: 2),
-                                                decoration: BoxDecoration(
-                                                  color: isSelected
-                                                      ? Colors.white
-                                                          .withOpacity(0.2)
-                                                      : mycolor
-                                                          .withOpacity(0.1),
-                                                  borderRadius:
-                                                      BorderRadius.circular(10),
-                                                ),
-                                                child: Text(
-                                                  '$lineCount',
-                                                  style: TextStyle(
-                                                    color: isSelected
-                                                        ? Colors.white
-                                                        : mycolor,
-                                                    fontSize: 10,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
+                              SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Active Filters',
+                                      style: TextStyle(
+                                        color: Colors.orange.shade800,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-
-                      // Vehicle Lot Tabs
-                      if (vehicleLots.length > 1)
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding:
-                                  EdgeInsets.only(left: 16, top: 8, bottom: 4),
-                              child: Text(
-                                'Filter by Lot',
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
+                                    SizedBox(height: 2),
+                                    Text(
+                                      _buildFilterSubtitle(),
+                                      style: TextStyle(
+                                        color: Colors.orange.shade700,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ),
-                            Container(
-                              margin: EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 4),
-                              height: 50,
-                              child: ListView.builder(
-                                scrollDirection: Axis.horizontal,
-                                itemCount: vehicleLots.length,
-                                itemBuilder: (context, index) {
-                                  String lot = vehicleLots[index];
-                                  bool isSelected = selectedLot == lot;
-
-                                  // Calculate count based on current line filter
-                                  int lotCount;
-                                  if (lot == 'All') {
-                                    lotCount = selectedLine == 'All'
-                                        ? vehicles.length
-                                        : vehicles
-                                            .where((v) =>
-                                                v.vehicle_line == selectedLine)
-                                            .length;
-                                  } else {
-                                    lotCount = selectedLine == 'All'
-                                        ? vehicles
-                                            .where((v) => v.lot == lot)
-                                            .length
-                                        : vehicles
-                                            .where((v) =>
-                                                v.lot == lot &&
-                                                v.vehicle_line == selectedLine)
-                                            .length;
-                                  }
-
-                                  return Container(
-                                    margin: EdgeInsets.only(right: 8),
-                                    child: Material(
-                                      color: Colors.transparent,
-                                      child: InkWell(
-                                        borderRadius: BorderRadius.circular(8),
-                                        onTap: () {
-                                          setState(() {
-                                            selectedLot = lot;
-                                          });
-                                        },
-                                        child: Container(
-                                          padding: EdgeInsets.symmetric(
-                                              horizontal: 16, vertical: 8),
-                                          decoration: BoxDecoration(
-                                            color: isSelected
-                                                ? Colors.orange.shade600
-                                                : Colors.white,
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                            border: Border.all(
-                                              color: isSelected
-                                                  ? Colors.orange.shade600
-                                                  : Colors.grey.shade300,
-                                              width: 1,
-                                            ),
-                                            boxShadow: isSelected
-                                                ? [
-                                                    BoxShadow(
-                                                      color: Colors
-                                                          .orange.shade600
-                                                          .withOpacity(0.3),
-                                                      blurRadius: 8,
-                                                      offset: Offset(0, 2),
-                                                    ),
-                                                  ]
-                                                : [],
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Icon(
-                                                lot == 'All'
-                                                    ? Icons.inventory_2
-                                                    : Icons.inventory,
-                                                size: 16,
-                                                color: isSelected
-                                                    ? Colors.white
-                                                    : Colors.orange.shade600,
-                                              ),
-                                              SizedBox(width: 6),
-                                              Text(
-                                                lot == 'All'
-                                                    ? 'All Lots'
-                                                    : 'Lot $lot',
-                                                style: TextStyle(
-                                                  color: isSelected
-                                                      ? Colors.white
-                                                      : Colors.orange.shade600,
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                              SizedBox(width: 6),
-                                              Container(
-                                                padding: EdgeInsets.symmetric(
-                                                    horizontal: 6, vertical: 2),
-                                                decoration: BoxDecoration(
-                                                  color: isSelected
-                                                      ? Colors.white
-                                                          .withOpacity(0.2)
-                                                      : Colors.orange.shade600
-                                                          .withOpacity(0.1),
-                                                  borderRadius:
-                                                      BorderRadius.circular(10),
-                                                ),
-                                                child: Text(
-                                                  '$lotCount',
-                                                  style: TextStyle(
-                                                    color: isSelected
-                                                        ? Colors.white
-                                                        : Colors
-                                                            .orange.shade600,
-                                                    fontSize: 10,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  );
+                              TextButton.icon(
+                                onPressed: () {
+                                  setState(() {
+                                    selectedLine = 'All';
+                                    selectedLot = 'All';
+                                  });
                                 },
+                                icon: Icon(Icons.clear,
+                                    size: 16, color: Colors.orange.shade600),
+                                label: Text(
+                                  'Clear',
+                                  style: TextStyle(
+                                    color: Colors.orange.shade600,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                style: TextButton.styleFrom(
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       SizedBox(height: 8),
-                      // Filter Header
                       // List
                       Expanded(
                         child: Builder(
@@ -977,8 +1559,9 @@ class _SCheduleUnitsState extends State<SCheduleUnits> {
                                                       BorderRadius.circular(6),
                                                   onTap: () {
                                                     if (widget.view != null) {
-                                                      // Show unit details dialog (would need to implement)
-                                                      // _showUnitDetailsDialog(vehicle);
+                                                      // Show unit details dialog
+                                                      _showUnitDetailsDialog(
+                                                          vehicle);
                                                     } else {
                                                       // Original functionality for scheduled units
                                                       showDialog(

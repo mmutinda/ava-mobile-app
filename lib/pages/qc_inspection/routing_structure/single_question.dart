@@ -14,6 +14,7 @@ import 'package:qr_code_scanner/qr_code_scanner.dart';
 
 class SingleQuestion extends StatefulWidget {
   final int id;
+  final String lotNo;
   final String question;
   final ValueChanged<String> onValueChanged;
   final ValueChanged<String> onInputValueChanged;
@@ -37,9 +38,12 @@ class SingleQuestion extends StatefulWidget {
   final List<Map<String, String>> users; // List of users with name and email
   final ValueChanged<Map<String, dynamic>?>?
       onClaimDataChanged; // Add claim data callback
+  final String? initialStaffNo; // Add staff number parameter
+  final ValueChanged<String>? onStaffNoChanged; // Add staff number callback
   const SingleQuestion(
       {super.key,
       required this.id,
+      required this.lotNo,
       required this.onValueChanged,
       required this.onInputValueChanged,
       required this.onValueChanged2,
@@ -59,6 +63,8 @@ class SingleQuestion extends StatefulWidget {
       this.parts_to_scan, // Add parts to scan parameter
       this.scandata, // Add scandata parameter for comparison
       this.onClaimDataChanged, // Add claim data callback
+      this.initialStaffNo, // Add staff number parameter
+      this.onStaffNoChanged, // Add staff number callback
       this.instruction}); // Add instruction parameter
 
   @override
@@ -70,6 +76,7 @@ class _SingleQuestionState extends State<SingleQuestion>
   String? okay;
   Uint8List? _signatureImage;
   late TextEditingController inputController;
+  late TextEditingController staffNoController; // Add staff number controller
   File? _image; // Holds the captured image
   bool _isInstructionExpanded = false; // Track instruction expansion state
   bool _isNotifyUsersExpanded = false; // Track notify users expansion state
@@ -77,6 +84,7 @@ class _SingleQuestionState extends State<SingleQuestion>
   bool _isScanned = false; // Track if scanning is completed
   String? _scannedData; // Store scanned data
   bool _scanningRequired = false; // Track if scanning is required
+  bool _scanMatched = false; // Track if scan result matches expected data
   bool _claimCaptured = false; // Track if claim has been captured
 
   // Store claim data for editing
@@ -129,21 +137,21 @@ class _SingleQuestionState extends State<SingleQuestion>
     inputController = TextEditingController(text: widget.initialDecripValue);
     inputController.addListener(_handleValueChanged);
 
-    // Initialize from previous values
-    if (widget.initialRadioValue != null) {
-      okay = widget.initialRadioValue;
-      // If it was NOK, mark as claim captured
-      if (okay == "NOK") {
-        _claimCaptured = true;
-      }
-    }
+    // Initialize staff number controller
+    staffNoController =
+        TextEditingController(text: widget.initialStaffNo ?? '');
+    staffNoController.addListener(_handleStaffNoChanged);
+
+    // // Validate and set initial defect category
+    // selectedDefectCategory =
+    //     _validateDefectCategory(widget.initialDefectCategory);
 
     // Check if scanning is required
     _scanningRequired =
         widget.parts_to_scan != null && widget.parts_to_scan!.isNotEmpty;
 
-    // If already answered and scanning was required, mark as scanned
-    if (widget.initialRadioValue != null && _scanningRequired) {
+    // If already answered, mark as scanned
+    if (widget.initialRadioValue != null) {
       _isScanned = true;
     }
   }
@@ -152,6 +160,8 @@ class _SingleQuestionState extends State<SingleQuestion>
   void dispose() {
     inputController.removeListener(_handleValueChanged);
     inputController.dispose();
+    staffNoController.removeListener(_handleStaffNoChanged);
+    staffNoController.dispose();
     super.dispose();
   }
 
@@ -159,8 +169,165 @@ class _SingleQuestionState extends State<SingleQuestion>
     widget.onInputValueChanged(inputController.text);
   }
 
+  void _handleStaffNoChanged() {
+    if (widget.onStaffNoChanged != null) {
+      // Only save if staff number is not empty
+      if (staffNoController.text.trim().isNotEmpty) {
+        widget.onStaffNoChanged!(staffNoController.text);
+      }
+    }
+  }
+
   void _handleImageChanged() {
     widget.onImageChanged(_image!);
+  }
+
+  // Show staff number dialog
+  // Show staff number dialog with disabled state when answered
+  Future<void> _showStaffNumberDialog() async {
+    // Don't show dialog if question is already answered
+    if (widget.initialRadioValue != null) {
+      return;
+    }
+
+    TextEditingController dialogController =
+        TextEditingController(text: staffNoController.text);
+
+    String? errorMessage;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              child: Container(
+                padding: EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.person,
+                          color: Colors.blue.shade700,
+                          size: 24,
+                        ),
+                        SizedBox(width: 12),
+                        Text(
+                          'Staff Number',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[800],
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 16),
+                    TextFormField(
+                      controller: dialogController,
+                      decoration: InputDecoration(
+                        hintText: 'Enter your staff number',
+                        prefixIcon: Icon(Icons.badge_outlined,
+                            color: Colors.blue.shade700),
+                        contentPadding:
+                            EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: mycolor, width: 2),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.red, width: 2),
+                        ),
+                        focusedErrorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.red, width: 2),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
+                        errorText: errorMessage,
+                      ),
+                      style: TextStyle(fontSize: 16),
+                      keyboardType: TextInputType.number,
+                      maxLength: 10,
+                      autofocus: true,
+                      onChanged: (value) {
+                        // Clear error when user starts typing
+                        if (errorMessage != null) {
+                          setDialogState(() {
+                            errorMessage = null;
+                          });
+                        }
+                      },
+                    ),
+                    SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            style: OutlinedButton.styleFrom(
+                              padding: EdgeInsets.symmetric(vertical: 12),
+                              side: BorderSide(color: Colors.grey.shade400),
+                            ),
+                            child: Text(
+                              'Cancel',
+                              style: TextStyle(color: Colors.grey.shade600),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              // Validate staff number is not empty
+                              if (dialogController.text.trim().isEmpty) {
+                                setDialogState(() {
+                                  errorMessage = 'Staff number cannot be empty';
+                                });
+                                return;
+                              }
+
+                              // Save if valid
+                              setState(() {
+                                staffNoController.text = dialogController.text;
+                              });
+                              if (widget.onStaffNoChanged != null) {
+                                widget.onStaffNoChanged!(dialogController.text);
+                              }
+                              Navigator.of(context).pop();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: mycolor,
+                              padding: EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            child: Text(
+                              'Save',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   /// Capture image from camera
@@ -219,12 +386,18 @@ class _SingleQuestionState extends State<SingleQuestion>
             expectedData = widget.scandata?.toString() ?? '';
           }
 
-          if (_scannedData == expectedData) {
+          // Check if scan matches expected data
+          _scanMatched = _scannedData == expectedData;
+
+          // Only allow answering if scan matches
+          if (_scanMatched) {
+            // Automatically set to OK when scan matches
             okay = "OK";
             widget.onValueChanged("OK");
           } else {
-            okay = "NOK";
-            widget.onValueChanged("NOK");
+            // Don't set answer when scan doesn't match
+            okay = null;
+            widget.onValueChanged("");
           }
         });
       }
@@ -435,12 +608,18 @@ class _SingleQuestionState extends State<SingleQuestion>
                       expectedData = widget.scandata?.toString() ?? '';
                     }
 
-                    if (_scannedData == expectedData) {
+                    // Check if manual entry matches expected data
+                    _scanMatched = _scannedData == expectedData;
+
+                    // Only allow answering if scan matches
+                    if (_scanMatched) {
+                      // Automatically set to OK when scan matches
                       okay = "OK";
                       widget.onValueChanged("OK");
                     } else {
-                      okay = "NOK";
-                      widget.onValueChanged("NOK");
+                      // Don't set answer when scan doesn't match
+                      okay = null;
+                      widget.onValueChanged("");
                     }
                   });
                 }
@@ -730,23 +909,35 @@ class _SingleQuestionState extends State<SingleQuestion>
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.green[50],
+                            color: _scanMatched
+                                ? Colors.green[50]
+                                : Colors.red[50],
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.green[300]!),
+                            border: Border.all(
+                                color: _scanMatched
+                                    ? Colors.green[300]!
+                                    : Colors.red[300]!),
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.check_circle, color: Colors.green),
+                              Icon(
+                                _scanMatched ? Icons.check_circle : Icons.error,
+                                color: _scanMatched ? Colors.green : Colors.red,
+                              ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Scan Completed',
+                                      _scanMatched
+                                          ? 'Scan Completed - Match Found'
+                                          : 'Scan Completed - No Match',
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.green[800],
+                                        color: _scanMatched
+                                            ? Colors.green[800]
+                                            : Colors.red[800],
                                       ),
                                     ),
                                     Text(
@@ -756,12 +947,22 @@ class _SingleQuestionState extends State<SingleQuestion>
                                         color: Colors.grey[600],
                                       ),
                                     ),
+                                    // if (!_scanMatched)
+                                    //   Text(
+                                    //     'Scan result does not match expected value. Please scan the correct ${widget.parts_to_scan}.',
+                                    //     style: TextStyle(
+                                    //       fontSize: 11,
+                                    //       color: Colors.red[700],
+                                    //       fontStyle: FontStyle.italic,
+                                    //     ),
+                                    //   ),
                                     const SizedBox(height: 4),
                                     GestureDetector(
                                       onTap: () {
                                         setState(() {
                                           _isScanned = false;
                                           _scannedData = null;
+                                          _scanMatched = false;
                                           okay = null;
                                         });
                                         widget
@@ -793,6 +994,7 @@ class _SingleQuestionState extends State<SingleQuestion>
                                     setState(() {
                                       _isScanned = false;
                                       _scannedData = null;
+                                      _scanMatched = false;
                                       okay = null;
                                     });
                                     widget.onValueChanged(""); // Reset value
@@ -819,9 +1021,12 @@ class _SingleQuestionState extends State<SingleQuestion>
                   const SizedBox(height: 12),
                 ],
 
-                // Radio buttons - compact horizontal layout
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
+                // Radio buttons and staff number - flexible layout
+                Wrap(
+                  alignment: WrapAlignment.start,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 12,
+                  runSpacing: 8,
                   children: [
                     const Text(
                       'Answer:',
@@ -831,10 +1036,11 @@ class _SingleQuestionState extends State<SingleQuestion>
                         color: Colors.black87,
                       ),
                     ),
-                    const SizedBox(width: 12),
                     // OK Radio
                     GestureDetector(
-                      onTap: (_scanningRequired && !_isScanned)
+                      onTap: (widget.initialRadioValue != null ||
+                              (_scanningRequired &&
+                                  (!_isScanned || !_scanMatched)))
                           ? null
                           : () {
                               setState(() {
@@ -876,7 +1082,9 @@ class _SingleQuestionState extends State<SingleQuestion>
                             Radio<String>(
                               value: "OK",
                               groupValue: okay ?? widget.initialRadioValue,
-                              onChanged: (_scanningRequired && !_isScanned)
+                              onChanged: (widget.initialRadioValue != null ||
+                                      (_scanningRequired &&
+                                          (!_isScanned || !_scanMatched)))
                                   ? null
                                   : (value) {
                                       setState(() {
@@ -909,7 +1117,8 @@ class _SingleQuestionState extends State<SingleQuestion>
                               style: TextStyle(
                                 // fontSize: 14,
                                 fontWeight: FontWeight.w500,
-                                color: (_scanningRequired && !_isScanned)
+                                color: (_scanningRequired &&
+                                        (!_isScanned || !_scanMatched))
                                     ? Colors.grey.shade400
                                     : okay == "OK"
                                         ? Colors.green.shade700
@@ -924,24 +1133,32 @@ class _SingleQuestionState extends State<SingleQuestion>
                     const SizedBox(width: 12),
                     // NOK Radio
                     GestureDetector(
-                      onTap: (_scanningRequired && !_isScanned)
+                      onTap: (widget.initialRadioValue != null ||
+                              (_scanningRequired &&
+                                  (!_isScanned || !_scanMatched)))
                           ? null
                           : () async {
                               // Initialize claim template
                               final claimTemplate = _initializeClaimTemplate();
 
-                              // Show issue dialog with initialized template
-                              final result =
-                                  await showDialog<Map<String, dynamic>?>(
+                              // Show issue dialog as bottom sheet with initialized template
+                              final result = await showModalBottomSheet<
+                                  Map<String, dynamic>?>(
                                 context: context,
-                                barrierDismissible: true,
-                                builder: (context) => IssueDialog(
-                                  initialDescription: _claimDescription,
-                                  initialPartNo: _claimPartNo,
-                                  initialCategory: _claimCategory,
-                                  initialType: _claimType,
-                                  initialClassification: _claimClassification,
-                                  initialImage: _claimImage,
+                                isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                builder: (context) => Container(
+                                  height:
+                                      MediaQuery.of(context).size.height * 0.9,
+                                  child: IssueDialog(
+                                    lotNo: widget.lotNo,
+                                    initialDescription: _claimDescription,
+                                    initialPartNo: _claimPartNo,
+                                    initialCategory: _claimCategory,
+                                    initialType: _claimType,
+                                    initialClassification: _claimClassification,
+                                    initialImage: _claimImage,
+                                  ),
                                 ),
                               );
 
@@ -1006,7 +1223,9 @@ class _SingleQuestionState extends State<SingleQuestion>
                             Radio<String>(
                               value: "NOK",
                               groupValue: okay ?? widget.initialRadioValue,
-                              onChanged: (_scanningRequired && !_isScanned)
+                              onChanged: (widget.initialRadioValue != null ||
+                                      (_scanningRequired &&
+                                          (!_isScanned || !_scanMatched)))
                                   ? null
                                   : (value) async {
                                       if (value == "NOK") {
@@ -1014,20 +1233,29 @@ class _SingleQuestionState extends State<SingleQuestion>
                                         final claimTemplate =
                                             _initializeClaimTemplate();
 
-                                        // Show issue dialog with initialized template
-                                        final result = await showDialog<
-                                            Map<String, dynamic>?>(
+                                        // Show issue dialog as bottom sheet with initialized template
+                                        final result =
+                                            await showModalBottomSheet<
+                                                Map<String, dynamic>?>(
                                           context: context,
-                                          barrierDismissible: true,
-                                          builder: (context) => IssueDialog(
-                                            initialDescription:
-                                                _claimDescription,
-                                            initialPartNo: _claimPartNo,
-                                            initialCategory: _claimCategory,
-                                            initialType: _claimType,
-                                            initialClassification:
-                                                _claimClassification,
-                                            initialImage: _claimImage,
+                                          isScrollControlled: true,
+                                          backgroundColor: Colors.transparent,
+                                          builder: (context) => Container(
+                                            height: MediaQuery.of(context)
+                                                    .size
+                                                    .height *
+                                                0.9,
+                                            child: IssueDialog(
+                                              lotNo: widget.lotNo,
+                                              initialDescription:
+                                                  _claimDescription,
+                                              initialPartNo: _claimPartNo,
+                                              initialCategory: _claimCategory,
+                                              initialType: _claimType,
+                                              initialClassification:
+                                                  _claimClassification,
+                                              initialImage: _claimImage,
+                                            ),
                                           ),
                                         );
 
@@ -1101,7 +1329,8 @@ class _SingleQuestionState extends State<SingleQuestion>
                               style: TextStyle(
                                 // fontSize: 14,
                                 fontWeight: FontWeight.w500,
-                                color: (_scanningRequired && !_isScanned)
+                                color: (_scanningRequired &&
+                                        (!_isScanned || !_scanMatched))
                                     ? Colors.grey.shade400
                                     : okay == "NOK"
                                         ? Colors.red.shade700
@@ -1113,6 +1342,57 @@ class _SingleQuestionState extends State<SingleQuestion>
                         ),
                       ),
                     ),
+                    // Staff Number icon - tap to edit (disabled when answered)
+                    GestureDetector(
+                      onTap: widget.initialRadioValue != null
+                          ? null
+                          : () => _showStaffNumberDialog(),
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: widget.initialRadioValue != null
+                              ? Colors.grey.shade200 // Disabled state
+                              : staffNoController.text.isNotEmpty
+                                  ? Colors.blue.shade100
+                                  : Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                              color: widget.initialRadioValue != null
+                                  ? Colors.grey.shade300 // Disabled border
+                                  : staffNoController.text.isNotEmpty
+                                      ? Colors.blue.shade300
+                                      : Colors.grey.shade300,
+                              width: 1),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.person,
+                              color: widget.initialRadioValue != null
+                                  ? Colors.grey.shade500 // Disabled icon
+                                  : staffNoController.text.isNotEmpty
+                                      ? Colors.blue.shade700
+                                      : Colors.grey.shade600,
+                              size: 16,
+                            ),
+                            if (staffNoController.text.isNotEmpty) ...[
+                              const SizedBox(width: 4),
+                              Text(
+                                staffNoController.text,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: widget.initialRadioValue != null
+                                      ? Colors.grey.shade500 // Disabled text
+                                      : Colors.blue.shade700,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
 
@@ -1120,17 +1400,23 @@ class _SingleQuestionState extends State<SingleQuestion>
                 if (_claimCaptured)
                   GestureDetector(
                     onTap: () async {
-                      // Show issue dialog for editing
-                      final result = await showDialog<Map<String, dynamic>?>(
+                      // Show issue dialog as bottom sheet for editing
+                      final result =
+                          await showModalBottomSheet<Map<String, dynamic>?>(
                         context: context,
-                        barrierDismissible: true,
-                        builder: (context) => IssueDialog(
-                          initialDescription: _claimDescription,
-                          initialPartNo: _claimPartNo,
-                          initialCategory: _claimCategory,
-                          initialType: _claimType,
-                          initialClassification: _claimClassification,
-                          initialImage: _claimImage,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (context) => Container(
+                          height: MediaQuery.of(context).size.height * 0.9,
+                          child: IssueDialog(
+                            initialDescription: _claimDescription,
+                            initialPartNo: _claimPartNo,
+                            initialCategory: _claimCategory,
+                            initialType: _claimType,
+                            initialClassification: _claimClassification,
+                            initialImage: _claimImage,
+                            lotNo: widget.lotNo,
+                          ),
                         ),
                       );
 
@@ -1214,31 +1500,43 @@ class _SingleQuestionState extends State<SingleQuestion>
                     ),
                   ),
 
-                // Warning message when scanning is required but not completed
-                if (_scanningRequired && !_isScanned)
+                // Warning message when scanning is required but not completed or doesn't match
+                if (_scanningRequired && (!_isScanned || !_scanMatched))
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.orange[50],
+                        color:
+                            (!_isScanned) ? Colors.orange[50] : Colors.red[50],
                         borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: Colors.orange[300]!),
+                        border: Border.all(
+                            color: (!_isScanned)
+                                ? Colors.orange[300]!
+                                : Colors.red[300]!),
                       ),
                       child: Row(
                         children: [
                           Icon(
-                            Icons.warning_amber_rounded,
-                            color: Colors.orange[700],
+                            (!_isScanned)
+                                ? Icons.warning_amber_rounded
+                                : Icons.error_outline,
+                            color: (!_isScanned)
+                                ? Colors.orange[700]
+                                : Colors.red[700],
                             size: 16,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Please scan the ${widget.parts_to_scan} first',
+                              (!_isScanned)
+                                  ? 'Please scan the ${widget.parts_to_scan} first'
+                                  : 'Scan result does not match. Please scan the correct ${widget.parts_to_scan} to answer this question.',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.orange[700],
+                                color: (!_isScanned)
+                                    ? Colors.orange[700]
+                                    : Colors.red[700],
                                 fontStyle: FontStyle.italic,
                               ),
                             ),

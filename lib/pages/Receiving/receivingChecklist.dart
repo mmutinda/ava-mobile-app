@@ -493,11 +493,7 @@ class _QCChecklistState extends State<QCChecklist>
                                             margin: const EdgeInsets.only(
                                                 bottom: 12),
                                             decoration: BoxDecoration(
-                                              color: isAnswered
-                                                  ? (isOK
-                                                      ? Colors.green.shade50
-                                                      : Colors.red.shade50)
-                                                  : Colors.white,
+                                              color: Colors.white,
                                               borderRadius:
                                                   BorderRadius.circular(12),
                                               border: Border.all(
@@ -748,9 +744,6 @@ class _QCChecklistState extends State<QCChecklist>
                                                       'NOK') ...[
                                                     const SizedBox(height: 16),
                                                     Container(
-                                                      padding:
-                                                          const EdgeInsets.all(
-                                                              14),
                                                       decoration: BoxDecoration(
                                                         color:
                                                             Colors.red.shade50,
@@ -763,12 +756,25 @@ class _QCChecklistState extends State<QCChecklist>
                                                           width: 1,
                                                         ),
                                                       ),
-                                                      child: Column(
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .start,
-                                                        children: [
-                                                          Text(
+                                                      child: Theme(
+                                                        data: Theme.of(context)
+                                                            .copyWith(
+                                                                dividerColor: Colors
+                                                                    .transparent),
+                                                        child: ExpansionTile(
+                                                          initiallyExpanded:
+                                                              false,
+                                                          tilePadding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  horizontal:
+                                                                      14,
+                                                                  vertical: 4),
+                                                          childrenPadding:
+                                                              const EdgeInsets
+                                                                  .fromLTRB(14,
+                                                                  0, 14, 14),
+                                                          title: Text(
                                                             'Issue Description',
                                                             style: TextStyle(
                                                               fontSize: 13,
@@ -779,209 +785,215 @@ class _QCChecklistState extends State<QCChecklist>
                                                                   .red.shade700,
                                                             ),
                                                           ),
-                                                          const SizedBox(
-                                                              height: 6),
-                                                          TextFormField(
-                                                            initialValue: query[
-                                                                    'description'] ??
-                                                                '',
-                                                            onChanged: (value) {
-                                                              query['description'] =
-                                                                  value;
-                                                            },
-                                                            maxLines: null,
-                                                            decoration:
-                                                                InputDecoration(
-                                                              hintText:
-                                                                  'Describe the issue found...',
-                                                              hintStyle:
-                                                                  TextStyle(
-                                                                color: Colors
-                                                                    .grey
-                                                                    .shade500,
-                                                                fontSize: 14,
-                                                              ),
-                                                              border:
-                                                                  OutlineInputBorder(
-                                                                borderRadius:
-                                                                    BorderRadius
-                                                                        .circular(
-                                                                            8),
-                                                                borderSide:
-                                                                    BorderSide(
+                                                          iconColor: Colors
+                                                              .red.shade700,
+                                                          collapsedIconColor:
+                                                              Colors
+                                                                  .red.shade700,
+                                                          children: [
+                                                            TextFormField(
+                                                              initialValue:
+                                                                  query['description'] ??
+                                                                      '',
+                                                              onChanged:
+                                                                  (value) {
+                                                                query['description'] =
+                                                                    value;
+                                                              },
+                                                              maxLines: null,
+                                                              decoration:
+                                                                  InputDecoration(
+                                                                hintText:
+                                                                    'Describe the issue found...',
+                                                                hintStyle:
+                                                                    TextStyle(
                                                                   color: Colors
                                                                       .grey
-                                                                      .shade300,
+                                                                      .shade500,
+                                                                  fontSize: 14,
                                                                 ),
-                                                              ),
-                                                              focusedBorder:
-                                                                  OutlineInputBorder(
-                                                                borderRadius:
-                                                                    BorderRadius
-                                                                        .circular(
-                                                                            8),
-                                                                borderSide:
-                                                                    BorderSide(
-                                                                  color: Colors
-                                                                      .red
-                                                                      .shade400,
-                                                                  width: 2,
+                                                                border:
+                                                                    OutlineInputBorder(
+                                                                  borderRadius:
+                                                                      BorderRadius
+                                                                          .circular(
+                                                                              8),
+                                                                  borderSide:
+                                                                      BorderSide(
+                                                                    color: Colors
+                                                                        .grey
+                                                                        .shade300,
+                                                                  ),
                                                                 ),
+                                                                focusedBorder:
+                                                                    OutlineInputBorder(
+                                                                  borderRadius:
+                                                                      BorderRadius
+                                                                          .circular(
+                                                                              8),
+                                                                  borderSide:
+                                                                      BorderSide(
+                                                                    color: Colors
+                                                                        .red
+                                                                        .shade400,
+                                                                    width: 2,
+                                                                  ),
+                                                                ),
+                                                                filled: true,
+                                                                fillColor:
+                                                                    Colors
+                                                                        .white,
+                                                                contentPadding:
+                                                                    const EdgeInsets
+                                                                        .all(
+                                                                        12),
                                                               ),
-                                                              filled: true,
-                                                              fillColor:
-                                                                  Colors.white,
-                                                              contentPadding:
-                                                                  const EdgeInsets
-                                                                      .all(12),
+                                                              validator:
+                                                                  (value) {
+                                                                if (query['checked'] ==
+                                                                        'NOK' &&
+                                                                    (value ==
+                                                                            null ||
+                                                                        value
+                                                                            .trim()
+                                                                            .isEmpty)) {
+                                                                  return 'Description is required for NOK items';
+                                                                }
+                                                                return null;
+                                                              },
                                                             ),
-                                                            validator: (value) {
-                                                              if (query['checked'] ==
-                                                                      'NOK' &&
-                                                                  (value ==
-                                                                          null ||
-                                                                      value
-                                                                          .trim()
-                                                                          .isEmpty)) {
-                                                                return 'Description is required for NOK items';
-                                                              }
-                                                              return null;
-                                                            },
-                                                          ),
-                                                          const SizedBox(
-                                                              height: 12),
-                                                          Row(
-                                                            children: [
-                                                              Text(
-                                                                'Capture Evidence',
-                                                                style:
-                                                                    TextStyle(
-                                                                  fontSize: 13,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w600,
-                                                                  color: Colors
-                                                                      .red
-                                                                      .shade700,
+                                                            const SizedBox(
+                                                                height: 12),
+                                                            Row(
+                                                              children: [
+                                                                Text(
+                                                                  'Capture Evidence',
+                                                                  style:
+                                                                      TextStyle(
+                                                                    fontSize:
+                                                                        13,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w600,
+                                                                    color: Colors
+                                                                        .red
+                                                                        .shade700,
+                                                                  ),
                                                                 ),
-                                                              ),
-                                                              const Spacer(),
-                                                              GestureDetector(
-                                                                onTap: () =>
-                                                                    _captureImage(
-                                                                        index),
-                                                                child:
-                                                                    Container(
-                                                                  padding:
-                                                                      const EdgeInsets
-                                                                          .all(
-                                                                          10),
-                                                                  decoration:
-                                                                      BoxDecoration(
-                                                                    color: query['image'] !=
-                                                                            null
-                                                                        ? Colors
-                                                                            .green
-                                                                            .shade100
-                                                                        : Colors
-                                                                            .grey
-                                                                            .shade100,
-                                                                    borderRadius:
-                                                                        BorderRadius
-                                                                            .circular(6),
-                                                                    border:
-                                                                        Border
+                                                                const Spacer(),
+                                                                GestureDetector(
+                                                                  onTap: () =>
+                                                                      _captureImage(
+                                                                          index),
+                                                                  child:
+                                                                      Container(
+                                                                    padding:
+                                                                        const EdgeInsets
                                                                             .all(
+                                                                            10),
+                                                                    decoration:
+                                                                        BoxDecoration(
                                                                       color: query['image'] !=
                                                                               null
                                                                           ? Colors
                                                                               .green
-                                                                              .shade300
+                                                                              .shade100
                                                                           : Colors
                                                                               .grey
-                                                                              .shade300,
-                                                                      width: 1,
-                                                                    ),
-                                                                  ),
-                                                                  child: Row(
-                                                                    mainAxisSize:
-                                                                        MainAxisSize
-                                                                            .min,
-                                                                    children: [
-                                                                      Icon(
-                                                                        query['image'] !=
-                                                                                null
-                                                                            ? Icons.check_circle
-                                                                            : Icons.camera_alt,
+                                                                              .shade100,
+                                                                      borderRadius:
+                                                                          BorderRadius.circular(
+                                                                              6),
+                                                                      border:
+                                                                          Border
+                                                                              .all(
                                                                         color: query['image'] !=
                                                                                 null
-                                                                            ? Colors.green.shade600
-                                                                            : Colors.grey.shade600,
-                                                                        size:
-                                                                            18,
+                                                                            ? Colors.green.shade300
+                                                                            : Colors.grey.shade300,
+                                                                        width:
+                                                                            1,
                                                                       ),
-                                                                      const SizedBox(
-                                                                          width:
-                                                                              6),
-                                                                      Text(
-                                                                        query['image'] !=
-                                                                                null
-                                                                            ? 'Captured'
-                                                                            : 'Camera',
-                                                                        style:
-                                                                            TextStyle(
+                                                                    ),
+                                                                    child: Row(
+                                                                      mainAxisSize:
+                                                                          MainAxisSize
+                                                                              .min,
+                                                                      children: [
+                                                                        Icon(
+                                                                          query['image'] != null
+                                                                              ? Icons.check_circle
+                                                                              : Icons.camera_alt,
                                                                           color: query['image'] != null
                                                                               ? Colors.green.shade600
                                                                               : Colors.grey.shade600,
-                                                                          fontSize:
-                                                                              13,
-                                                                          fontWeight:
-                                                                              FontWeight.w500,
+                                                                          size:
+                                                                              18,
                                                                         ),
-                                                                      ),
-                                                                    ],
+                                                                        const SizedBox(
+                                                                            width:
+                                                                                6),
+                                                                        Text(
+                                                                          query['image'] != null
+                                                                              ? 'Captured'
+                                                                              : 'Camera',
+                                                                          style:
+                                                                              TextStyle(
+                                                                            color: query['image'] != null
+                                                                                ? Colors.green.shade600
+                                                                                : Colors.grey.shade600,
+                                                                            fontSize:
+                                                                                13,
+                                                                            fontWeight:
+                                                                                FontWeight.w500,
+                                                                          ),
+                                                                        ),
+                                                                      ],
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                            if (query[
+                                                                    'image'] !=
+                                                                null) ...[
+                                                              const SizedBox(
+                                                                  height: 10),
+                                                              Container(
+                                                                height: 80,
+                                                                width: double
+                                                                    .infinity,
+                                                                decoration:
+                                                                    BoxDecoration(
+                                                                  borderRadius:
+                                                                      BorderRadius
+                                                                          .circular(
+                                                                              6),
+                                                                  border: Border
+                                                                      .all(
+                                                                    color: Colors
+                                                                        .grey
+                                                                        .shade300,
+                                                                  ),
+                                                                ),
+                                                                child:
+                                                                    ClipRRect(
+                                                                  borderRadius:
+                                                                      BorderRadius
+                                                                          .circular(
+                                                                              6),
+                                                                  child: Image
+                                                                      .file(
+                                                                    query[
+                                                                        'image'],
+                                                                    fit: BoxFit
+                                                                        .cover,
                                                                   ),
                                                                 ),
                                                               ),
                                                             ],
-                                                          ),
-                                                          if (query['image'] !=
-                                                              null) ...[
-                                                            const SizedBox(
-                                                                height: 10),
-                                                            Container(
-                                                              height: 80,
-                                                              width: double
-                                                                  .infinity,
-                                                              decoration:
-                                                                  BoxDecoration(
-                                                                borderRadius:
-                                                                    BorderRadius
-                                                                        .circular(
-                                                                            6),
-                                                                border:
-                                                                    Border.all(
-                                                                  color: Colors
-                                                                      .grey
-                                                                      .shade300,
-                                                                ),
-                                                              ),
-                                                              child: ClipRRect(
-                                                                borderRadius:
-                                                                    BorderRadius
-                                                                        .circular(
-                                                                            6),
-                                                                child:
-                                                                    Image.file(
-                                                                  query[
-                                                                      'image'],
-                                                                  fit: BoxFit
-                                                                      .cover,
-                                                                ),
-                                                              ),
-                                                            ),
                                                           ],
-                                                        ],
+                                                        ),
                                                       ),
                                                     ),
                                                   ],

@@ -261,6 +261,8 @@ class _QcCategoriesState extends State<QcCategories> {
                                     MaterialPageRoute(
                                       builder: (context) =>
                                           JobCardQuestionsTemplate(
+                                        lotNo: widget.res['data']['vehicledata']
+                                            ['lot_no'],
                                         vehicle_receiving_item:
                                             widget.res['data']['vehicledata']
                                                 ['vehicle_receiving_item'],

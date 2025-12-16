@@ -391,13 +391,6 @@ class _NearMissListPageState extends State<NearMissListPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 12,
-            offset: Offset(0, -6),
-          ),
-        ],
       ),
       child: Column(
         children: [
@@ -763,8 +756,10 @@ class _NearMissListPageState extends State<NearMissListPage> {
     // Get previous month date range
     DateTime now = DateTime.now();
     DateTime previousMonth = DateTime(now.year, now.month - 1, 1);
-    DateTime startOfPreviousMonth = DateTime(previousMonth.year, previousMonth.month, 1);
-    DateTime endOfPreviousMonth = DateTime(previousMonth.year, previousMonth.month + 1, 0);
+    DateTime startOfPreviousMonth =
+        DateTime(previousMonth.year, previousMonth.month, 1);
+    DateTime endOfPreviousMonth =
+        DateTime(previousMonth.year, previousMonth.month + 1, 0);
 
     // Count reports by user for previous month only
     Map<String, Map<String, dynamic>> userCounts = {};
@@ -773,11 +768,11 @@ class _NearMissListPageState extends State<NearMissListPage> {
       try {
         // Parse the record date
         DateTime recordDate = DateFormat('yyyy-MM-dd').parse(record.date);
-        
+
         // Check if record is from previous month
-        if (recordDate.isAfter(startOfPreviousMonth.subtract(Duration(days: 1))) &&
+        if (recordDate
+                .isAfter(startOfPreviousMonth.subtract(Duration(days: 1))) &&
             recordDate.isBefore(endOfPreviousMonth.add(Duration(days: 1)))) {
-          
           String userId = record.createdBy.email;
 
           if (userCounts.containsKey(userId)) {
@@ -926,13 +921,6 @@ class _NearMissListPageState extends State<NearMissListPage> {
       floatingActionButton: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: theme.primaryColor.withOpacity(0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
         ),
         child: FloatingActionButton(
           foregroundColor: Colors.white,
@@ -1138,13 +1126,6 @@ class _NearMissListPageState extends State<NearMissListPage> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 20,
-                      offset: Offset(0, 10),
-                    ),
-                  ],
                 ),
                 child: CircularProgressIndicator(
                   strokeWidth: 3,
@@ -1394,13 +1375,6 @@ class _NearMissListPageState extends State<NearMissListPage> {
           color: riskColor.withOpacity(0.3),
           width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: riskColor.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),

@@ -29,6 +29,18 @@ class _ClaimFormState extends State<ClaimForm> {
   late TextEditingController _descriptionController;
   late TextEditingController _processDescriptionController;
 
+  // Dropdown controllers
+  late SingleValueDropDownController _issueCategoryController;
+  late SingleValueDropDownController _issueTypeController;
+  late SingleValueDropDownController _reasonCodeController;
+  late SingleValueDropDownController _defectClassificationController;
+
+  // Data models for searchable dropdowns
+  List<DropDownValueModel> _issueCategoryItems = [];
+  List<DropDownValueModel> _issueTypeItems = [];
+  List<DropDownValueModel> _reasonCodeItems = [];
+  List<DropDownValueModel> _defectClassificationItems = [];
+
   List<dynamic> clients = [];
   List<dynamic> checklist = [];
   List<List<dynamic>> checklistData = [];
@@ -182,6 +194,15 @@ class _ClaimFormState extends State<ClaimForm> {
     _descriptionController = TextEditingController();
     _processDescriptionController = TextEditingController();
 
+    // Initialize dropdown controllers
+    _issueCategoryController = SingleValueDropDownController();
+    _issueTypeController = SingleValueDropDownController();
+    _reasonCodeController = SingleValueDropDownController();
+    _defectClassificationController = SingleValueDropDownController();
+
+    // Initialize dropdown data models
+    _initializeDropdownData();
+
     getuserdata().then((value) {
       user = jsonDecode(value);
     });
@@ -194,9 +215,157 @@ class _ClaimFormState extends State<ClaimForm> {
     _defectCodeController.dispose();
     _descriptionController.dispose();
     _processDescriptionController.dispose();
+
+    // Dispose dropdown controllers
+    _issueCategoryController.dispose();
+    _issueTypeController.dispose();
+    _reasonCodeController.dispose();
+    _defectClassificationController.dispose();
+
     _vehicleFieldFocus.dispose();
     _partFieldFocus.dispose();
     super.dispose();
+  }
+
+  void _initializeDropdownData() {
+    // Initialize issue categories
+    _issueCategoryItems = _issueCategories
+        .map((category) => DropDownValueModel(name: category, value: category))
+        .toList();
+
+    // Initialize reason codes
+    _reasonCodeItems = _reasonCodes
+        .map((code) => DropDownValueModel(name: code, value: code))
+        .toList();
+
+    // Initialize defect classifications
+    _defectClassificationItems = _defectClassifications
+        .map((classification) =>
+            DropDownValueModel(name: classification, value: classification))
+        .toList();
+
+    // Issue types will be updated when category is selected
+    _issueTypeItems = [];
+  }
+
+  void _updateIssueTypes(String? selectedCategory) {
+    if (selectedCategory != null &&
+        _issueCategoriesAndTypes.containsKey(selectedCategory)) {
+      _issueTypeItems = _issueCategoriesAndTypes[selectedCategory]!
+          .map((type) => DropDownValueModel(name: type, value: type))
+          .toList();
+    } else {
+      _issueTypeItems = [];
+    }
+  }
+
+  Widget _buildSearchableDropdown({
+    required String label,
+    required IconData icon,
+    required String hint,
+    required SingleValueDropDownController controller,
+    required List<DropDownValueModel> items,
+    required ValueSetter<dynamic> onChanged,
+    bool enabled = true,
+    String? Function(String?)? validator,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: enabled
+                      ? mycolor.withOpacity(0.1)
+                      : Colors.grey.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Icon(
+                  icon,
+                  size: 16,
+                  color: enabled ? mycolor : Colors.grey,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: enabled ? Colors.grey[800] : Colors.grey[500],
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: enabled
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : [],
+          ),
+          child: DropDownTextField(
+            controller: controller,
+            clearOption: true,
+            enableSearch: true,
+            clearIconProperty: IconProperty(color: Colors.grey),
+            searchTextStyle: const TextStyle(color: Colors.black87),
+            searchDecoration: InputDecoration(
+              hintText: "Search $label...",
+              hintStyle: TextStyle(color: Colors.grey.shade500),
+              border: InputBorder.none,
+              prefixIcon: const Icon(Icons.search, color: Colors.grey),
+            ),
+            validator: validator,
+            dropDownItemCount: items.length > 6 ? 6 : items.length,
+            dropDownList: items,
+            onChanged: onChanged,
+            textFieldDecoration: InputDecoration(
+              filled: true,
+              fillColor: enabled ? Colors.grey.shade50 : Colors.grey.shade100,
+              hintText: hint,
+              hintStyle: TextStyle(color: Colors.grey.shade500),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade200),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade200),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: mycolor, width: 2),
+              ),
+              disabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
+              suffixIcon: Icon(
+                Icons.keyboard_arrow_down,
+                color: enabled ? mycolor : Colors.grey,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   void storeChecklist() {
@@ -639,35 +808,35 @@ class _ClaimFormState extends State<ClaimForm> {
                     const SizedBox(height: 24),
 
                     // Issue Category Dropdown
-                    _buildModernDropdown(
+                    _buildSearchableDropdown(
                       label: 'Issue Category',
                       icon: Icons.category_outlined,
                       hint: 'Select issue category',
-                      value: _selectedIssueCategory,
-                      items: _issueCategories,
-                      onChanged: (value) {
+                      controller: _issueCategoryController,
+                      items: _issueCategoryItems,
+                      onChanged: (val) {
                         setState(() {
-                          _selectedIssueCategory = value;
+                          _selectedIssueCategory = val.value;
                           _selectedIssueType =
                               null; // Reset issue type when category changes
+                          _issueTypeController
+                              .clearDropDown(); // Clear issue type controller
+                          _updateIssueTypes(_selectedIssueCategory);
                         });
                       },
                     ),
                     const SizedBox(height: 24),
 
                     // Issue Type Dropdown (depends on category)
-                    _buildModernDropdown(
+                    _buildSearchableDropdown(
                       label: 'Issue Type',
                       icon: Icons.list_alt_outlined,
                       hint: 'Select issue type',
-                      value: _selectedIssueType,
-                      items: _selectedIssueCategory != null
-                          ? _issueCategoriesAndTypes[_selectedIssueCategory!] ??
-                              []
-                          : [],
-                      onChanged: (value) {
+                      controller: _issueTypeController,
+                      items: _issueTypeItems,
+                      onChanged: (val) {
                         setState(() {
-                          _selectedIssueType = value;
+                          _selectedIssueType = val.value;
                         });
                       },
                       enabled: _selectedIssueCategory != null,
@@ -675,30 +844,30 @@ class _ClaimFormState extends State<ClaimForm> {
                     const SizedBox(height: 24),
 
                     // Reason Code Dropdown
-                    _buildModernDropdown(
+                    _buildSearchableDropdown(
                       label: 'Reason Code',
                       icon: Icons.code_outlined,
                       hint: 'Select reason code',
-                      value: _selectedReasonCode,
-                      items: _reasonCodes,
-                      onChanged: (value) {
+                      controller: _reasonCodeController,
+                      items: _reasonCodeItems,
+                      onChanged: (val) {
                         setState(() {
-                          _selectedReasonCode = value;
+                          _selectedReasonCode = val.value;
                         });
                       },
                     ),
                     const SizedBox(height: 24),
 
                     // Defect Classification Dropdown
-                    _buildModernDropdown(
+                    _buildSearchableDropdown(
                       label: 'Defect Classification',
                       icon: Icons.class_outlined,
                       hint: 'Select defect classification',
-                      value: _selectedDefectClassification,
-                      items: _defectClassifications,
-                      onChanged: (value) {
+                      controller: _defectClassificationController,
+                      items: _defectClassificationItems,
+                      onChanged: (val) {
                         setState(() {
-                          _selectedDefectClassification = value;
+                          _selectedDefectClassification = val.value;
                         });
                       },
                     ),
@@ -925,117 +1094,6 @@ class _ClaimFormState extends State<ClaimForm> {
         _imageFile = File(image.path);
       });
     }
-  }
-
-  Widget _buildModernDropdown({
-    required String label,
-    required IconData icon,
-    required String hint,
-    required String? value,
-    required List<String> items,
-    required ValueChanged<String?> onChanged,
-    bool enabled = true,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 12),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: enabled
-                      ? mycolor.withOpacity(0.1)
-                      : Colors.grey.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Icon(
-                  icon,
-                  size: 16,
-                  color: enabled ? mycolor : Colors.grey,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: enabled ? Colors.grey[800] : Colors.grey[500],
-                  letterSpacing: 0.3,
-                ),
-              ),
-            ],
-          ),
-        ),
-        Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: enabled
-                ? [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : [],
-          ),
-          child: DropdownButtonFormField<String>(
-            value: value,
-            hint: Text(
-              hint,
-              style: TextStyle(
-                color: Colors.grey[500],
-              ),
-            ),
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: enabled ? Colors.grey.shade50 : Colors.grey.shade100,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey.shade200),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey.shade200),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: mycolor, width: 2),
-              ),
-              disabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey.shade300),
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 16,
-              ),
-            ),
-            items: enabled
-                ? items.map((String item) {
-                    return DropdownMenuItem<String>(
-                      value: item,
-                      child: Text(
-                        item,
-                        style: const TextStyle(fontSize: 14),
-                      ),
-                    );
-                  }).toList()
-                : [],
-            onChanged: enabled ? onChanged : null,
-            isExpanded: true,
-            icon: Icon(
-              Icons.keyboard_arrow_down,
-              color: enabled ? mycolor : Colors.grey,
-            ),
-          ),
-        ),
-      ],
-    );
   }
 
   Widget _buildModernTextField({

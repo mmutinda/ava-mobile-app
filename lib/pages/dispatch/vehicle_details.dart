@@ -7,8 +7,9 @@ import 'package:intl/intl.dart';
 
 class VehicleDetails extends StatefulWidget {
   final String vehicleId;
+  final String vin_no;
 
-  const VehicleDetails({Key? key, required this.vehicleId}) : super(key: key);
+  const VehicleDetails({Key? key, required this.vehicleId, required this.vin_no}) : super(key: key);
 
   @override
   _VehicleDetailsState createState() => _VehicleDetailsState();
@@ -227,7 +228,7 @@ class _VehicleDetailsState extends State<VehicleDetails>
                     ),
                   ),
                   Text(
-                    widget.vehicleId,
+                    widget.vin_no,
                     style: TextStyle(
                       fontWeight: FontWeight.w500,
                       fontSize: 12,

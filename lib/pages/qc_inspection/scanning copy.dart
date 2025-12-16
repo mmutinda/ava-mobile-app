@@ -208,6 +208,7 @@ class _ScanningState extends State<Scanning> {
         }
         if (widget.shopId == '17') {
           JobCardQuestionsTemplate(
+            lotNo: res['data']['vehicledata']['lot_no'],
             chasis_no: res['data']['vehicledata']['vin_no'],
             shop_name: 'EOL station',
             station_id: widget.subStationId,
@@ -968,6 +969,7 @@ class _ScanningState extends State<Scanning> {
                                             return;
                                           } else if (widget.shopId == '17') {
                                             JobCardQuestionsTemplate(
+                                              lotNo: res['data']['vehicledata']['lot_no'],
                                               chasis_no: res['data']
                                                   ['vehicledata']['vin_no'],
                                               shop_name: 'EOL station',

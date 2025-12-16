@@ -97,27 +97,27 @@ class ChecklistItemCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isOK
-              ? [Colors.green.shade50, Colors.green.shade100]
-              : [Colors.red.shade50, Colors.red.shade100],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        // gradient: LinearGradient(
+        //   colors: isOK
+        //       ? [Colors.green.shade50, Colors.green.shade100]
+        //       : [Colors.red.shade50, Colors.red.shade100],
+        //   begin: Alignment.topLeft,
+        //   end: Alignment.bottomRight,
+        // ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isOK ? Colors.green.shade300 : Colors.red.shade300,
           width: 1.5,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: isOK
-                ? Colors.green.withOpacity(0.1)
-                : Colors.red.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        // boxShadow: [
+        //   BoxShadow(
+        //     color: isOK
+        //         ? Colors.green.withOpacity(0.1)
+        //         : Colors.red.withOpacity(0.1),
+        //     blurRadius: 8,
+        //     offset: const Offset(0, 2),
+        //   ),
+        // ],
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -238,35 +238,40 @@ class ChecklistItemCard extends StatelessWidget {
               ],
             ),
 
-            // Show description for NOK items
+            // Show description and image for NOK items
             if (!isOK &&
-                checklistItem['description'] != null &&
-                checklistItem['description'].toString().isNotEmpty) ...[
+                ((checklistItem['description'] != null &&
+                        checklistItem['description'].toString().isNotEmpty) ||
+                    (checklistItem['images'] != null &&
+                        checklistItem['images'].toString().isNotEmpty))) ...[
               const SizedBox(height: 12),
               Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.red.shade50,
+                  color: Colors.white70,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
                     color: Colors.red.shade200,
                     width: 1,
                   ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+                child: Theme(
+                  data: Theme.of(context)
+                      .copyWith(dividerColor: Colors.transparent),
+                  child: ExpansionTile(
+                    initiallyExpanded: false,
+                    tilePadding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                    title: Row(
                       children: [
                         Icon(
-                          Icons.description_outlined,
+                          Icons.warning_outlined,
                           color: Colors.red.shade600,
                           size: 16,
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          'Issue Description',
+                          'Issue Details',
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -275,130 +280,149 @@ class ChecklistItemCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      checklistItem['description'].toString(),
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.red.shade800,
-                        height: 1.3,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-
-            // Show image for NOK items if available
-            if (!isOK &&
-                checklistItem['images'] != null &&
-                checklistItem['images'].toString().isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Colors.red.shade200,
-                    width: 1,
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.red.shade50,
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(8),
-                          topRight: Radius.circular(8),
-                        ),
-                      ),
-                      child: Row(
+                    iconColor: Colors.red.shade600,
+                    collapsedIconColor: Colors.red.shade600,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(
-                            Icons.image_outlined,
-                            color: Colors.red.shade600,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Evidence Image',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.red.shade600,
+                          // Issue Description
+                          if (checklistItem['description'] != null &&
+                              checklistItem['description']
+                                  .toString()
+                                  .isNotEmpty) ...[
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.description_outlined,
+                                  color: Colors.red.shade600,
+                                  size: 14,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Description',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.red.shade600,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
+                            const SizedBox(height: 6),
+                            Text(
+                              checklistItem['description'].toString(),
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.red.shade800,
+                                height: 1.3,
+                              ),
+                            ),
+                          ],
+                          // Evidence Image
+                          if (checklistItem['images'] != null &&
+                              checklistItem['images']
+                                  .toString()
+                                  .isNotEmpty) ...[
+                            if (checklistItem['description'] != null &&
+                                checklistItem['description']
+                                    .toString()
+                                    .isNotEmpty)
+                              const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.image_outlined,
+                                  color: Colors.red.shade600,
+                                  size: 14,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Evidence',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.red.shade600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: GestureDetector(
+                                onTap: () {
+                                  // Show full screen image
+                                  // _showFullScreenImage(
+                                  //     context, checklistItem['images'].toString());
+                                },
+                                child: Container(
+                                  width: double.infinity,
+                                  height: 120,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade100,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Colors.red.shade200,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Image.network(
+                                    '${Api.qc_image}${checklistItem['images']}',
+                                    fit: BoxFit.cover,
+                                    loadingBuilder:
+                                        (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return Center(
+                                        child: CircularProgressIndicator(
+                                          value: loadingProgress
+                                                      .expectedTotalBytes !=
+                                                  null
+                                              ? loadingProgress
+                                                      .cumulativeBytesLoaded /
+                                                  loadingProgress
+                                                      .expectedTotalBytes!
+                                              : null,
+                                          color: Colors.red.shade400,
+                                          strokeWidth: 2,
+                                        ),
+                                      );
+                                    },
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        width: double.infinity,
+                                        height: 120,
+                                        color: Colors.grey.shade200,
+                                        child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              Icons.error_outline,
+                                              color: Colors.grey.shade500,
+                                              size: 24,
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              'Image not available',
+                                              style: TextStyle(
+                                                color: Colors.grey.shade500,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
-                    ),
-                    ClipRRect(
-                      borderRadius: const BorderRadius.only(
-                        bottomLeft: Radius.circular(8),
-                        bottomRight: Radius.circular(8),
-                      ),
-                      child: GestureDetector(
-                        onTap: () {
-                          // Show full screen image
-                          // _showFullScreenImage(
-                          //     context, checklistItem['images'].toString());
-                        },
-                        child: Container(
-                          width: double.infinity,
-                          height: 120,
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                          ),
-                          child: Image.network(
-                            '${Api.qc_image}${checklistItem['images']}',
-                            fit: BoxFit.cover,
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return Center(
-                                child: CircularProgressIndicator(
-                                  value: loadingProgress.expectedTotalBytes !=
-                                          null
-                                      ? loadingProgress.cumulativeBytesLoaded /
-                                          loadingProgress.expectedTotalBytes!
-                                      : null,
-                                  color: Colors.red.shade400,
-                                  strokeWidth: 2,
-                                ),
-                              );
-                            },
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                width: double.infinity,
-                                height: 120,
-                                color: Colors.grey.shade200,
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.error_outline,
-                                      color: Colors.grey.shade500,
-                                      size: 24,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Image not available',
-                                      style: TextStyle(
-                                        color: Colors.grey.shade500,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ],

@@ -231,14 +231,6 @@ class _QFLThreeListState extends State<QFLThreeList> {
       floatingActionButton: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(15),
-          boxShadow: [
-            BoxShadow(
-              color: mycolor.withOpacity(0.3),
-              spreadRadius: 2,
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
         ),
         child: FloatingActionButton(
           foregroundColor: Colors.white,
@@ -372,13 +364,6 @@ class _QFLThreeListState extends State<QFLThreeList> {
                               ],
                             ),
                             shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.red.withOpacity(0.2),
-                                blurRadius: 8,
-                                offset: Offset(0, 4),
-                              ),
-                            ],
                           ),
                           child: Icon(
                             Icons.error_outline_rounded,
@@ -414,13 +399,6 @@ class _QFLThreeListState extends State<QFLThreeList> {
                               colors: [mycolor, mycolor.withOpacity(0.8)],
                             ),
                             borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: mycolor.withOpacity(0.3),
-                                blurRadius: 8,
-                                offset: Offset(0, 4),
-                              ),
-                            ],
                           ),
                           child: ElevatedButton.icon(
                             onPressed: _loadData,
@@ -527,13 +505,6 @@ class _QFLThreeListState extends State<QFLThreeList> {
           color: scoreColor.withOpacity(0.3),
           width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: scoreColor.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),

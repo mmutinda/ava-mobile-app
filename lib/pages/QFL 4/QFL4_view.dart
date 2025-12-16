@@ -11,7 +11,12 @@ class QFL4_View extends StatefulWidget {
   final dynamic vehicleVin;
   final dynamic vehicleName;
 
-  const QFL4_View({super.key, required this.vehicleId, required this.modelId, required this.vehicleVin, required this.vehicleName});
+  const QFL4_View(
+      {super.key,
+      required this.vehicleId,
+      required this.modelId,
+      required this.vehicleVin,
+      required this.vehicleName});
 
   @override
   State<QFL4_View> createState() => _QFL4_ViewState();
@@ -44,7 +49,7 @@ class _QFL4_ViewState extends State<QFL4_View> {
         shops = response["data"]["shop"];
       }
     } catch (e) {
-      errorText = "Error loading shops: $e";
+      errorText = "Error loading data: $e";
     } finally {
       setState(() => isLoading = false);
     }
@@ -74,7 +79,7 @@ class _QFL4_ViewState extends State<QFL4_View> {
     } catch (e) {
       setState(() {
         isLoading = false;
-        errorText = "Failed to load user data: $e";
+        errorText = "Failed to load data: $e";
       });
       return;
     }
@@ -100,13 +105,13 @@ class _QFL4_ViewState extends State<QFL4_View> {
       if (shopResponse != null && shopResponse["data"]["shop"] != null) {
         shops = shopResponse["data"]["shop"];
       } else {
-        errorText += "Shop data missing.\n";
+        errorText += shopResponse?["msg"] ?? "Data missing.\n";
       }
 
       if (vehicleResponse != null && vehicleResponse["data"] != null) {
         data = vehicleResponse["data"];
       } else {
-        errorText += "Vehicle data missing.\n";
+        errorText += vehicleResponse?["msg"] ?? "Data missing.\n";
       }
     } catch (e) {
       errorText += "Unexpected error: $e\n";
@@ -255,7 +260,7 @@ class _QFL4_ViewState extends State<QFL4_View> {
             ),
             const SizedBox(height: 24),
             Text(
-              'Oops! Something went wrong',
+              'Oops!',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
@@ -364,7 +369,6 @@ class _QFL4_ViewState extends State<QFL4_View> {
                         modelId: widget.modelId,
                         shops: shops,
                         vehicleVin: widget.vehicleVin,
-                      
                       ),
                     ),
                   ).then((value) {

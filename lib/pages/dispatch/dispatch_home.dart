@@ -469,8 +469,9 @@ class _DispatchHomeState extends State<DispatchHome> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) =>
-                  VehicleDetails(vehicleId: unit['id']?.toString() ?? ''),
+              builder: (context) => VehicleDetails(
+                  vehicleId: unit['id']?.toString() ?? '',
+                  vin_no: unit['vin_no']?.toString() ?? ''),
             ),
           );
         },

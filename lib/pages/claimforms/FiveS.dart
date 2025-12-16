@@ -205,13 +205,6 @@ class _DocumentListPageState extends State<DocumentListPage> {
       floatingActionButton: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: theme.primaryColor.withOpacity(0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
         ),
         child: FloatingActionButton(
           onPressed: () {
@@ -552,13 +545,6 @@ class _DocumentListPageState extends State<DocumentListPage> {
           color: scoreColor.withOpacity(0.3),
           width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: scoreColor.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
@@ -858,13 +844,6 @@ class _DocumentListPageState extends State<DocumentListPage> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.orange.withOpacity(0.3),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
                     ),
                     child: const Icon(
                       Icons.emoji_events_rounded,
@@ -935,13 +914,6 @@ class _DocumentListPageState extends State<DocumentListPage> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.orange.withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,

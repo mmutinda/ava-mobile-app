@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:awesome_top_snackbar/awesome_top_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
@@ -21,6 +22,7 @@ class JobCardQuestionsTemplate extends StatefulWidget {
   final categoryName;
   final shop_name;
   final chasis_no;
+  final lotNo;
   final station_id;
   final vehicle_receiving_item;
 
@@ -30,6 +32,7 @@ class JobCardQuestionsTemplate extends StatefulWidget {
     this.vehicle_id,
     this.shop_id,
     this.categoryName,
+    required this.lotNo,
     required this.shop_name,
     required this.chasis_no,
     this.station_id,
@@ -62,6 +65,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
   Map<int, File> images = {};
   Map<int, Map<String, dynamic>> claimData =
       {}; // Track claim data for NOK answers
+  Map<int, String> staffNumbers = {}; // Track staff numbers for each question
   String haserror = '';
   List questions = [];
   var Category = {};
@@ -76,48 +80,97 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
   var jobCardId;
   int? selectedNextStationId; // Changed to int? for better type safety
 
-  // Check if there are any changes made to the current answers
-  bool get hasChangesToSave {
+  // Check if checksheet is already submitted (all questions have previous answers)
+  bool get isChecksheetSubmitted {
     if (questions.isEmpty) return false;
 
     for (var question in questions) {
-      final int questionId = question["id"];
-      var previousAnswer = question['answer_given'] ?? '';
-
-      if (question["quiz_type"] == "multiple") {
-        String? currentAnswer = multipleValue[questionId];
-        if (currentAnswer != null && currentAnswer != previousAnswer) {
-          return true; // Found a changed answer
-        }
-      } else if (question["quiz_type"] == "single") {
-        String? currentAnswer = singleValues[questionId];
-        if (currentAnswer != null && currentAnswer != previousAnswer) {
-          return true; // Found a changed answer
-        }
+      var answerGiven = question['answer_given'] ?? '';
+      if (answerGiven.isEmpty) {
+        return false; // Found a question without previous answer
       }
     }
-    return false; // No changes detected
+    return true; // All questions have previous answers
   }
 
-  // Check if all required questions are answered (for validation)
-  bool get areAllQuestionsAnswered {
-    if (questions.isEmpty) return false;
+  // Generate a summary of all answered questions
+  List<Map<String, dynamic>> generateAnswerSummary() {
+    List<Map<String, dynamic>> summary = [];
 
-    for (var question in questions) {
+    for (int index = 0; index < questions.length; index++) {
+      var question = questions[index];
       final int questionId = question["id"];
-      bool hasAnswer = false;
+      String questionText = question['query_name'] ?? 'No question text';
+
+      String answer = '';
+      String answerType = '';
+      List<String> defects = [];
+      String defectCategory = '';
+      String description = '';
+      String staffNo = '';
+      bool hasClaim = false;
 
       if (question["quiz_type"] == "multiple") {
-        hasAnswer = multipleValue[questionId] != null;
+        String? value = multipleValue[questionId];
+        List<dynamic>? values = multipleValues[questionId];
+        String? category = multipleDefectCategory[questionId];
+
+        if (value != null) {
+          answer = value;
+          answerType = 'Multiple Choice';
+
+          if (values != null && values.isNotEmpty) {
+            defects = values.map((e) => e.toString()).toList();
+          }
+
+          if (category != null && category.isNotEmpty) {
+            defectCategory = category;
+          }
+
+          description = DescipTextValues[questionId] ?? '';
+        }
       } else if (question["quiz_type"] == "single") {
-        hasAnswer = singleValues[questionId] != null;
+        String? value = singleValues[questionId];
+        String? category = singleDefectCategory[questionId];
+
+        if (value != null) {
+          answer = value;
+          answerType = 'Single Choice';
+
+          if (category != null && category.isNotEmpty) {
+            defectCategory = category;
+          }
+
+          description = DescipTextValues[questionId] ?? '';
+          staffNo = staffNumbers[questionId] ?? '';
+
+          // Check if there's claim data for NOK answers
+          if (value == "NOK" && claimData.containsKey(questionId)) {
+            hasClaim = true;
+          }
+        }
       }
 
-      if (!hasAnswer) {
-        return false; // Found an unanswered question
+      // Only add questions that have been answered
+      if (answer.isNotEmpty) {
+        summary.add({
+          'index': index + 1,
+          'questionText': questionText,
+          'answer': answer,
+          'answerType': answerType,
+          'defects': defects,
+          'defectCategory': defectCategory,
+          'description': description,
+          'staffNo': staffNo,
+          'hasClaim': hasClaim,
+          'hasImage': images.containsKey(questionId),
+          'hasUsers': selectedUsers.containsKey(questionId) &&
+              (selectedUsers[questionId]?.isNotEmpty ?? false),
+        });
       }
     }
-    return true; // All questions are answered
+
+    return summary;
   }
 
   @override
@@ -169,9 +222,48 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
     }
   }
 
+  // Check if any questions have been answered
+  bool hasAnyAnswers() {
+    // Check single questions
+    for (var entry in singleValues.entries) {
+      if (entry.value.trim().isNotEmpty) {
+        return true;
+      }
+    }
+
+    // Check multiple questions
+    for (var entry in multipleValue.entries) {
+      if (entry.value.trim().isNotEmpty) {
+        return true;
+      }
+    }
+
+    // Check numeric answers
+    for (var entry in numericValues.entries) {
+      if (entry.value.trim().isNotEmpty) {
+        return true;
+      }
+    }
+
+    // Check open text answers
+    for (var entry in openTextValues.entries) {
+      if (entry.value.trim().isNotEmpty) {
+        return true;
+      }
+    }
+
+    // Check multiple values (list type)
+    for (var entry in multipleValues.entries) {
+      if (entry.value.isNotEmpty) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
-    print('Substation data: $claimData');
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -456,6 +548,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                 } else if (get["quiz_type"] == "single") {
                                   //single
                                   questionWidget = SingleQuestion(
+                                      lotNo: widget.lotNo,
                                       scandata: get['parts_to_scan'].toString().toLowerCase() ==
                                               'engine'
                                           ? widget.vehicle_receiving_item[
@@ -551,6 +644,15 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                         var qid = get['id'];
                                         handleClaimData(qid, claimDataResult);
                                       },
+                                      initialStaffNo: user['data'] != null ? user['data']['staff_no'] : '',
+                                      onStaffNoChanged: (String value) {
+                                        var qid = get['id'];
+                                        setState(() {
+                                          staffNumbers[qid] = value;
+                                          print(
+                                              'Staff number changed: $value for question $qid');
+                                        });
+                                      },
                                       initialRadioValue: answer_given != '' ? answer_given : null,
                                       question: (get['query_name'] ?? 'No question text') as String);
                                 } else {
@@ -636,31 +738,62 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                           child: InkWell(
                             borderRadius: BorderRadius.circular(16),
                             onTap: () async {
+                              // Check if any questions have been answered before proceeding
+                              if (!hasAnyAnswers()) {
+                                // Check if checksheet is already submitted
+                                if (isChecksheetSubmitted) {
+                                  awesomeTopSnackbar(
+                                      context, "Checksheet already submitted",
+                                      backgroundColor: Colors.orange);
+
+                                  Fluttertoast.showToast(
+                                    msg: "Checksheet already submitted",
+                                    toastLength: Toast.LENGTH_SHORT,
+                                    gravity: ToastGravity.TOP,
+                                    backgroundColor: Colors.orange,
+                                    textColor: Colors.white,
+                                    fontSize: 16.0,
+                                  );
+                                } else {
+                                  Fluttertoast.showToast(
+                                    msg: "Please answer at least one question",
+                                    toastLength: Toast.LENGTH_SHORT,
+                                    gravity: ToastGravity.CENTER,
+                                    backgroundColor: Colors.red,
+                                    textColor: Colors.white,
+                                    fontSize: 16.0,
+                                  );
+                                }
+                                return; // Exit early, don't proceed with any dialogs
+                              }
+
                               if (_formKey.currentState!.validate()) {
                                 // For EOL checks (when station_id is not null), validate all questions are answered
                                 if (widget.station_id != null) {
-                                  if (!areAllQuestionsAnswered) {
-                                    List<String> unansweredQuestions = [];
+                                  bool allAnswered = true;
+                                  List<String> unansweredQuestions = [];
 
-                                    for (int i = 0; i < questions.length; i++) {
-                                      var quest = questions[i];
-                                      final int questionId = quest["id"];
-                                      bool hasAnswer = false;
+                                  for (int i = 0; i < questions.length; i++) {
+                                    var quest = questions[i];
+                                    final int questionId = quest["id"];
+                                    bool hasAnswer = false;
 
-                                      if (quest["quiz_type"] == "multiple") {
-                                        hasAnswer =
-                                            multipleValue[questionId] != null;
-                                      } else if (quest["quiz_type"] ==
-                                          "single") {
-                                        hasAnswer =
-                                            singleValues[questionId] != null;
-                                      }
-
-                                      if (!hasAnswer) {
-                                        unansweredQuestions
-                                            .add("Question ${i + 1}");
-                                      }
+                                    if (quest["quiz_type"] == "multiple") {
+                                      hasAnswer =
+                                          multipleValue[questionId] != null;
+                                    } else if (quest["quiz_type"] == "single") {
+                                      hasAnswer =
+                                          singleValues[questionId] != null;
                                     }
+
+                                    if (!hasAnswer) {
+                                      allAnswered = false;
+                                      unansweredQuestions
+                                          .add("Question ${i + 1}");
+                                    }
+                                  }
+
+                                  if (!allAnswered) {
                                     // Show error dialog for unanswered questions
                                     await showDialog(
                                       context: context,
@@ -773,462 +906,9 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                   }
                                 }
 
-                                // Show confirmation dialog
-                                bool? confirmSave = await showDialog<bool>(
-                                  context: context,
-                                  barrierDismissible: false,
-                                  builder: (BuildContext context) {
-                                    return Dialog(
-                                      backgroundColor: Colors.transparent,
-                                      child: Container(
-                                        padding: EdgeInsets.all(20),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          borderRadius:
-                                              BorderRadius.circular(16),
-                                        ),
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(
-                                              widget.station_id != null
-                                                  ? Icons.checklist_rtl
-                                                  : Icons.save_outlined,
-                                              color: mycolor,
-                                              size: 48,
-                                            ),
-                                            SizedBox(height: 16),
-                                            Text(
-                                              widget.station_id != null
-                                                  ? 'Complete Checklist'
-                                                  : 'Confirm Save',
-                                              style: TextStyle(
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.grey[800],
-                                              ),
-                                            ),
-                                            SizedBox(height: 8),
-                                            Text(
-                                              widget.station_id != null
-                                                  ? substations.isNotEmpty
-                                                      ? 'Are you sure you want to complete the ${widget.categoryName} checklist? Please select the next station to route the vehicle. This will mark all checks as finished.'
-                                                      : 'Are you sure you want to complete the ${widget.categoryName} checklist? This will mark all checks as finished.'
-                                                  : 'Are you sure you want to save your answers? This action cannot be undone.',
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                color: Colors.grey[600],
-                                              ),
-                                              textAlign: TextAlign.center,
-                                            ),
-                                            if (widget.station_id != null &&
-                                                (substations).isNotEmpty)
-                                              Column(
-                                                children: [
-                                                  SizedBox(height: 16),
-                                                  Container(
-                                                    padding: EdgeInsets.all(12),
-                                                    decoration: BoxDecoration(
-                                                      color:
-                                                          Colors.blue.shade50,
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              8),
-                                                      border: Border.all(
-                                                          color: Colors
-                                                              .blue.shade200),
-                                                    ),
-                                                    child: Column(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .start,
-                                                      children: [
-                                                        Row(
-                                                          children: [
-                                                            Icon(
-                                                              Icons
-                                                                  .route_outlined,
-                                                              color: Colors.blue
-                                                                  .shade700,
-                                                              size: 20,
-                                                            ),
-                                                            SizedBox(width: 8),
-                                                            Text(
-                                                              'Select Next Station: *',
-                                                              style: TextStyle(
-                                                                fontSize: 14,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w600,
-                                                                color: Colors
-                                                                    .blue
-                                                                    .shade700,
-                                                              ),
-                                                            ),
-                                                            SizedBox(width: 4),
-                                                            Text(
-                                                              '(Required)',
-                                                              style: TextStyle(
-                                                                fontSize: 11,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w500,
-                                                                color: Colors
-                                                                    .red
-                                                                    .shade600,
-                                                                fontStyle:
-                                                                    FontStyle
-                                                                        .italic,
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                        SizedBox(height: 8),
-                                                        StatefulBuilder(
-                                                          builder: (context,
-                                                              setStateDialog) {
-                                                            // Create a snapshot of the substations data to avoid modification during build
-                                                            final stationsSnapshot = List<
-                                                                    Map<String,
-                                                                        dynamic>>.from(
-                                                                substations);
-
-                                                            // Get valid station IDs to ensure selectedNextStationId is valid
-                                                            Set<int>
-                                                                validStationIds =
-                                                                {};
-
-                                                            for (var station
-                                                                in stationsSnapshot) {
-                                                              if (station[
-                                                                      'sub_stations_id'] !=
-                                                                  null) {
-                                                                int stationId = station[
-                                                                            'sub_stations_id']
-                                                                        is int
-                                                                    ? station[
-                                                                        'sub_stations_id']
-                                                                    : int.tryParse(
-                                                                            station['sub_stations_id'].toString()) ??
-                                                                        0;
-
-                                                                if (stationId >
-                                                                    0) {
-                                                                  validStationIds
-                                                                      .add(
-                                                                          stationId);
-                                                                }
-                                                              }
-                                                            }
-
-                                                            // Validate selectedNextStationId
-                                                            if (selectedNextStationId !=
-                                                                    null &&
-                                                                !validStationIds
-                                                                    .contains(
-                                                                        selectedNextStationId)) {
-                                                              selectedNextStationId =
-                                                                  null;
-                                                            }
-
-                                                            return DropdownButtonFormField<
-                                                                int>(
-                                                              value:
-                                                                  selectedNextStationId,
-                                                              decoration:
-                                                                  InputDecoration(
-                                                                contentPadding:
-                                                                    EdgeInsets.symmetric(
-                                                                        horizontal:
-                                                                            12,
-                                                                        vertical:
-                                                                            8),
-                                                                border:
-                                                                    OutlineInputBorder(
-                                                                  borderRadius:
-                                                                      BorderRadius
-                                                                          .circular(
-                                                                              6),
-                                                                  borderSide: BorderSide(
-                                                                      color: Colors
-                                                                          .grey
-                                                                          .shade300),
-                                                                ),
-                                                                focusedBorder:
-                                                                    OutlineInputBorder(
-                                                                  borderRadius:
-                                                                      BorderRadius
-                                                                          .circular(
-                                                                              6),
-                                                                  borderSide:
-                                                                      BorderSide(
-                                                                          color:
-                                                                              mycolor),
-                                                                ),
-                                                              ),
-                                                              hint: Text(
-                                                                'Choose next station (Required)',
-                                                                style: TextStyle(
-                                                                    color: Colors
-                                                                        .grey
-                                                                        .shade600,
-                                                                    fontSize:
-                                                                        12),
-                                                              ),
-                                                              items: () {
-                                                                // First, get unique station data from snapshot
-                                                                Map<
-                                                                        int,
-                                                                        Map<String,
-                                                                            dynamic>>
-                                                                    uniqueStations =
-                                                                    {};
-
-                                                                print(
-                                                                    '=== DEBUG: Building dropdown items ===');
-                                                                print(
-                                                                    'Total substations: ${stationsSnapshot.length}');
-
-                                                                for (var station
-                                                                    in stationsSnapshot) {
-                                                                  if (station[
-                                                                          'sub_stations_id'] !=
-                                                                      null) {
-                                                                    int stationId = station['sub_stations_id']
-                                                                            is int
-                                                                        ? station[
-                                                                            'sub_stations_id']
-                                                                        : int.tryParse(station['sub_stations_id'].toString()) ??
-                                                                            0;
-
-                                                                    print(
-                                                                        'Processing station: ID=$stationId, exists=${uniqueStations.containsKey(stationId)}');
-
-                                                                    if (stationId >
-                                                                        0) {
-                                                                      // Only keep the first occurrence of each station ID
-                                                                      if (!uniqueStations
-                                                                          .containsKey(
-                                                                              stationId)) {
-                                                                        uniqueStations[stationId] =
-                                                                            station;
-                                                                        print(
-                                                                            'Added unique station: $stationId');
-                                                                      } else {
-                                                                        print(
-                                                                            'Skipped duplicate station: $stationId');
-                                                                      }
-                                                                    }
-                                                                  }
-                                                                }
-
-                                                                // Create dropdown items
-                                                                List<
-                                                                        DropdownMenuItem<
-                                                                            int>>
-                                                                    items = [];
-                                                                uniqueStations.forEach(
-                                                                    (stationId,
-                                                                        station) {
-                                                                  String
-                                                                      stationName =
-                                                                      '';
-                                                                  if (station['station'] !=
-                                                                          null &&
-                                                                      station['station']
-                                                                              [
-                                                                              'name'] !=
-                                                                          null) {
-                                                                    stationName =
-                                                                        station['station']['name']
-                                                                            .toString();
-                                                                  } else {
-                                                                    stationName =
-                                                                        'Station ${stationId}';
-                                                                  }
-
-                                                                  items.add(
-                                                                      DropdownMenuItem<
-                                                                          int>(
-                                                                    value:
-                                                                        stationId,
-                                                                    child: Text(
-                                                                      stationName,
-                                                                      style: TextStyle(
-                                                                          fontSize:
-                                                                              12),
-                                                                    ),
-                                                                  ));
-                                                                });
-
-                                                                print(
-                                                                    'Created ${items.length} dropdown items');
-                                                                print(
-                                                                    'Item values: ${items.map((item) => item.value).toList()}');
-
-                                                                return items;
-                                                              }(),
-                                                              validator:
-                                                                  (value) {
-                                                                if (widget.station_id !=
-                                                                        null &&
-                                                                    substations
-                                                                        .isNotEmpty &&
-                                                                    value ==
-                                                                        null) {
-                                                                  return 'Next station selection is required';
-                                                                }
-                                                                return null;
-                                                              },
-                                                              onChanged:
-                                                                  (int? value) {
-                                                                print(
-                                                                    '=== DEBUG: Dropdown selection changed ===');
-                                                                print(
-                                                                    'Selected value: $value');
-                                                                print(
-                                                                    'Previous value: $selectedNextStationId');
-                                                                setStateDialog(
-                                                                    () {
-                                                                  selectedNextStationId =
-                                                                      value;
-                                                                  print(
-                                                                      'Updated selectedNextStationId: $selectedNextStationId');
-                                                                });
-                                                              },
-                                                            );
-                                                          },
-                                                        ),
-                                                        SizedBox(height: 8),
-                                                        Row(
-                                                          children: [
-                                                            Icon(
-                                                              Icons
-                                                                  .info_outline,
-                                                              size: 14,
-                                                              color: Colors.blue
-                                                                  .shade600,
-                                                            ),
-                                                            SizedBox(width: 6),
-                                                            Expanded(
-                                                              child: Text(
-                                                                'You must select a next station before completing the checklist',
-                                                                style:
-                                                                    TextStyle(
-                                                                  fontSize: 11,
-                                                                  color: Colors
-                                                                      .blue
-                                                                      .shade600,
-                                                                  fontStyle:
-                                                                      FontStyle
-                                                                          .italic,
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            SizedBox(height: 20),
-                                            Row(
-                                              children: [
-                                                Expanded(
-                                                  child: Container(
-                                                    decoration: BoxDecoration(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              8),
-                                                      border: Border.all(
-                                                          color: Colors
-                                                              .grey[300]!),
-                                                    ),
-                                                    child: Material(
-                                                      color: Colors.transparent,
-                                                      child: InkWell(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(8),
-                                                        onTap: () {
-                                                          Navigator.of(context)
-                                                              .pop(false);
-                                                        },
-                                                        child: Container(
-                                                          padding: EdgeInsets
-                                                              .symmetric(
-                                                                  vertical: 12),
-                                                          child: Text(
-                                                            'Cancel',
-                                                            style: TextStyle(
-                                                              color: Colors
-                                                                  .grey[600],
-                                                              fontSize: 16,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w600,
-                                                            ),
-                                                            textAlign: TextAlign
-                                                                .center,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                                SizedBox(width: 12),
-                                                Expanded(
-                                                  child: Container(
-                                                    decoration: BoxDecoration(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              8),
-                                                      color: mycolor,
-                                                    ),
-                                                    child: Material(
-                                                      color: Colors.transparent,
-                                                      child: InkWell(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(8),
-                                                        onTap: () {
-                                                          Navigator.of(context)
-                                                              .pop(true);
-                                                        },
-                                                        child: Container(
-                                                          padding: EdgeInsets
-                                                              .symmetric(
-                                                                  vertical: 12),
-                                                          child: Text(
-                                                            widget.station_id !=
-                                                                    null
-                                                                ? 'Complete'
-                                                                : 'Save',
-                                                            style: TextStyle(
-                                                              color:
-                                                                  Colors.white,
-                                                              fontSize: 16,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w600,
-                                                            ),
-                                                            textAlign: TextAlign
-                                                                .center,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                );
+                                // Show summary confirmation bottom sheet
+                                bool? confirmSave =
+                                    await _showSummaryBottomSheet();
 
                                 // Only proceed if user confirmed
                                 if (confirmSave == true) {
@@ -1321,6 +1001,9 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                       "signature":
                                           traceableSignature[questionId],
                                       "users": selectedUsers[questionId],
+                                      "staff_no": staffNumbers[questionId] ??
+                                          user['data']?['staff_no'] ??
+                                          '',
                                       // Claim data fields
                                       // "issue_description": '',
                                       "defect_description": '',
@@ -1415,22 +1098,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                       // print(
                                       //     "-->${DescipTextValues[questionId]}");
                                     }
-
-                                    // Include answer if:
-                                    // 1. There's a current answer, OR
-                                    // 2. There's a previous answer (for re-saving), OR
-                                    // 3. There are changes to save
-                                    if (answer["answer"] != null ||
-                                        quest['answer_given'] != null &&
-                                            quest['answer_given'] != '' ||
-                                        hasChangesToSave) {
-                                      // If no current answer but has previous answer, use previous answer
-                                      if (answer["answer"] == null &&
-                                          quest['answer_given'] != null &&
-                                          quest['answer_given'] != '') {
-                                        answer["answer"] =
-                                            quest['answer_given'];
-                                      }
+                                    if (answer["answer"] != null) {
                                       answers.add(answer);
                                     }
                                   }
@@ -1444,10 +1112,10 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                     // Close loading dialog first
                                     Navigator.of(context).pop();
 
-                                    // Check if there are changes to save
-                                    if (!hasChangesToSave) {
-                                      awesomeTopSnackbar(
-                                          context, "No changes to save",
+                                    // Check if checksheet is already submitted
+                                    if (isChecksheetSubmitted) {
+                                      awesomeTopSnackbar(context,
+                                          "Checksheet already submitted",
                                           iconWithDecoration: BoxDecoration(
                                             borderRadius:
                                                 BorderRadius.circular(20),
@@ -1487,9 +1155,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                   Text(
                                     widget.station_id != null
                                         ? 'COMPLETE CHECKLIST'
-                                        : hasChangesToSave
-                                            ? 'SAVE CHANGES'
-                                            : 'SAVE ANSWERS',
+                                        : 'SAVE ANSWERS',
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 16,
@@ -1515,9 +1181,9 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
     if (!_formKey.currentState!.validate()) return;
 
     if (answers.isEmpty) {
-      // Check if there are any changes to save
-      if (!hasChangesToSave) {
-        awesomeTopSnackbar(context, "No changes to save",
+      // Check if checksheet is already submitted
+      if (isChecksheetSubmitted) {
+        awesomeTopSnackbar(context, "Checksheet already submitted",
             backgroundColor: Colors.orange);
       } else {
         awesomeTopSnackbar(context, "Please answer at least one question",
@@ -1673,23 +1339,11 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
         substations = dataMain["substation"] ?? [];
         print('Substation data: $substations');
 
-        // Initialize previous answers for re-editing
+        // Initialize staff numbers for all questions with user's staff number
         for (var question in questions) {
           final int questionId = question["id"];
-          var previousAnswer = question['answer_given'] ?? '';
-
-          if (previousAnswer.isNotEmpty) {
-            if (question["quiz_type"] == "multiple") {
-              multipleValue[questionId] = previousAnswer;
-            } else if (question["quiz_type"] == "single") {
-              singleValues[questionId] = previousAnswer;
-            }
-          }
-
-          // Initialize description values if available
-          var previousDescription = question['defect_description'] ?? '';
-          if (previousDescription.isNotEmpty) {
-            DescipTextValues[questionId] = previousDescription;
+          if (!staffNumbers.containsKey(questionId)) {
+            staffNumbers[questionId] = user['data']?['staff_no'] ?? '';
           }
         }
 
@@ -1709,5 +1363,680 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
             responseData["message"] ?? "Unexpected error", Colors.red[500]),
       );
     }
+  }
+
+  // Show summary bottom sheet with all answers before final confirmation
+  Future<bool?> _showSummaryBottomSheet() async {
+    List<Map<String, dynamic>> summary = generateAnswerSummary();
+
+    if (summary.isEmpty) {
+      return false; // No answers to show
+    }
+
+    return await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.4,
+          minChildSize: 0.3,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+              ),
+              child: Column(
+                children: [
+                  // Handle bar
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: EdgeInsets.only(top: 12, bottom: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+
+                  // Scrollable content
+                  Expanded(
+                    child: ListView(
+                      controller: scrollController,
+                      padding: EdgeInsets.zero,
+                      children: [
+                        // Header
+                        Container(
+                          margin:
+                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                mycolor.withOpacity(0.1),
+                                mycolor.withOpacity(0.05),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: mycolor.withOpacity(0.2),
+                              width: 1,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: mycolor.withOpacity(0.1),
+                                blurRadius: 8,
+                                offset: Offset(0, 2),
+                                spreadRadius: 0,
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          mycolor,
+                                          mycolor.withOpacity(0.8)
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: mycolor.withOpacity(0.3),
+                                          blurRadius: 8,
+                                          offset: Offset(0, 2),
+                                          spreadRadius: 0,
+                                        ),
+                                      ],
+                                    ),
+                                    child: Icon(
+                                      Icons.summarize_outlined,
+                                      color: Colors.white,
+                                      size: 24,
+                                    ),
+                                  ),
+                                  SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Review Your Answers',
+                                          style: TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.grey[800],
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                        SizedBox(height: 4),
+                                        Container(
+                                          padding: EdgeInsets.symmetric(
+                                              horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: mycolor.withOpacity(0.1),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            border: Border.all(
+                                              color: mycolor.withOpacity(0.3),
+                                              width: 1,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            '${summary.length} Question${summary.length > 1 ? 's' : ''} Answered',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                              color: mycolor,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Divider
+                        Divider(height: 1, color: Colors.grey[200]),
+
+                        // Summary List - Generate items directly
+                        ...summary.map((answerSummary) {
+                          return Container(
+                            margin: EdgeInsets.only(
+                                left: 20, right: 20, bottom: 16),
+                            padding: EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey[200]!),
+                              borderRadius: BorderRadius.circular(12),
+                              color: answerSummary['answer'] == 'NOK'
+                                  ? Colors.red.shade50
+                                  : answerSummary['answer'] == 'OK'
+                                      ? Colors.green.shade50
+                                      : Colors.grey.shade50,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Question header
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      width: 28,
+                                      height: 28,
+                                      decoration: BoxDecoration(
+                                        color: mycolor,
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          '${answerSummary['index']}',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        answerSummary['questionText'],
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.grey[800],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+
+                                SizedBox(height: 12),
+
+                                // Answer details
+                                Container(
+                                  padding: EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border:
+                                        Border.all(color: Colors.grey[200]!),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      // Answer
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            answerSummary['answer'] == 'OK'
+                                                ? Icons.check_circle
+                                                : answerSummary['answer'] ==
+                                                        'NOK'
+                                                    ? Icons.cancel
+                                                    : Icons.help_outline,
+                                            color:
+                                                answerSummary['answer'] == 'OK'
+                                                    ? Colors.green
+                                                    : answerSummary['answer'] ==
+                                                            'NOK'
+                                                        ? Colors.red
+                                                        : Colors.orange,
+                                            size: 20,
+                                          ),
+                                          SizedBox(width: 8),
+                                          Text(
+                                            'Answer: ${answerSummary['answer']}',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: answerSummary['answer'] ==
+                                                      'OK'
+                                                  ? Colors.green.shade700
+                                                  : answerSummary['answer'] ==
+                                                          'NOK'
+                                                      ? Colors.red.shade700
+                                                      : Colors.orange.shade700,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+
+                                      // Additional details
+                                      if (answerSummary['defects']
+                                          .isNotEmpty) ...[
+                                        SizedBox(height: 8),
+                                        Text(
+                                          'Defects: ${answerSummary['defects'].join(', ')}',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      ],
+
+                                      if (answerSummary['defectCategory']
+                                          .isNotEmpty) ...[
+                                        SizedBox(height: 4),
+                                        Text(
+                                          'Category: ${answerSummary['defectCategory']}',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      ],
+
+                                      if (answerSummary['description']
+                                          .isNotEmpty) ...[
+                                        SizedBox(height: 4),
+                                        Text(
+                                          'Description: ${answerSummary['description']}',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      ],
+
+                                      if (answerSummary['staffNo']
+                                          .isNotEmpty) ...[
+                                        SizedBox(height: 4),
+                                        Text(
+                                          'Staff No: ${answerSummary['staffNo']}',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      ],
+
+                                      // Icons for additional data
+                                      if (answerSummary['hasClaim'] ||
+                                          answerSummary['hasImage'] ||
+                                          answerSummary['hasUsers']) ...[
+                                        SizedBox(height: 8),
+                                        Row(
+                                          children: [
+                                            if (answerSummary['hasClaim'])
+                                              Container(
+                                                padding: EdgeInsets.symmetric(
+                                                    horizontal: 8, vertical: 4),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.orange.shade100,
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Icon(Icons.report_problem,
+                                                        size: 14,
+                                                        color: Colors
+                                                            .orange.shade700),
+                                                    SizedBox(width: 4),
+                                                    Text(
+                                                      'Claim',
+                                                      style: TextStyle(
+                                                        fontSize: 10,
+                                                        color: Colors
+                                                            .orange.shade700,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            if (answerSummary['hasImage'])
+                                              Container(
+                                                padding: EdgeInsets.symmetric(
+                                                    horizontal: 8, vertical: 4),
+                                                margin:
+                                                    EdgeInsets.only(left: 4),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.blue.shade100,
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Icon(Icons.camera_alt,
+                                                        size: 14,
+                                                        color: Colors
+                                                            .blue.shade700),
+                                                    SizedBox(width: 4),
+                                                    Text(
+                                                      'Image',
+                                                      style: TextStyle(
+                                                        fontSize: 10,
+                                                        color: Colors
+                                                            .blue.shade700,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            if (answerSummary['hasUsers'])
+                                              Container(
+                                                padding: EdgeInsets.symmetric(
+                                                    horizontal: 8, vertical: 4),
+                                                margin:
+                                                    EdgeInsets.only(left: 4),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.green.shade100,
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Icon(Icons.people,
+                                                        size: 14,
+                                                        color: Colors
+                                                            .green.shade700),
+                                                    SizedBox(width: 4),
+                                                    Text(
+                                                      'Users',
+                                                      style: TextStyle(
+                                                        fontSize: 10,
+                                                        color: Colors
+                                                            .green.shade700,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ],
+                    ),
+                  ),
+
+                  // Action buttons - Static at bottom
+                  Container(
+                    padding: EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        if (widget.station_id != null &&
+                            substations.isNotEmpty) ...[
+                          Container(
+                            padding: EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.blue.shade200),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.route_outlined,
+                                      color: Colors.blue.shade700,
+                                      size: 20,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Select Next Station: *',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.blue.shade700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 8),
+                                StatefulBuilder(
+                                  builder: (context, setStateDialog) {
+                                    final stationsSnapshot =
+                                        List<Map<String, dynamic>>.from(
+                                            substations);
+
+                                    Set<int> validStationIds = {};
+                                    for (var station in stationsSnapshot) {
+                                      if (station['sub_stations_id'] != null) {
+                                        int stationId =
+                                            station['sub_stations_id'] is int
+                                                ? station['sub_stations_id']
+                                                : int.tryParse(station[
+                                                            'sub_stations_id']
+                                                        .toString()) ??
+                                                    0;
+
+                                        if (stationId > 0) {
+                                          validStationIds.add(stationId);
+                                        }
+                                      }
+                                    }
+
+                                    if (selectedNextStationId != null &&
+                                        !validStationIds
+                                            .contains(selectedNextStationId)) {
+                                      selectedNextStationId = null;
+                                    }
+
+                                    return DropdownButtonFormField<int>(
+                                      value: selectedNextStationId,
+                                      decoration: InputDecoration(
+                                        contentPadding: EdgeInsets.symmetric(
+                                            horizontal: 12, vertical: 8),
+                                        border: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(6),
+                                          borderSide: BorderSide(
+                                              color: Colors.grey.shade300),
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(6),
+                                          borderSide:
+                                              BorderSide(color: mycolor),
+                                        ),
+                                      ),
+                                      hint: Text(
+                                        'Choose next station (Required)',
+                                        style: TextStyle(
+                                            color: Colors.grey.shade600,
+                                            fontSize: 12),
+                                      ),
+                                      items: () {
+                                        Map<int, Map<String, dynamic>>
+                                            uniqueStations = {};
+
+                                        for (var station in stationsSnapshot) {
+                                          if (station['sub_stations_id'] !=
+                                              null) {
+                                            int stationId = station[
+                                                    'sub_stations_id'] is int
+                                                ? station['sub_stations_id']
+                                                : int.tryParse(station[
+                                                            'sub_stations_id']
+                                                        .toString()) ??
+                                                    0;
+
+                                            if (stationId > 0) {
+                                              if (!uniqueStations
+                                                  .containsKey(stationId)) {
+                                                uniqueStations[stationId] =
+                                                    station;
+                                              }
+                                            }
+                                          }
+                                        }
+
+                                        List<DropdownMenuItem<int>> items = [];
+                                        uniqueStations
+                                            .forEach((stationId, station) {
+                                          String stationName = '';
+                                          if (station['station'] != null &&
+                                              station['station']['name'] !=
+                                                  null) {
+                                            stationName = station['station']
+                                                    ['name']
+                                                .toString();
+                                          } else {
+                                            stationName = 'Station $stationId';
+                                          }
+
+                                          items.add(DropdownMenuItem<int>(
+                                            value: stationId,
+                                            child: Text(stationName,
+                                                style: TextStyle(fontSize: 12)),
+                                          ));
+                                        });
+
+                                        return items;
+                                      }(),
+                                      onChanged: (int? value) {
+                                        setStateDialog(() {
+                                          selectedNextStationId = value;
+                                        });
+                                      },
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(height: 16),
+                        ],
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.grey[300]!),
+                                ),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(12),
+                                    onTap: () =>
+                                        Navigator.of(context).pop(false),
+                                    child: Container(
+                                      padding:
+                                          EdgeInsets.symmetric(vertical: 14),
+                                      child: Text(
+                                        'Review More',
+                                        style: TextStyle(
+                                          color: Colors.grey[600],
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [mycolor, mycolor.withOpacity(0.8)],
+                                  ),
+                                ),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(12),
+                                    onTap: () {
+                                      // Validate next station selection if required
+                                      if (widget.station_id != null &&
+                                          substations.isNotEmpty &&
+                                          selectedNextStationId == null) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                                'Please select the next station'),
+                                            backgroundColor: Colors.orange,
+                                          ),
+                                        );
+                                        return;
+                                      }
+                                      Navigator.of(context).pop(true);
+                                    },
+                                    child: Container(
+                                      padding:
+                                          EdgeInsets.symmetric(vertical: 14),
+                                      child: Text(
+                                        widget.station_id != null
+                                            ? 'Complete'
+                                            : 'Save',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 }

@@ -43,7 +43,8 @@ class MyApp extends StatelessWidget {
   }
 }
 
-void configLoading() {
+void 
+configLoading() {
   EasyLoading.instance
     // ..indicatorType = EasyLoadingIndicatorType.cubeGrid
     ..loadingStyle = EasyLoadingStyle.dark
