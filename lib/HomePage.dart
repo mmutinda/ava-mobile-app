@@ -89,6 +89,7 @@ class _HomeScreanState extends State<HomeScrean> with TickerProviderStateMixin {
     _refreshTimer = null;
   }
 
+  // ignore: unused_element
   void _toggleAutoRefresh() {
     setState(() {
       _isAutoRefreshEnabled = !_isAutoRefreshEnabled;

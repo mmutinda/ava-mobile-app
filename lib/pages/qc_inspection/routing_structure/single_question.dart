@@ -39,6 +39,7 @@ class SingleQuestion extends StatefulWidget {
   final ValueChanged<Map<String, dynamic>?>?
       onClaimDataChanged; // Add claim data callback
   final String? initialStaffNo; // Add staff number parameter
+  final String? StaffNo; // Add staff number parameter
   final ValueChanged<String>? onStaffNoChanged; // Add staff number callback
   const SingleQuestion(
       {super.key,
@@ -64,6 +65,7 @@ class SingleQuestion extends StatefulWidget {
       this.scandata, // Add scandata parameter for comparison
       this.onClaimDataChanged, // Add claim data callback
       this.initialStaffNo, // Add staff number parameter
+      this.StaffNo, // Add staff number parameter
       this.onStaffNoChanged, // Add staff number callback
       this.instruction}); // Add instruction parameter
 
@@ -139,7 +141,7 @@ class _SingleQuestionState extends State<SingleQuestion>
 
     // Initialize staff number controller
     staffNoController =
-        TextEditingController(text: widget.initialStaffNo ?? '');
+        TextEditingController(text: widget.initialStaffNo ?? widget.StaffNo);
     staffNoController.addListener(_handleStaffNoChanged);
 
     // // Validate and set initial defect category
@@ -294,8 +296,7 @@ class _SingleQuestionState extends State<SingleQuestion>
                               // Validate staff number is not empty
                               if (dialogController.text.trim().isEmpty) {
                                 setDialogState(() {
-                                  errorMessage =
-                                      'Staff number cannot be empty';
+                                  errorMessage = 'Staff number cannot be empty';
                                 });
                                 return;
                               }
@@ -332,6 +333,7 @@ class _SingleQuestionState extends State<SingleQuestion>
   }
 
   /// Capture image from camera
+  // ignore: unused_element
   Future<void> _captureImage() async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.camera);
@@ -1380,7 +1382,9 @@ class _SingleQuestionState extends State<SingleQuestion>
                             if (staffNoController.text.isNotEmpty) ...[
                               const SizedBox(width: 4),
                               Text(
-                                staffNoController.text,
+                                widget.initialRadioValue == null
+                                    ? staffNoController.text
+                                    : widget.initialStaffNo ?? 'N/A',
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w600,

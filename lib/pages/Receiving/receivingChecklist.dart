@@ -445,7 +445,7 @@ class _QCChecklistState extends State<QCChecklist>
       }
 
       // ✅ 3. Build request
-      final uri = Uri.parse('${Api.api_url}postVehicleReceivingChecklistt');
+      final uri = Uri.parse('${Api.api_url}postVehicleReceivingChecklist');
       final request = http.MultipartRequest('POST', uri)
         ..headers.addAll({
           'Accept': 'application/json',

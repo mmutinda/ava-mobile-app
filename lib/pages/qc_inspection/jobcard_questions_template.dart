@@ -644,7 +644,8 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                         var qid = get['id'];
                                         handleClaimData(qid, claimDataResult);
                                       },
-                                      initialStaffNo: (user['data'] != null && user['data']['staff_no'] != null && user['data']['staff_no'].toString().trim().isNotEmpty) ? user['data']['staff_no'].toString() : '',
+                                      initialStaffNo: get['staff_no'],
+                                      StaffNo: (user['data'] != null && user['data']['staff_no'] != null && user['data']['staff_no'].toString().trim().isNotEmpty) ? user['data']['staff_no'].toString() : '',
                                       onStaffNoChanged: (String value) {
                                         var qid = get['id'];
                                         setState(() {
