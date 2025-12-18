@@ -173,10 +173,9 @@ class _SingleQuestionState extends State<SingleQuestion>
 
   void _handleStaffNoChanged() {
     if (widget.onStaffNoChanged != null) {
-      // Only save if staff number is not empty
-      if (staffNoController.text.trim().isNotEmpty) {
-        widget.onStaffNoChanged!(staffNoController.text);
-      }
+      // Always update the staff number value, even if empty
+      // This allows validation to catch missing staff numbers
+      widget.onStaffNoChanged!(staffNoController.text);
     }
   }
 
@@ -1552,7 +1551,8 @@ class _SingleQuestionState extends State<SingleQuestion>
                   ),
                 // Description field for existing answers
                 if (widget.initialRadioValue != null &&
-                    widget.initialDecripValue != null)
+                    widget.initialDecripValue != null &&
+                    widget.initialDecripValue!.isNotEmpty)
                   Column(
                     children: [
                       Container(

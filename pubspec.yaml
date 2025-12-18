@@ -76,6 +76,7 @@ dependencies:
   dropdown_button2: ^2.3.9
   barcode_widget: ^2.0.4
   qr_code_scanner: ^1.0.1
+  mobile_scanner: ^5.2.3
 
 dev_dependencies:
   flutter_test:

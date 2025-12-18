@@ -404,8 +404,8 @@ class _ScanningState extends State<Scanning> {
                                     child: InkWell(
                                       borderRadius: BorderRadius.circular(16),
                                       onTap: () {
-                                        showTapScanToast(context);
-                                        // processSKU(car.vin);
+                                        // showTapScanToast(context);
+                                        processSKU(car.vin);
                                       },
                                       child: Padding(
                                         padding: const EdgeInsets.all(16),
@@ -627,6 +627,7 @@ class _ScanningState extends State<Scanning> {
                                         if (widget.shopId == '16') {
                                           processSKU(vehicles[index].vin);
                                         } else {
+                                          processSKU(vehicles[index].vin);
                                           showTapScanToast(context);
                                         }
                                       },
@@ -969,7 +970,8 @@ class _ScanningState extends State<Scanning> {
                                             return;
                                           } else if (widget.shopId == '17') {
                                             JobCardQuestionsTemplate(
-                                              lotNo: res['data']['vehicledata']['lot_no'],
+                                              lotNo: res['data']['vehicledata']
+                                                  ['lot_no'],
                                               chasis_no: res['data']
                                                   ['vehicledata']['vin_no'],
                                               shop_name: 'EOL station',

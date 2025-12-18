@@ -145,9 +145,10 @@ class _QCChecklistState extends State<QCChecklist>
 
   // Show confirmation dialog before submitting
   Future<void> _showConfirmDialog(BuildContext context) async {
-    // Count OK and NOK items
+    // Count OK, NOK and N/A items
     int okCount = checklist.where((item) => item['checked'] == 'OK').length;
     int nokCount = checklist.where((item) => item['checked'] == 'NOK').length;
+    int naCount = checklist.where((item) => item['checked'] == 'N/A').length;
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -310,6 +311,34 @@ class _QCChecklistState extends State<QCChecklist>
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                               color: Colors.red.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.remove_circle,
+                                  color: Colors.orange.shade600, size: 16),
+                              const SizedBox(width: 6),
+                              Text(
+                                'N/A Items:',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey.shade700,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            '$naCount',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.orange.shade600,
                             ),
                           ),
                         ],
@@ -878,7 +907,7 @@ class _QCChecklistState extends State<QCChecklist>
                                                                     vertical:
                                                                         10,
                                                                     horizontal:
-                                                                        16),
+                                                                        12),
                                                             decoration:
                                                                 BoxDecoration(
                                                               color: query[
@@ -949,7 +978,7 @@ class _QCChecklistState extends State<QCChecklist>
                                                           ),
                                                         ),
                                                       ),
-                                                      const SizedBox(width: 12),
+                                                      const SizedBox(width: 8),
                                                       Expanded(
                                                         child: GestureDetector(
                                                           onTap: () async {
@@ -1084,6 +1113,93 @@ class _QCChecklistState extends State<QCChecklist>
                                                                             .white
                                                                         : Colors
                                                                             .red
+                                                                            .shade600,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w600,
+                                                                    fontSize:
+                                                                        14,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 8),
+                                                      Expanded(
+                                                        child: GestureDetector(
+                                                          onTap: () {
+                                                            setState(() {
+                                                              query['checked'] =
+                                                                  'N/A';
+                                                            });
+                                                          },
+                                                          child: Container(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .symmetric(
+                                                              vertical: 10,
+                                                              horizontal: 12,
+                                                            ),
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              color: query[
+                                                                          'checked'] ==
+                                                                      'N/A'
+                                                                  ? Colors
+                                                                      .orange
+                                                                      .shade500
+                                                                  : Colors.grey
+                                                                      .shade100,
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          8),
+                                                              border:
+                                                                  Border.all(
+                                                                color: query[
+                                                                            'checked'] ==
+                                                                        'N/A'
+                                                                    ? Colors
+                                                                        .orange
+                                                                        .shade500
+                                                                    : Colors
+                                                                        .grey
+                                                                        .shade300,
+                                                                width: 1,
+                                                              ),
+                                                            ),
+                                                            child: Row(
+                                                              mainAxisAlignment:
+                                                                  MainAxisAlignment
+                                                                      .center,
+                                                              children: [
+                                                                Icon(
+                                                                  Icons
+                                                                      .remove_circle,
+                                                                  color: query[
+                                                                              'checked'] ==
+                                                                          'N/A'
+                                                                      ? Colors
+                                                                          .white
+                                                                      : Colors
+                                                                          .orange
+                                                                          .shade600,
+                                                                  size: 18,
+                                                                ),
+                                                                const SizedBox(
+                                                                    width: 6),
+                                                                Text(
+                                                                  'N/A',
+                                                                  style:
+                                                                      TextStyle(
+                                                                    color: query['checked'] ==
+                                                                            'N/A'
+                                                                        ? Colors
+                                                                            .white
+                                                                        : Colors
+                                                                            .orange
                                                                             .shade600,
                                                                     fontWeight:
                                                                         FontWeight

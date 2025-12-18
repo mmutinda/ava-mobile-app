@@ -201,6 +201,31 @@ class _QCViewState extends State<QCView> {
                             ],
                           ),
                         ),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.shade100,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.remove_circle,
+                                  color: Colors.orange.shade700, size: 14),
+                              const SizedBox(width: 3),
+                              Text(
+                                '${checklistData.where((item) => item['answer'] == 'N/A').length}',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.orange.shade700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ],

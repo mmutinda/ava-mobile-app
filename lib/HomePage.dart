@@ -194,8 +194,22 @@ class _HomeScreanState extends State<HomeScrean> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     ThemeData theme = Theme.of(context);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
     final orientation = MediaQuery.of(context).orientation;
     final isLandscape = orientation == Orientation.landscape;
+
+    // Responsive breakpoints
+    final isSmallPhone = screenWidth < 360;
+    final isPhone = screenWidth < 600;
+    final isTablet = screenWidth >= 600 && screenWidth < 900;
+    final isDesktop = screenWidth >= 900;
+
+    // Adaptive sizes
+    final titleFontSize = isSmallPhone ? 18.0 : (isPhone ? 22.0 : 26.0);
+    final drawerHeaderHeight = isLandscape ? 180.0 : (isTablet ? 280.0 : 300.0);
+    final avatarRadius = isSmallPhone ? 20.0 : (isLandscape ? 25.0 : 30.0);
+    final quickActionColumns = isDesktop ? 4 : (isTablet ? 3 : 2);
 
     final List<Map<String, String>> sliderItems = [
       {
@@ -255,7 +269,7 @@ class _HomeScreanState extends State<HomeScrean> with TickerProviderStateMixin {
               "Dashboard",
               style: TextStyle(
                 fontWeight: FontWeight.w700,
-                fontSize: 22,
+                fontSize: titleFontSize,
                 color: Colors.white,
                 letterSpacing: 0.5,
               ),
@@ -323,7 +337,7 @@ class _HomeScreanState extends State<HomeScrean> with TickerProviderStateMixin {
               children: <Widget>[
                 Container(
                   constraints: BoxConstraints(
-                    maxHeight: isLandscape ? 200 : 300,
+                    maxHeight: drawerHeaderHeight,
                   ),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -363,12 +377,15 @@ class _HomeScreanState extends State<HomeScrean> with TickerProviderStateMixin {
                                   ],
                                 ),
                                 child: CircleAvatar(
-                                  radius: isLandscape ? 20 : 25,
+                                  radius: avatarRadius,
                                   backgroundImage:
                                       AssetImage("images/profile1.jpg"),
                                 ),
                               ),
-                              SizedBox(width: isLandscape ? 15 : 25),
+                              SizedBox(
+                                  width: isSmallPhone
+                                      ? 12
+                                      : (isLandscape ? 15 : 25)),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -594,8 +611,15 @@ class _HomeScreanState extends State<HomeScrean> with TickerProviderStateMixin {
   }
 
   void _showQuickActionsBottomSheet(BuildContext context, ThemeData theme) {
+    final screenWidth = MediaQuery.of(context).size.width;
     final orientation = MediaQuery.of(context).orientation;
     final isLandscape = orientation == Orientation.landscape;
+
+    // Responsive breakpoints
+    final isPhone = screenWidth < 600;
+    final isTablet = screenWidth >= 600 && screenWidth < 900;
+    final isDesktop = screenWidth >= 900;
+    final quickActionColumns = isDesktop ? 4 : (isTablet ? 3 : 2);
 
     showModalBottomSheet(
       context: context,
@@ -603,8 +627,10 @@ class _HomeScreanState extends State<HomeScrean> with TickerProviderStateMixin {
       isScrollControlled: true,
       builder: (context) => Container(
         height: isLandscape
-            ? MediaQuery.of(context).size.height * 0.8
-            : MediaQuery.of(context).size.height * 0.6,
+            ? MediaQuery.of(context).size.height * 0.85
+            : (MediaQuery.of(context).size.width >= 600
+                ? MediaQuery.of(context).size.height * 0.7
+                : MediaQuery.of(context).size.height * 0.6),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.only(
@@ -662,10 +688,12 @@ class _HomeScreanState extends State<HomeScrean> with TickerProviderStateMixin {
               child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: 20),
                 child: GridView.count(
-                  crossAxisCount: isLandscape ? 4 : 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: isLandscape ? 1.0 : 1.2,
+                  crossAxisCount: quickActionColumns,
+                  crossAxisSpacing: isPhone ? 12 : 16,
+                  mainAxisSpacing: isPhone ? 12 : 16,
+                  childAspectRatio: isDesktop
+                      ? 1.0
+                      : (isTablet ? 1.1 : (isLandscape ? 1.0 : 1.2)),
                   children: [
                     _buildQuickActionCard(
                       FeatherIcons.truck,
@@ -730,7 +758,8 @@ class _HomeScreanState extends State<HomeScrean> with TickerProviderStateMixin {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: EdgeInsets.all(16),
+              padding: EdgeInsets.all(
+                  MediaQuery.of(context).size.width < 600 ? 12 : 16),
               decoration: BoxDecoration(
                 color: color,
                 borderRadius: BorderRadius.circular(12),
@@ -745,15 +774,19 @@ class _HomeScreanState extends State<HomeScrean> with TickerProviderStateMixin {
               child: Icon(
                 icon,
                 color: Colors.white,
-                size: 24,
+                size: MediaQuery.of(context).size.width < 360
+                    ? 20
+                    : (MediaQuery.of(context).size.width < 600 ? 24 : 28),
               ),
             ),
-            SizedBox(height: 12),
+            SizedBox(height: MediaQuery.of(context).size.width < 600 ? 8 : 12),
             Text(
               title,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: MediaQuery.of(context).size.width < 360
+                    ? 12
+                    : (MediaQuery.of(context).size.width < 600 ? 14 : 16),
                 fontWeight: FontWeight.w600,
                 color: color.withOpacity(0.8),
               ),
@@ -1274,11 +1307,18 @@ class _HomeScreanState extends State<HomeScrean> with TickerProviderStateMixin {
   // Portrait layout - original vertical layout
   Widget _buildPortraitLayout(
       ThemeData theme, List<Map<String, String>> sliderItems) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final horizontalMargin =
+        screenWidth < 360 ? 12.0 : (screenWidth < 600 ? 16.0 : 24.0);
+    final sliderHeight =
+        screenWidth < 360 ? 150.0 : (screenWidth < 600 ? 200.0 : 250.0);
+
     return Column(
       children: [
         // Image Slider
         Container(
-          margin: EdgeInsets.symmetric(horizontal: 16),
+          height: sliderHeight,
+          margin: EdgeInsets.symmetric(horizontal: horizontalMargin),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
@@ -1298,7 +1338,7 @@ class _HomeScreanState extends State<HomeScrean> with TickerProviderStateMixin {
         // Dashboard Content
         Expanded(
           child: Container(
-            margin: EdgeInsets.symmetric(horizontal: 16),
+            margin: EdgeInsets.symmetric(horizontal: horizontalMargin),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.only(
@@ -1329,13 +1369,18 @@ class _HomeScreanState extends State<HomeScrean> with TickerProviderStateMixin {
   // Landscape layout - side by side layout
   Widget _buildLandscapeLayout(
       ThemeData theme, List<Map<String, String>> sliderItems) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth >= 600 && screenWidth < 900;
+    final isDesktop = screenWidth >= 900;
+    final horizontalPadding = isTablet ? 20.0 : (isDesktop ? 32.0 : 16.0);
+
     return Padding(
-      padding: EdgeInsets.all(16),
+      padding: EdgeInsets.all(horizontalPadding),
       child: Row(
         children: [
           // Left side - Image Slider
           Expanded(
-            flex: 2,
+            flex: isDesktop ? 2 : 2,
             child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),

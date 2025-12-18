@@ -35,7 +35,7 @@ class IssueDialog extends StatefulWidget {
 class _IssueDialogState extends State<IssueDialog> {
   final _issueDescriptionController = TextEditingController();
   final _partNoController = TextEditingController();
-  File? _imageFile;
+  List<File> _imageFiles = [];
   bool _isSubmitting = false; // Add loading state
 
   // Validation error messages
@@ -71,12 +71,22 @@ class _IssueDialogState extends State<IssueDialog> {
   String? _selectedIssueType;
   String? _selectedDefectClassification;
 
+  // Controllers for "Other" manual entries
+  final TextEditingController _otherCategoryController =
+      TextEditingController();
+  final TextEditingController _otherTypeController = TextEditingController();
+  final TextEditingController _otherClassificationController =
+      TextEditingController();
+  final TextEditingController _otherPartNumberController =
+      TextEditingController();
+
   final List<String> _issueCategories = [
     'Process Issues',
     'Part Handling',
     'Paint Issues',
     'KDQR',
     'MMO',
+    'Other',
   ];
 
   final Map<String, List<String>> _issueCategoriesAndTypes = {
@@ -110,6 +120,7 @@ class _IssueDialogState extends State<IssueDialog> {
       'Jig Missing',
       'ROBBED',
       'FAULTY MACHINE',
+      'Other',
     ],
     'Part Handling': [
       'SCRATCHES',
@@ -117,6 +128,7 @@ class _IssueDialogState extends State<IssueDialog> {
       'DIRT MARKS',
       'STRAY MARKS',
       'STAIN MARKS',
+      'Other',
     ],
     'Paint Issues': [
       'DEBRIS',
@@ -136,6 +148,7 @@ class _IssueDialogState extends State<IssueDialog> {
       'DAMAGED PVC',
       'PVC OVERSPRAY',
       'WET PAINT',
+      'Other',
     ],
     'KDQR': [
       'PART QUALITY',
@@ -148,12 +161,15 @@ class _IssueDialogState extends State<IssueDialog> {
       'ME-MANUFACTURER ERROR',
       'WRONG PART',
       'NS-NOT SUPPLIED',
+      'Other',
     ],
     'MMO': [
       'LD-LINE DAMAGE',
       'LL-LINE LOSS',
       'RUST',
+      'Other',
     ],
+    'Other': ['Other'],
   };
 
   final List<String> _defectClassifications = [
@@ -161,6 +177,7 @@ class _IssueDialogState extends State<IssueDialog> {
     'B- Major',
     'C-Minor',
     'D-Cosmetic',
+    'Other',
   ];
 
   // Update issue types based on selected category
@@ -197,11 +214,11 @@ class _IssueDialogState extends State<IssueDialog> {
       print(url);
       final response = await httpget(url, token, context);
 
-      if (response != null &&
-          response['success'] == true &&
-          response['data'] != null) {
-        final List<dynamic> data = response['data'];
-        setState(() {
+      setState(() {
+        if (response != null &&
+            response['success'] == true &&
+            response['data'] != null) {
+          final List<dynamic> data = response['data'];
           // Extract part numbers and remove duplicates
           final List<String> allPartNumbers =
               data.map((item) => item['part_no'].toString()).toList();
@@ -219,8 +236,11 @@ class _IssueDialogState extends State<IssueDialog> {
             _partNumberController.dropDownValue = DropDownValueModel(
                 name: widget.initialPartNo!, value: widget.initialPartNo!);
           }
-        });
-      }
+        }
+
+        // Always add "Other" option at the end, even if data is null or empty
+        _partNumbers.add(DropDownValueModel(name: 'Other', value: 'Other'));
+      });
     } catch (e) {
       print('Error loading part numbers: $e');
     } finally {
@@ -272,7 +292,9 @@ class _IssueDialogState extends State<IssueDialog> {
           value: widget.initialClassification!);
     }
 
-    _imageFile = widget.initialImage;
+    if (widget.initialImage != null) {
+      _imageFiles = [widget.initialImage!];
+    }
 
     // Load part numbers from API
     _loadPartNumbers();
@@ -390,6 +412,15 @@ class _IssueDialogState extends State<IssueDialog> {
                         });
                       },
                     ),
+                    if (_selectedIssueCategory == 'Other') ...[
+                      SizedBox(height: 16),
+                      _buildSimpleTextField(
+                        controller: _otherCategoryController,
+                        label: 'Specify Category',
+                        hint: 'Enter custom category...',
+                        prefixIcon: Icons.edit,
+                      ),
+                    ],
                     if (_selectedIssueCategory != null) ...[
                       SizedBox(height: 16),
                       _buildSearchableDropdown(
@@ -410,6 +441,15 @@ class _IssueDialogState extends State<IssueDialog> {
                           });
                         },
                       ),
+                      if (_selectedIssueType == 'Other') ...[
+                        SizedBox(height: 16),
+                        _buildSimpleTextField(
+                          controller: _otherTypeController,
+                          label: 'Specify Issue Type',
+                          hint: 'Enter custom issue type...',
+                          prefixIcon: Icons.edit,
+                        ),
+                      ],
                     ],
                     SizedBox(height: 16),
                     _buildSearchableDropdown(
@@ -430,6 +470,15 @@ class _IssueDialogState extends State<IssueDialog> {
                         });
                       },
                     ),
+                    if (_selectedDefectClassification == 'Other') ...[
+                      SizedBox(height: 16),
+                      _buildSimpleTextField(
+                        controller: _otherClassificationController,
+                        label: 'Specify Classification',
+                        hint: 'Enter custom classification...',
+                        prefixIcon: Icons.edit,
+                      ),
+                    ],
 
                     SizedBox(height: 16),
 
@@ -484,18 +533,57 @@ class _IssueDialogState extends State<IssueDialog> {
                             ),
                           ),
 
-                        // Image preview
-                        if (_imageFile != null)
+                        // Image preview with delete option
+                        if (_imageFiles.isNotEmpty)
                           Container(
                             margin: const EdgeInsets.only(top: 12),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.file(
-                                _imageFile!,
-                                // height: 150,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                              ),
+                            child: Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children:
+                                  _imageFiles.asMap().entries.map((entry) {
+                                int index = entry.key;
+                                File imageFile = entry.value;
+                                return Stack(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Image.file(
+                                        imageFile,
+                                        height: 120,
+                                        width: 120,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                    Positioned(
+                                      top: 4,
+                                      right: 4,
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            _imageFiles.removeAt(index);
+                                            if (_imageFiles.isEmpty) {
+                                              _imageError = null;
+                                            }
+                                          });
+                                        },
+                                        child: Container(
+                                          padding: EdgeInsets.all(4),
+                                          decoration: BoxDecoration(
+                                            color: Colors.red,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(
+                                            Icons.close,
+                                            color: Colors.white,
+                                            size: 16,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              }).toList(),
                             ),
                           ),
                       ],
@@ -688,6 +776,44 @@ class _IssueDialogState extends State<IssueDialog> {
                 clearOption: true,
                 searchKeyboardType: TextInputType.text,
               ),
+        // Show text field for manual entry when "Other" is selected
+        if (_partNumberController.dropDownValue?.value == 'Other')
+          Padding(
+            padding: const EdgeInsets.only(top: 12.0),
+            child: TextFormField(
+              controller: _otherPartNumberController,
+              autofocus: false,
+              decoration: InputDecoration(
+                labelText: 'Enter Custom Part Number',
+                hintText: 'Type the part number...',
+                hintStyle: TextStyle(color: Colors.grey[400]),
+                prefixIcon: Icon(Icons.edit, color: mycolor),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: mycolor, width: 2),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              ),
+              validator: (value) {
+                if (_partNumberController.dropDownValue?.value == 'Other' &&
+                    (value == null || value.trim().isEmpty)) {
+                  return 'Please enter a custom part number';
+                }
+                return null;
+              },
+            ),
+          ),
       ],
     );
   }
@@ -897,7 +1023,7 @@ class _IssueDialogState extends State<IssueDialog> {
     final image = await picker.pickImage(source: ImageSource.camera);
     if (image != null) {
       setState(() {
-        _imageFile = File(image.path);
+        _imageFiles.add(File(image.path));
         _imageError = null;
       });
     }
@@ -968,11 +1094,19 @@ class _IssueDialogState extends State<IssueDialog> {
       // Return claim data to indicate successful submission
       final claimData = {
         'description': _issueDescriptionController.text.trim(),
-        'partNo': _partNoController.text.trim(),
-        'category': _selectedIssueCategory,
-        'type': _selectedIssueType,
-        'classification': _selectedDefectClassification,
-        'image': _imageFile,
+        'partNo': _partNumberController.dropDownValue?.value == 'Other'
+            ? _otherPartNumberController.text.trim()
+            : _partNoController.text.trim(),
+        'category': _selectedIssueCategory == 'Other'
+            ? _otherCategoryController.text.trim()
+            : _selectedIssueCategory,
+        'type': _selectedIssueType == 'Other'
+            ? _otherTypeController.text.trim()
+            : _selectedIssueType,
+        'classification': _selectedDefectClassification == 'Other'
+            ? _otherClassificationController.text.trim()
+            : _selectedDefectClassification,
+        'images': _imageFiles,
       };
 
       Navigator.pop(context, claimData);

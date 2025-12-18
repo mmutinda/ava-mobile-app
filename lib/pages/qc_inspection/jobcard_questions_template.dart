@@ -645,7 +645,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                         handleClaimData(qid, claimDataResult);
                                       },
                                       initialStaffNo: get['staff_no'],
-                                      StaffNo: (user['data'] != null && user['data']['staff_no'] != null && user['data']['staff_no'].toString().trim().isNotEmpty) ? user['data']['staff_no'].toString() : '',
+                                      StaffNo: get['staff_no'],
                                       onStaffNoChanged: (String value) {
                                         var qid = get['id'];
                                         setState(() {
@@ -947,17 +947,17 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                       String? staffNo =
                                           staffNumbers[questionId];
 
-                                      // If not found or empty, try user data
+                                      // If not found or empty, try getting from question's staff_no field ONLY (no user data fallback)
                                       if (staffNo == null ||
                                           staffNo.trim().isEmpty) {
-                                        if (user['data'] != null &&
-                                            user['data']['staff_no'] != null &&
-                                            user['data']['staff_no']
+                                        // Try getting from question's staff_no field
+                                        if (quest['staff_no'] != null &&
+                                            quest['staff_no']
                                                 .toString()
                                                 .trim()
                                                 .isNotEmpty) {
-                                          staffNo = user['data']['staff_no']
-                                              .toString();
+                                          staffNo =
+                                              quest['staff_no'].toString();
                                         } else {
                                           staffNo = '';
                                         }
@@ -966,7 +966,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                       print(
                                           'Question ${i + 1} (ID: $questionId): Answer=$answerValue, StaffNo="$staffNo"');
 
-                                      // Check if staff_no is null, empty, or whitespace
+                                      // Check if staff_no is null, empty, or whitespace - DON'T SAVE IF EMPTY
                                       if (staffNo.trim().isEmpty) {
                                         questionsWithoutStaffNo.add(
                                             "Question ${i + 1}: ${quest['query_name']}");
@@ -1169,7 +1169,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                           traceableSignature[questionId],
                                       "users": selectedUsers[questionId],
                                       "staff_no": staffNumbers[questionId] ??
-                                          user['data']?['staff_no'] ??
+                                          quest['staff_no'] ??
                                           '',
                                       // Claim data fields
                                       // "issue_description": '',
@@ -1265,8 +1265,23 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                       // print(
                                       //     "-->${DescipTextValues[questionId]}");
                                     }
-                                    if (answer["answer"] != null) {
-                                      answers.add(answer);
+
+                                    // Only add answer if it has a value AND staff_no is not empty
+                                    if (answer["answer"] != null &&
+                                        answer["answer"]
+                                            .toString()
+                                            .isNotEmpty) {
+                                      // Check if staff_no is not empty before adding
+                                      String staffNo =
+                                          answer["staff_no"]?.toString() ?? '';
+                                      if (staffNo.trim().isNotEmpty) {
+                                        answers.add(answer);
+                                        print(
+                                            'Adding answer for question $questionId with staff_no: $staffNo');
+                                      } else {
+                                        print(
+                                            'Skipping answer for question $questionId - staff_no is empty');
+                                      }
                                     }
                                   }
 
@@ -1412,8 +1427,9 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
         request.files.add(await http.MultipartFile.fromPath(
             'images[${entry.key}]', entry.value.path));
       }
-      print("=== PAYLOAD DEBUG ===");
-      print("Answers: ${jsonEncode(answers)}");
+
+      // print("Answers: ${jsonEncode(answers)}");
+      log(jsonEncode(answers));
       if (claimDataMap != null && claimDataMap.isNotEmpty) {
         // Clean claim data for debug output (same as payload)
         List<Map<String, dynamic>> claimDataArray =
@@ -1465,9 +1481,6 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
       }
     } catch (e) {
       setState(() => isButtonEnabled = true);
-      print("==============");
-      print(e);
-      print("==============");
       awesomeTopSnackbar(
           context, "Something went wrong. Check your internet connection.",
           backgroundColor: Colors.red);
@@ -1505,20 +1518,23 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
         Category = dataMain["category"] ?? {};
         substations = dataMain["substation"] ?? [];
         print('Substation data: $substations');
-
-        // Initialize staff numbers for all questions with user's staff number
-        for (var question in questions) {
-          final int questionId = question["id"];
-          if (!staffNumbers.containsKey(questionId)) {
-            staffNumbers[questionId] = user['data']?['staff_no'] ?? '';
-          }
-        }
-
         // Debug: Print substations structure
         for (int i = 0; i < substations.length; i++) {
           var station = substations[i];
           print(
               'Station $i: sub_stations_id=${station['sub_stations_id']}, station=${station['station']}');
+        }
+
+        // Initialize staffNumbers map with staff_no from API
+        for (var question in questions) {
+          final int questionId = question["id"];
+          final String? apiStaffNo = question["staff_no"];
+
+          // Only initialize if staff_no exists in API and not empty
+          if (apiStaffNo != null && apiStaffNo.toString().trim().isNotEmpty) {
+            staffNumbers[questionId] = apiStaffNo.toString();
+            print('Initialized staff_no for question $questionId: $apiStaffNo');
+          }
         }
 
         // Reset selectedNextStationId when new data is loaded

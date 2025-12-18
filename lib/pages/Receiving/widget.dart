@@ -93,6 +93,14 @@ class ChecklistItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     bool isOK = checklistItem['answer'] == 'OK';
+    bool isNA = checklistItem['answer'] == 'N/A';
+    bool isNOK = checklistItem['answer'] == 'NOK';
+
+    Color borderColor = isOK
+        ? Colors.green.shade300
+        : isNA
+            ? Colors.orange.shade300
+            : Colors.red.shade300;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -106,7 +114,7 @@ class ChecklistItemCard extends StatelessWidget {
         // ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isOK ? Colors.green.shade300 : Colors.red.shade300,
+          color: borderColor,
           width: 1.5,
         ),
         // boxShadow: [
@@ -134,14 +142,23 @@ class ChecklistItemCard extends StatelessWidget {
                       gradient: LinearGradient(
                         colors: isOK
                             ? [Colors.green.shade400, Colors.green.shade600]
-                            : [Colors.red.shade400, Colors.red.shade600],
+                            : isNA
+                                ? [
+                                    Colors.orange.shade400,
+                                    Colors.orange.shade600
+                                  ]
+                                : [Colors.red.shade400, Colors.red.shade600],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: (isOK ? Colors.green : Colors.red)
+                          color: (isOK
+                                  ? Colors.green
+                                  : isNA
+                                      ? Colors.orange
+                                      : Colors.red)
                               .withOpacity(0.3),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
@@ -201,15 +218,21 @@ class ChecklistItemCard extends StatelessWidget {
                     gradient: LinearGradient(
                       colors: isOK
                           ? [Colors.green.shade400, Colors.green.shade600]
-                          : [Colors.red.shade400, Colors.red.shade600],
+                          : isNA
+                              ? [Colors.orange.shade400, Colors.orange.shade600]
+                              : [Colors.red.shade400, Colors.red.shade600],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color:
-                            (isOK ? Colors.green : Colors.red).withOpacity(0.3),
+                        color: (isOK
+                                ? Colors.green
+                                : isNA
+                                    ? Colors.orange
+                                    : Colors.red)
+                            .withOpacity(0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -219,7 +242,11 @@ class ChecklistItemCard extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        isOK ? Icons.check_circle : Icons.cancel,
+                        isOK
+                            ? Icons.check_circle
+                            : isNA
+                                ? Icons.remove_circle
+                                : Icons.cancel,
                         color: Colors.white,
                         size: 18,
                       ),

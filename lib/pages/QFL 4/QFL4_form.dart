@@ -106,58 +106,63 @@ class _QFL4_formState extends State<QFL4_form> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      backgroundColor: Colors.grey.shade50,
-      appBar: AppBar(
-        title: const Text(
-          'Quality Issue Report',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
+      child: Scaffold(
+        backgroundColor: Colors.grey.shade50,
+        appBar: AppBar(
+          title: const Text(
+            'Quality Issue Report',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 18,
+            ),
           ),
-        ),
-        elevation: 0,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(
-            height: 1,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.transparent,
-                  theme.primaryColor.withOpacity(0.2),
-                  Colors.transparent,
-                ],
+          elevation: 0,
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1),
+            child: Container(
+              height: 1,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.transparent,
+                    theme.primaryColor.withOpacity(0.2),
+                    Colors.transparent,
+                  ],
+                ),
               ),
             ),
           ),
         ),
-      ),
-      body: isLoading
-          ? _buildLoadingState()
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: errorText.isNotEmpty
-                  ? _buildErrorState()
-                  : Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildHeaderCard(),
-                          const SizedBox(height: 16),
-                          _buildShopSelectionCard(),
-                          const SizedBox(height: 16),
-                          if (_shopController.dropDownValue != null) ...[
-                            _buildIssuesCard(),
-                            const SizedBox(height: 24),
-                            _buildSubmitButton(),
-                          ] else
-                            _buildSelectShopPrompt(),
-                        ],
+        body: isLoading
+            ? _buildLoadingState()
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: errorText.isNotEmpty
+                    ? _buildErrorState()
+                    : Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildHeaderCard(),
+                            const SizedBox(height: 16),
+                            _buildShopSelectionCard(),
+                            const SizedBox(height: 16),
+                            if (_shopController.dropDownValue != null) ...[
+                              _buildIssuesCard(),
+                              const SizedBox(height: 24),
+                              _buildSubmitButton(),
+                            ] else
+                              _buildSelectShopPrompt(),
+                          ],
+                        ),
                       ),
-                    ),
-            ),
+              ),
+      ),
     );
   }
 
@@ -500,79 +505,47 @@ class _QFL4_formState extends State<QFL4_form> {
           ),
         ],
       ),
-      child: isLoading2
-          ? Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        Colors.grey.shade600,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Submitting...',
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              ),
-            )
-          : ElevatedButton(
-              onPressed: () {
-                if (_formKey.currentState!.validate()) {
-                  final collectedIssues = List.generate(
-                    issueControllers.length,
-                    (index) => {
-                      'issue': issueControllers[index].text.trim(),
-                      'class': issueClasses[index],
-                    },
-                  );
-
-                  debugPrint(
-                      "Selected Shop ID: ${_shopController.dropDownValue?.value}");
-                  debugPrint("Submitted Issues with Classes: $collectedIssues");
-                  _showConfirmDialog(context);
-                }
+      child: ElevatedButton(
+        onPressed: () {
+          if (_formKey.currentState!.validate()) {
+            final collectedIssues = List.generate(
+              issueControllers.length,
+              (index) => {
+                'issue': issueControllers[index].text.trim(),
+                'class': issueClasses[index],
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).primaryColor,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 0,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.send_rounded, size: 20),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Submit Report',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+            );
+
+            debugPrint(
+                "Selected Shop ID: ${_shopController.dropDownValue?.value}");
+            debugPrint("Submitted Issues with Classes: $collectedIssues");
+            _showConfirmDialog(context);
+          }
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Theme.of(context).primaryColor,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          elevation: 0,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.send_rounded, size: 20),
+            const SizedBox(width: 8),
+            const Text(
+              'Submit Report',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
               ),
             ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -802,6 +775,7 @@ class _QFL4_formState extends State<QFL4_form> {
                   flex: 3,
                   child: TextFormField(
                     controller: issueControllers[index],
+                    autofocus: false,
                     maxLines: 3,
                     minLines: 2,
                     decoration: InputDecoration(
@@ -1165,9 +1139,49 @@ class _QFL4_formState extends State<QFL4_form> {
       "items": collectedIssues,
     };
     log(jsonEncode(payload));
-    setState(() {
-      isLoading2 = true;
-    });
+
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    Theme.of(context).primaryColor,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'Submitting...',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade800,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Please wait',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
 
     try {
       final url = Api.api_url + "saveqfl4";
@@ -1178,9 +1192,9 @@ class _QFL4_formState extends State<QFL4_form> {
         context,
       );
 
-      setState(() {
-        isLoading2 = false;
-      });
+      // Close loading dialog
+      Navigator.of(context).pop();
+
       log(jsonEncode(response));
       if (response != null && response['success'] == true) {
         awesomeTopSnackbar(
@@ -1208,9 +1222,9 @@ class _QFL4_formState extends State<QFL4_form> {
         );
       }
     } catch (e) {
-      setState(() {
-        isLoading2 = false;
-      });
+      // Close loading dialog
+      Navigator.of(context).pop();
+
       debugPrint("❌ Error during saveData: $e");
       awesomeTopSnackbar(
         context,
@@ -1223,11 +1237,6 @@ class _QFL4_formState extends State<QFL4_form> {
         backgroundColor: Colors.red,
       );
     } finally {
-      // Remove or update this block if 'isLoading2' is not defined elsewhere
-      // If you want to use a loading state, define 'isLoading2' as a bool in your state
-      setState(() {
-        isLoading2 = false;
-      });
       setState(() {
         _shopController.setDropDown(null);
       });

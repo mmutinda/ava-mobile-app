@@ -102,7 +102,7 @@ class _QFL4State extends State<QFL4> with TickerProviderStateMixin {
       message = '';
     });
 
-    final url = "${Api.api_url}sheduledunits";
+    final url = "${Api.api_url}qfl4units";
     print(url);
 
     try {
@@ -130,7 +130,7 @@ class _QFL4State extends State<QFL4> with TickerProviderStateMixin {
         _animationController.forward();
         if (vehicles.isEmpty) {
           setState(() {
-            message = "No scheduled units found.";
+            message = "No units found.";
           });
           EasyLoading.dismiss();
         }
@@ -413,8 +413,10 @@ class _QFL4State extends State<QFL4> with TickerProviderStateMixin {
                                               context,
                                               MaterialPageRoute(
                                                 builder: (context) => QFL4_View(
-                                                  vehicleName: vehicles[index].model,
-                                                  vehicleVin: vehicles[index].vin,
+                                                  vehicleName:
+                                                      vehicles[index].model,
+                                                  vehicleVin:
+                                                      vehicles[index].vin,
                                                   vehicleId: vehicles[index].id,
                                                   modelId:
                                                       vehicles[index].model_id,
@@ -447,7 +449,6 @@ class _QFL4State extends State<QFL4> with TickerProviderStateMixin {
                                               ],
                                             ),
                                           ),
-                                          
                                         ),
                                       ),
                                     ),
