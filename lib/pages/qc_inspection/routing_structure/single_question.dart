@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -7,9 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
-import 'package:isuze_pqcs/common/widgets.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/routing_structure/issuedialog.dart';
-import 'package:nb_utils/nb_utils.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 
 class SingleQuestion extends StatefulWidget {
@@ -76,7 +73,6 @@ class SingleQuestion extends StatefulWidget {
 class _SingleQuestionState extends State<SingleQuestion>
     with AutomaticKeepAliveClientMixin {
   String? okay;
-  Uint8List? _signatureImage;
   late TextEditingController inputController;
   late TextEditingController staffNoController; // Add staff number controller
   File? _image; // Holds the captured image
@@ -95,7 +91,7 @@ class _SingleQuestionState extends State<SingleQuestion>
   String? _claimCategory;
   String? _claimType;
   String? _claimClassification;
-  File? _claimImage;
+  List<File> _claimImages = []; // Changed to handle multiple images
 
   // Initialize claim template with job card format
   Map<String, dynamic> _initializeClaimTemplate() {
@@ -667,7 +663,7 @@ class _SingleQuestionState extends State<SingleQuestion>
 
   @override
   Widget build(BuildContext context) {
-    print(widget.scandata);
+    // print(widget.scandata);
     super.build(context);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -1056,7 +1052,7 @@ class _SingleQuestionState extends State<SingleQuestion>
                                 _claimCategory = null;
                                 _claimType = null;
                                 _claimClassification = null;
-                                _claimImage = null;
+                                _claimImages.clear(); // Clear multiple images
                               });
 
                               // Clear claim data in parent via callback
@@ -1100,7 +1096,8 @@ class _SingleQuestionState extends State<SingleQuestion>
                                         _claimCategory = null;
                                         _claimType = null;
                                         _claimClassification = null;
-                                        _claimImage = null;
+                                        _claimImages
+                                            .clear(); // Clear multiple images
                                       });
 
                                       // Clear claim data in parent via callback
@@ -1159,7 +1156,8 @@ class _SingleQuestionState extends State<SingleQuestion>
                                     initialCategory: _claimCategory,
                                     initialType: _claimType,
                                     initialClassification: _claimClassification,
-                                    initialImage: _claimImage,
+                                    initialImages:
+                                        _claimImages, // Pass all images
                                   ),
                                 ),
                               );
@@ -1175,7 +1173,8 @@ class _SingleQuestionState extends State<SingleQuestion>
                                   'issue_type': result['type'],
                                   'defect_classification':
                                       result['classification'],
-                                  'image': result['image'],
+                                  'images': result[
+                                      'images'], // Handle multiple images
                                   'updated_at':
                                       DateTime.now().toIso8601String(),
                                 };
@@ -1191,7 +1190,8 @@ class _SingleQuestionState extends State<SingleQuestion>
                                   _claimType = result['type'];
                                   _claimClassification =
                                       result['classification'];
-                                  _claimImage = result['image'];
+                                  _claimImages = result['images'] ??
+                                      []; // Store multiple images
                                 });
 
                                 // Send claim data to parent via callback
@@ -1256,7 +1256,8 @@ class _SingleQuestionState extends State<SingleQuestion>
                                               initialType: _claimType,
                                               initialClassification:
                                                   _claimClassification,
-                                              initialImage: _claimImage,
+                                              initialImages:
+                                                  _claimImages, // Pass all images
                                             ),
                                           ),
                                         );
@@ -1274,7 +1275,8 @@ class _SingleQuestionState extends State<SingleQuestion>
                                             'issue_type': result['type'],
                                             'defect_classification':
                                                 result['classification'],
-                                            'image': result['image'],
+                                            'images': result[
+                                                'images'], // Handle multiple images
                                             'updated_at': DateTime.now()
                                                 .toIso8601String(),
                                           };
@@ -1291,7 +1293,8 @@ class _SingleQuestionState extends State<SingleQuestion>
                                             _claimType = result['type'];
                                             _claimClassification =
                                                 result['classification'];
-                                            _claimImage = result['image'];
+                                            _claimImages = result['images'] ??
+                                                []; // Store multiple images
                                           });
 
                                           // Send claim data to parent via callback
@@ -1418,7 +1421,7 @@ class _SingleQuestionState extends State<SingleQuestion>
                             initialCategory: _claimCategory,
                             initialType: _claimType,
                             initialClassification: _claimClassification,
-                            initialImage: _claimImage,
+                            initialImages: _claimImages, // Pass all images
                             lotNo: widget.lotNo,
                           ),
                         ),
@@ -1447,7 +1450,8 @@ class _SingleQuestionState extends State<SingleQuestion>
                           _claimCategory = result['category'];
                           _claimType = result['type'];
                           _claimClassification = result['classification'];
-                          _claimImage = result['image'];
+                          _claimImages =
+                              result['images'] ?? []; // Store multiple images
                         });
 
                         // Send updated claim data to parent via callback
@@ -1571,114 +1575,6 @@ class _SingleQuestionState extends State<SingleQuestion>
                           ),
                         ),
                       ),
-                    ],
-                  ),
-
-                // Signature section
-                if (widget.can_sign == 'Yes' && widget.checkanswered == false)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 12),
-                      if (_signatureImage != null)
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade50,
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: Colors.grey.shade200),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                height: 60,
-                                width: 80,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(4),
-                                  border:
-                                      Border.all(color: Colors.grey.shade300),
-                                ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(4),
-                                  child: Image.memory(
-                                    _signatureImage!,
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              const Expanded(
-                                child: Text(
-                                  'Signature Captured',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.black87,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                              IconButton(
-                                onPressed: () {
-                                  setState(() {
-                                    _signatureImage = null;
-                                  });
-                                },
-                                icon: Icon(
-                                  Icons.close,
-                                  color: Colors.red.shade600,
-                                  size: 18,
-                                ),
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(
-                                  minWidth: 30,
-                                  minHeight: 30,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      else
-                        Container(
-                          width: double.infinity,
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              showInDialog(
-                                context,
-                                builder: (context) => SignatureField(
-                                  onSignatureChanged: (signature) async {
-                                    setState(() {
-                                      _signatureImage = signature;
-                                    });
-                                    String base64Image =
-                                        'data:image/png;base64,' +
-                                            base64Encode(_signatureImage!);
-                                    widget.onValueChanged2(base64Image);
-                                    Navigator.pop(context);
-                                  },
-                                ),
-                                dialogAnimation:
-                                    DialogAnimation.SLIDE_TOP_BOTTOM,
-                              );
-                            },
-                            icon: Icon(
-                              Icons.edit,
-                              size: 16,
-                              color: mycolor,
-                            ),
-                            label: const Text(
-                              "Add Signature",
-                              style: TextStyle(fontSize: 13),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: mycolor,
-                              side: BorderSide(color: mycolor),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                            ),
-                          ),
-                        ),
                     ],
                   ),
 

@@ -10,7 +10,6 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:isuze_pqcs/common/api.dart';
 import 'package:isuze_pqcs/common/constants.dart';
 import 'package:isuze_pqcs/common/functions.dart';
-import 'package:isuze_pqcs/pages/qc_inspection/routing_structure/multiple_question.dart';
 import 'package:isuze_pqcs/pages/qc_inspection/routing_structure/single_question.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:http/http.dart' as http;
@@ -50,17 +49,10 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
   Map<int, dynamic> questionValues = {};
   Map<int, String> traceableValues = {};
   Map<int, String> openTextValues = {};
-  Map<int, String> singleDescipTextValues = {};
   Map<int, String> DescipTextValues = {};
   Map<int, String> numericValues = {};
   Map<int, String> singleValues = {};
-  Map<int, String> singleDescripValues = {};
-  Map<int, String> singleDescripCategory = {};
   Map<int, String> singleDefectCategory = {}; // Add defect category tracking
-  Map<int, String> multipleDefectCategory =
-      {}; // Add defect category tracking for multiple questions
-  Map<int, String> multipleValue = {};
-  Map<int, List<dynamic>> multipleValues = {};
   Map<int, List<String>> selectedUsers = {};
   Map<int, File> images = {};
   Map<int, Map<String, dynamic>> claimData =
@@ -110,26 +102,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
       String staffNo = '';
       bool hasClaim = false;
 
-      if (question["quiz_type"] == "multiple") {
-        String? value = multipleValue[questionId];
-        List<dynamic>? values = multipleValues[questionId];
-        String? category = multipleDefectCategory[questionId];
-
-        if (value != null) {
-          answer = value;
-          answerType = 'Multiple Choice';
-
-          if (values != null && values.isNotEmpty) {
-            defects = values.map((e) => e.toString()).toList();
-          }
-
-          if (category != null && category.isNotEmpty) {
-            defectCategory = category;
-          }
-
-          description = DescipTextValues[questionId] ?? '';
-        }
-      } else if (question["quiz_type"] == "single") {
+      if (question["quiz_type"] == "single") {
         String? value = singleValues[questionId];
         String? category = singleDefectCategory[questionId];
 
@@ -231,13 +204,6 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
       }
     }
 
-    // Check multiple questions
-    for (var entry in multipleValue.entries) {
-      if (entry.value.trim().isNotEmpty) {
-        return true;
-      }
-    }
-
     // Check numeric answers
     for (var entry in numericValues.entries) {
       if (entry.value.trim().isNotEmpty) {
@@ -248,13 +214,6 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
     // Check open text answers
     for (var entry in openTextValues.entries) {
       if (entry.value.trim().isNotEmpty) {
-        return true;
-      }
-    }
-
-    // Check multiple values (list type)
-    for (var entry in multipleValues.entries) {
-      if (entry.value.isNotEmpty) {
         return true;
       }
     }
@@ -450,102 +409,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
 
                                 Widget questionWidget;
 
-                                if (get["quiz_type"] == "multiple") {
-                                  questionWidget = MultipleQuestion(
-                                      initialDefectCategory:
-                                          (get['defectcategory'] is String)
-                                              ? get['defectcategory']
-                                              : null,
-                                      onDefectCategoryChanged: (String value) {
-                                        var qid = get['id'];
-                                        setState(() {
-                                          multipleDefectCategory[qid] = value;
-                                          print(
-                                              'Multiple Question - Defect category selected: $value for question $qid');
-                                        });
-                                      },
-                                      onInputValueChanged: (value) {
-                                        var qid = get['id'];
-                                        setState(() {
-                                          DescipTextValues[qid] = value;
-                                        });
-                                      },
-                                      initialDecripValue:
-                                          get["defect_description"],
-                                      hasDescription:
-                                          (get["additional_field"] ?? 'false')
-                                              as String,
-                                      instruction:
-                                          (get["instruction"] ?? '') as String,
-                                      intial_option: get["defect_names"],
-                                      initialImage: (get["image_url"] == null ||
-                                              get["image_url"]
-                                                  .toString()
-                                                  .isEmpty)
-                                          ? null
-                                          : get["image_url"],
-                                      onImageChanged: (File? image) {
-                                        print("image path $image");
-                                        setState(() {
-                                          if (image == null) {
-                                            images.remove(get['id']);
-                                          } else {
-                                            images[get['id']] = image;
-                                          }
-                                        });
-                                      },
-                                      onUsersSelected: (List<String> value) {
-                                        var qid = get['id'];
-                                        setState(() {
-                                          selectedUsers[qid] = value;
-                                        });
-                                      },
-                                      users: (get['emails'] as List<dynamic>? ??
-                                              [])
-                                          .map((user) {
-                                        return {
-                                          'name': (user['name'] ?? 'Unknown')
-                                              .toString(),
-                                          'email':
-                                              (user['email'] ?? '').toString(),
-                                        };
-                                      }).toList(),
-                                      index: index,
-                                      id: get['id'],
-                                      options: get["options"],
-                                      onRadioChanged: (value) {
-                                        var qid = get['id'];
-                                        setState(() {
-                                          multipleValue[qid] = value;
-
-                                          if (value == "OK") {
-                                            multipleValues[qid] =
-                                                multipleValues[qid] ?? [];
-                                            multipleValues[qid]!.clear();
-                                          }
-                                        });
-                                      },
-                                      onValuesChanged: (value) {
-                                        // print(values);
-                                        var qid = get['id'];
-                                        setState(() {
-                                          multipleValues[qid] = value;
-                                          // print(multipleValues);
-                                        });
-                                      },
-                                      onValueChanged2: (value) {
-                                        var qid = get['id'];
-                                        setState(() {
-                                          traceableSignature[qid] = value;
-                                          // print(traceableSignature);
-                                        });
-                                      },
-                                      initialRadioValue: answer_given != ''
-                                          ? answer_given
-                                          : null,
-                                      question: (get["query_name"] ??
-                                          'No question text') as String);
-                                } else if (get["quiz_type"] == "single") {
+                                if (get["quiz_type"] == "single") {
                                   //single
                                   questionWidget = SingleQuestion(
                                       lotNo: widget.lotNo,
@@ -657,50 +521,8 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                       initialRadioValue: answer_given != '' ? answer_given : null,
                                       question: (get['query_name'] ?? 'No question text') as String);
                                 } else {
-                                  // Handle unrecognized or missing quiz types
-                                  questionWidget = Container(
-                                    padding: EdgeInsets.all(16),
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: mycolor,
-                                        width: 1,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.warning_amber_rounded,
-                                          color: mycolor,
-                                          size: 24,
-                                        ),
-                                        SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                'Unsupported Question Type',
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 14,
-                                                ),
-                                              ),
-                                              SizedBox(height: 4),
-                                              Text(
-                                                'Quiz type "${get["quiz_type"] ?? "unknown"}" is not supported',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: mycolor,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
+                                  // Skip unsupported question types
+                                  questionWidget = Container();
                                 }
                                 return questionWidget;
                               },
@@ -779,10 +601,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                     final int questionId = quest["id"];
                                     bool hasAnswer = false;
 
-                                    if (quest["quiz_type"] == "multiple") {
-                                      hasAnswer =
-                                          multipleValue[questionId] != null;
-                                    } else if (quest["quiz_type"] == "single") {
+                                    if (quest["quiz_type"] == "single") {
                                       hasAnswer =
                                           singleValues[questionId] != null;
                                     }
@@ -931,47 +750,43 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                     bool hasAnswer = false;
                                     String? answerValue;
 
-                                    if (quest["quiz_type"] == "multiple") {
-                                      answerValue = multipleValue[questionId];
-                                      hasAnswer = answerValue != null &&
-                                          answerValue.isNotEmpty;
-                                    } else if (quest["quiz_type"] == "single") {
+                                    if (quest["quiz_type"] == "single") {
                                       answerValue = singleValues[questionId];
                                       hasAnswer = answerValue != null &&
                                           answerValue.isNotEmpty;
-                                    }
 
-                                    // If question is answered, check if staff_no exists and is valid
-                                    if (hasAnswer) {
-                                      // Try to get staff number from staffNumbers map first
-                                      String? staffNo =
-                                          staffNumbers[questionId];
+                                      // If question is answered, check if staff_no exists and is valid
+                                      if (hasAnswer) {
+                                        // Try to get staff number from staffNumbers map first
+                                        String? staffNo =
+                                            staffNumbers[questionId];
 
-                                      // If not found or empty, try getting from question's staff_no field ONLY (no user data fallback)
-                                      if (staffNo == null ||
-                                          staffNo.trim().isEmpty) {
-                                        // Try getting from question's staff_no field
-                                        if (quest['staff_no'] != null &&
-                                            quest['staff_no']
-                                                .toString()
-                                                .trim()
-                                                .isNotEmpty) {
-                                          staffNo =
-                                              quest['staff_no'].toString();
-                                        } else {
-                                          staffNo = '';
+                                        // If not found or empty, try getting from question's staff_no field ONLY (no user data fallback)
+                                        if (staffNo == null ||
+                                            staffNo.trim().isEmpty) {
+                                          // Try getting from question's staff_no field
+                                          if (quest['staff_no'] != null &&
+                                              quest['staff_no']
+                                                  .toString()
+                                                  .trim()
+                                                  .isNotEmpty) {
+                                            staffNo =
+                                                quest['staff_no'].toString();
+                                          } else {
+                                            staffNo = '';
+                                          }
                                         }
-                                      }
 
-                                      print(
-                                          'Question ${i + 1} (ID: $questionId): Answer=$answerValue, StaffNo="$staffNo"');
-
-                                      // Check if staff_no is null, empty, or whitespace - DON'T SAVE IF EMPTY
-                                      if (staffNo.trim().isEmpty) {
-                                        questionsWithoutStaffNo.add(
-                                            "Question ${i + 1}: ${quest['query_name']}");
                                         print(
-                                            '  >>> MISSING STAFF NUMBER for Question ${i + 1}');
+                                            'Question ${i + 1} (ID: $questionId): Answer=$answerValue, StaffNo="$staffNo"');
+
+                                        // Check if staff_no is null, empty, or whitespace - DON'T SAVE IF EMPTY
+                                        if (staffNo.trim().isEmpty) {
+                                          questionsWithoutStaffNo.add(
+                                              "Question ${i + 1}: ${quest['query_name']}");
+                                          print(
+                                              '  >>> MISSING STAFF NUMBER for Question ${i + 1}');
+                                        }
                                       }
                                     }
                                   }
@@ -1181,46 +996,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                       "has_claim_image": false,
                                     };
 
-                                    if (quest["quiz_type"] == "multiple") {
-                                      // Retrieve values from MultipleQuestion
-                                      List<dynamic>? values =
-                                          multipleValues[questionId];
-                                      String? value = multipleValue[questionId];
-                                      String? defectCategory =
-                                          multipleDefectCategory[questionId];
-
-                                      answer["defects"] = values;
-                                      answer["answer"] = value;
-                                      answer["defect_category"] =
-                                          defectCategory;
-
-                                      // Add claim data if available for NOK answers
-                                      if (value == "NOK" &&
-                                          claimData.containsKey(questionId)) {
-                                        var claimInfo = claimData[questionId];
-
-                                        // Extract specific claim fields to answer
-                                        answer["defect_description"] =
-                                            claimInfo?['issue_description'] ??
-                                                '';
-                                        answer["part_number"] =
-                                            claimInfo?['part_number'] ?? '';
-                                        answer["defect_category"] =
-                                            claimInfo?['issue_category'];
-                                        answer["issue_type"] =
-                                            claimInfo?['issue_type'];
-                                        answer["defect_classification"] =
-                                            claimInfo?['defect_classification'];
-
-                                        // Handle image separately for multipart upload
-                                        if (claimInfo?['image'] != null) {
-                                          // Store claim image in images map with special key for claim
-                                          images[questionId] =
-                                              claimInfo!['image'];
-                                          answer["has_claim_image"] = true;
-                                        }
-                                      }
-                                    } else if (quest["quiz_type"] == "single") {
+                                    if (quest["quiz_type"] == "single") {
                                       // Retrieve values from SingleQuestion
                                       String? value = singleValues[questionId];
                                       answer["answer"] = value;
@@ -1251,12 +1027,32 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                         answer["defect_classification"] =
                                             claimInfo?['defect_classification'];
 
-                                        // Handle image separately for multipart upload
-                                        if (claimInfo?['image'] != null) {
-                                          // Store claim image in images map with special key for claim
-                                          images[questionId] =
-                                              claimInfo!['image'];
+                                        // Handle multiple images separately for multipart upload
+                                        if (claimInfo?['images'] != null &&
+                                            claimInfo!['images'] is List &&
+                                            (claimInfo['images'] as List)
+                                                .isNotEmpty) {
+                                          // Store all claim images in images map with special keys for each image
+                                          List<dynamic> claimImages =
+                                              claimInfo['images'] as List;
+                                          for (int i = 0;
+                                              i < claimImages.length;
+                                              i++) {
+                                            if (claimImages[i] is File) {
+                                              // Use unique key for each claim image: questionId_claim_imageIndex
+                                              String imageKey =
+                                                  '${questionId}_claim_$i';
+                                              images[int.tryParse(imageKey
+                                                          .hashCode
+                                                          .toString()
+                                                          .substring(0, 8)) ??
+                                                      (questionId + 1000 + i)] =
+                                                  claimImages[i] as File;
+                                            }
+                                          }
                                           answer["has_claim_image"] = true;
+                                          answer["claim_images_count"] =
+                                              claimImages.length;
                                         }
 
                                         print(
@@ -1276,8 +1072,8 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
                                           answer["staff_no"]?.toString() ?? '';
                                       if (staffNo.trim().isNotEmpty) {
                                         answers.add(answer);
-                                        print(
-                                            'Adding answer for question $questionId with staff_no: $staffNo');
+                                        // print(
+                                        //     'Adding answer for question $questionId with staff_no: $staffNo');
                                       } else {
                                         print(
                                             'Skipping answer for question $questionId - staff_no is empty');
@@ -1396,9 +1192,25 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
           Map<String, dynamic> cleanClaimData =
               Map<String, dynamic>.from(claimData);
 
-          // Remove the File object from claim data (it's handled separately in multipart upload)
+          // Remove the File objects from claim data (they're handled separately in multipart upload)
+          if (cleanClaimData.containsKey('images')) {
+            // Convert File references to string paths or remove them
+            if (cleanClaimData['images'] != null &&
+                cleanClaimData['images'] is List) {
+              List<dynamic> images = cleanClaimData['images'] as List;
+              List<String> imagePaths = [];
+              for (var image in images) {
+                if (image != null) {
+                  imagePaths.add(image.toString());
+                }
+              }
+              cleanClaimData['image_paths'] = imagePaths;
+            }
+            cleanClaimData.remove('images'); // Remove the actual File objects
+          }
+
+          // Handle legacy single image field for backward compatibility
           if (cleanClaimData.containsKey('image')) {
-            // Convert File reference to string path or remove it
             if (cleanClaimData['image'] != null) {
               cleanClaimData['image_path'] = cleanClaimData['image'].toString();
             }
@@ -1436,6 +1248,24 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
             claimDataMap.values.map((claimData) {
           Map<String, dynamic> cleanClaimData =
               Map<String, dynamic>.from(claimData);
+
+          // Handle multiple images
+          if (cleanClaimData.containsKey('images')) {
+            if (cleanClaimData['images'] != null &&
+                cleanClaimData['images'] is List) {
+              List<dynamic> images = cleanClaimData['images'] as List;
+              List<String> imagePaths = [];
+              for (var image in images) {
+                if (image != null) {
+                  imagePaths.add(image.toString());
+                }
+              }
+              cleanClaimData['image_paths'] = imagePaths;
+            }
+            cleanClaimData.remove('images');
+          }
+
+          // Handle legacy single image for backward compatibility
           if (cleanClaimData.containsKey('image')) {
             if (cleanClaimData['image'] != null) {
               cleanClaimData['image_path'] = cleanClaimData['image'].toString();
@@ -1517,7 +1347,7 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
         questions = dataMain["query"] ?? [];
         Category = dataMain["category"] ?? {};
         substations = dataMain["substation"] ?? [];
-        print('Substation data: $substations');
+
         // Debug: Print substations structure
         for (int i = 0; i < substations.length; i++) {
           var station = substations[i];
@@ -1533,7 +1363,6 @@ class _JobCardQuestionsTemplateState extends State<JobCardQuestionsTemplate> {
           // Only initialize if staff_no exists in API and not empty
           if (apiStaffNo != null && apiStaffNo.toString().trim().isNotEmpty) {
             staffNumbers[questionId] = apiStaffNo.toString();
-            print('Initialized staff_no for question $questionId: $apiStaffNo');
           }
         }
 

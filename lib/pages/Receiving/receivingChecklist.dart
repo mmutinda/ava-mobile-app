@@ -1026,7 +1026,7 @@ class _QCChecklistState extends State<QCChecklist>
                                                                       query['nokData']
                                                                           ?[
                                                                           'classification'],
-                                                                  initialImage:
+                                                                  initialImages:
                                                                       query['nokData']
                                                                           ?[
                                                                           'image'],

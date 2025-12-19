@@ -14,7 +14,7 @@ class IssueDialog extends StatefulWidget {
   final String? initialCategory;
   final String? initialType;
   final String? initialClassification;
-  final File? initialImage;
+  final List<File>? initialImages; // Changed to support multiple images
   final String lotNo; // Add lot number parameter
 
   const IssueDialog({
@@ -24,7 +24,7 @@ class IssueDialog extends StatefulWidget {
     this.initialCategory,
     this.initialType,
     this.initialClassification,
-    this.initialImage,
+    this.initialImages, // Changed to support multiple images
     required this.lotNo, // Add lot number parameter
   }) : super(key: key);
 
@@ -292,8 +292,8 @@ class _IssueDialogState extends State<IssueDialog> {
           value: widget.initialClassification!);
     }
 
-    if (widget.initialImage != null) {
-      _imageFiles = [widget.initialImage!];
+    if (widget.initialImages != null && widget.initialImages!.isNotEmpty) {
+      _imageFiles = List<File>.from(widget.initialImages!);
     }
 
     // Load part numbers from API

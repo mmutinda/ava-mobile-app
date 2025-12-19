@@ -89,28 +89,6 @@ class _QcCategoriesState extends State<QcCategories> {
                     });
                   },
                 ),
-                SpeedDialChild(
-                  backgroundColor: Colors.green.shade600,
-                  foregroundColor: Colors.white,
-                  labelStyle: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                    fontSize: 14,
-                  ),
-                  labelBackgroundColor: Colors.white,
-                  child: Icon(Icons.check_circle_outline, size: 24),
-                  label: 'Raise Issue',
-                  onTap: () {
-                    // QCDefectsPage(
-                    //   vehileId: widget.res['data']['vehicledata']['id'],
-                    // )
-                    //     .launch(context,
-                    //         pageRouteAnimation: PageRouteAnimation.Slide)
-                    //     .then((val) {
-                    //   fetchCategories2(widget.ShopId);
-                    // });
-                  },
-                ),
               ],
             ),
       appBar: AppBar(

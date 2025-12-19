@@ -120,6 +120,200 @@ class _ScanningState extends State<Scanning> {
     return response;
   }
 
+  Future<void> showLossTimeDialog(Map<String, dynamic> res) async {
+    String? selectedLossType;
+    String lossReason = '';
+    String? dropdownError;
+    String? reasonError;
+    final List<dynamic> lossTimeTypes = res['data']['loss_time_types'] ?? [];
+
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            bool isFormValid =
+                selectedLossType != null && lossReason.trim().isNotEmpty;
+
+            return AlertDialog(
+              title: Text('Loss Time Information'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (res['data']['loss_time_message'] != null)
+                      Text(
+                        res['data']['loss_time_message'],
+                        style: TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                    SizedBox(height: 16),
+                    Text('Loss Time Type:',
+                        style: TextStyle(fontWeight: FontWeight.w600)),
+                    SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        contentPadding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        errorText: dropdownError,
+                      ),
+                      hint: Text('Select loss time type'),
+                      value: selectedLossType,
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          selectedLossType = newValue;
+                          dropdownError = null; // Clear error when user selects
+                        });
+                      },
+                      items: lossTimeTypes
+                          .map<DropdownMenuItem<String>>((dynamic item) {
+                        return DropdownMenuItem<String>(
+                          value: item['id'].toString(),
+                          child: Text(item['name'] ?? ''),
+                        );
+                      }).toList(),
+                    ),
+                    SizedBox(height: 16),
+                    Text('Delay Reason:',
+                        style: TextStyle(fontWeight: FontWeight.w600)),
+                    SizedBox(height: 8),
+                    TextFormField(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: 'Enter delay reason',
+                        contentPadding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        errorText: reasonError,
+                      ),
+                      maxLines: 3,
+                      onChanged: (value) {
+                        setState(() {
+                          lossReason = value;
+                          reasonError = null; // Clear error when user types
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: isFormValid
+                      ? () async {
+                          Navigator.of(context).pop();
+                          await saveLossTimeInfo(
+                            res['data']['unit_movement_id'].toString(),
+                            selectedLossType!,
+                            lossReason.trim(),
+                            res,
+                          );
+                        }
+                      : () {
+                          // Show validation errors when button is pressed but form is invalid
+                          setState(() {
+                            if (selectedLossType == null) {
+                              dropdownError = 'Please select a loss time type';
+                            }
+                            if (lossReason.trim().isEmpty) {
+                              reasonError = 'Please enter a delay reason';
+                            }
+                          });
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: mycolor,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: Text('Submit'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> saveLossTimeInfo(String unitMovementId, String lossTypeId,
+      String reason, Map<String, dynamic> originalRes) async {
+    EasyLoading.show(
+      status: "Saving loss time info...",
+      maskType: EasyLoadingMaskType.black,
+    );
+
+    try {
+      String url = "${Api.api_url}saveLossTimeInfo";
+
+      Map<String, dynamic> requestData = {
+        'unit_movement_id': int.parse(unitMovementId),
+        'loss_time_type_id': int.parse(lossTypeId),
+        'loss_time': originalRes['data']['loss_time_minutes'] ?? 0,
+        'reason': reason,
+      };
+
+      var response = await httppostwithtoken(
+          url, user['data']['token'], requestData, context);
+
+      EasyLoading.dismiss().whenComplete(() {
+        if (response != null && response['success'] == true) {
+          awesomeTopSnackbar(
+            context,
+            "Loss time information saved successfully",
+            iconWithDecoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(),
+              color: Colors.white,
+            ),
+            icon: const Icon(Icons.check, color: Colors.green),
+            backgroundColor: Colors.green[900],
+          );
+
+          // Continue with the normal flow - navigate to QcCategories
+          QcCategories(
+            ShopId: widget.shopId,
+            res: originalRes,
+            shop_name: widget.shopName,
+          ).launch(
+            context,
+            pageRouteAnimation: PageRouteAnimation.Slide,
+          );
+        } else {
+          awesomeTopSnackbar(
+            context,
+            response?['msg'] ?? "Failed to save loss time information",
+            iconWithDecoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(),
+              color: Colors.white,
+            ),
+            icon: const Icon(Icons.close, color: Colors.red),
+            backgroundColor: Colors.red[900],
+          );
+        }
+      });
+    } catch (e) {
+      EasyLoading.dismiss();
+      awesomeTopSnackbar(
+        context,
+        "Something went wrong while saving loss time info",
+        iconWithDecoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(),
+          color: Colors.white,
+        ),
+        icon: const Icon(Icons.close, color: Colors.red),
+        backgroundColor: Colors.red[900],
+      );
+    }
+  }
+
   Future<void> processSKU(String sku) async {
     ProgressDialog pr = ProgressDialog(
       context,
@@ -230,14 +424,19 @@ class _ScanningState extends State<Scanning> {
             dialogAnimation: DialogAnimation.SLIDE_TOP_BOTTOM,
           );
         } else {
-          QcCategories(
-            ShopId: widget.shopId,
-            res: res,
-            shop_name: widget.shopName,
-          ).launch(
-            context,
-            pageRouteAnimation: PageRouteAnimation.Slide,
-          );
+          // Check if loss time input is required after successful unit check
+          if (res["data"]['require_loss_time_input'] == true) {
+            showLossTimeDialog(res);
+          } else {
+            QcCategories(
+              ShopId: widget.shopId,
+              res: res,
+              shop_name: widget.shopName,
+            ).launch(
+              context,
+              pageRouteAnimation: PageRouteAnimation.Slide,
+            );
+          }
         }
       });
     } catch (e) {
@@ -1001,13 +1200,20 @@ class _ScanningState extends State<Scanning> {
                                                 dialogAnimation: DialogAnimation
                                                     .SLIDE_TOP_BOTTOM);
                                           } else {
-                                            QcCategories(
-                                              ShopId: widget.shopId,
-                                              res: res,
-                                              shop_name: widget.shopName,
-                                            ).launch(context,
-                                                pageRouteAnimation:
-                                                    PageRouteAnimation.Slide);
+                                            // Check if loss time input is required after successful unit check
+                                            if (res["data"][
+                                                    'require_loss_time_input'] ==
+                                                true) {
+                                              showLossTimeDialog(res);
+                                            } else {
+                                              QcCategories(
+                                                ShopId: widget.shopId,
+                                                res: res,
+                                                shop_name: widget.shopName,
+                                              ).launch(context,
+                                                  pageRouteAnimation:
+                                                      PageRouteAnimation.Slide);
+                                            }
                                           }
                                         }
                                       });
