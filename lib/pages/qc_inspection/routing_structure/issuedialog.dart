@@ -56,11 +56,13 @@ class _IssueDialogState extends State<IssueDialog> {
   List<DropDownValueModel> _issueCategoryModels = [];
   SingleValueDropDownController _issueCategoryController =
       SingleValueDropDownController();
+  bool _isLoadingCategories = false;
 
   // Issue Type dropdown variables
   List<DropDownValueModel> _issueTypeModels = [];
   SingleValueDropDownController _issueTypeController =
       SingleValueDropDownController();
+  bool _isLoadingTypes = false;
 
   // Defect Classification dropdown variables
   List<DropDownValueModel> _defectClassificationModels = [];
@@ -68,6 +70,7 @@ class _IssueDialogState extends State<IssueDialog> {
       SingleValueDropDownController();
 
   String? _selectedIssueCategory;
+  String? _selectedIssueCategoryId;
   String? _selectedIssueType;
   String? _selectedDefectClassification;
 
@@ -80,97 +83,9 @@ class _IssueDialogState extends State<IssueDialog> {
   final TextEditingController _otherPartNumberController =
       TextEditingController();
 
-  final List<String> _issueCategories = [
-    'Process Issues',
-    'Part Handling',
-    'Paint Issues',
-    'KDQR',
-    'MMO',
-    'Other',
-  ];
-
-  final Map<String, List<String>> _issueCategoriesAndTypes = {
-    'Process Issues': [
-      'LOOSE PART',
-      'MISALIGNED PARTS',
-      'EXCESS/LESS WORKING FLUIDS',
-      'WRONG ROUTING',
-      'POORLY FITTED PART',
-      'MISSING INSPECTION MARKS',
-      'MISSING DOCUMENTS',
-      'INCOMPLETE PROCESS',
-      'LESS PRESSURE',
-      'TEMPORALY FITTED PART',
-      'ABS LIGHT ON',
-      'PART NOT FITTED',
-      'ALTERNATIVE PART',
-      'OVER TORQUE',
-      'INCOMPLETE WELDS',
-      'MISSING PART',
-      'DAMAGED PART',
-      'WARNING LIGHT',
-      'WRONG PART FITTED',
-      'LARGE GAPS',
-      'WELD SPOTS',
-      'WRONG DOCUMENTATION',
-      'POROSITY',
-      'UNDER TORQUE',
-      'WELD UNDERCUTS',
-      'POOR PUNCHING',
-      'Jig Missing',
-      'ROBBED',
-      'FAULTY MACHINE',
-      'Other',
-    ],
-    'Part Handling': [
-      'SCRATCHES',
-      'DENTS',
-      'DIRT MARKS',
-      'STRAY MARKS',
-      'STAIN MARKS',
-      'Other',
-    ],
-    'Paint Issues': [
-      'DEBRIS',
-      'OVERFLOW',
-      'PINHOLES',
-      'ORANGE PEELS',
-      'COLOUR MISMATCH',
-      'PAINT BLISS',
-      'LESS PAINT',
-      'PAINT BARE AREA',
-      'PVC PEEL OFF',
-      'PAINT OVERSPRAY',
-      'DRY PAINT',
-      'PAINT PEEL OFF',
-      'POORLY PAINTED',
-      'DAMAGED SEALER',
-      'DAMAGED PVC',
-      'PVC OVERSPRAY',
-      'WET PAINT',
-      'Other',
-    ],
-    'KDQR': [
-      'PART QUALITY',
-      'WS-WRONG SHIPMENT',
-      'SS-SHORT SHIPMENT',
-      'PROGRAMMING/SERVER',
-      'FAULTY PART',
-      'SCRATCHES',
-      'DEBRIS',
-      'ME-MANUFACTURER ERROR',
-      'WRONG PART',
-      'NS-NOT SUPPLIED',
-      'Other',
-    ],
-    'MMO': [
-      'LD-LINE DAMAGE',
-      'LL-LINE LOSS',
-      'RUST',
-      'Other',
-    ],
-    'Other': ['Other'],
-  };
+  // API data storage
+  List<Map<String, dynamic>> _issueCategoriesData = [];
+  List<Map<String, dynamic>> _issueTypesData = [];
 
   final List<String> _defectClassifications = [
     'A-Critical',
@@ -180,20 +95,160 @@ class _IssueDialogState extends State<IssueDialog> {
     'Other',
   ];
 
-  // Update issue types based on selected category
-  void _updateIssueTypes(String? selectedCategory) {
-    if (selectedCategory != null) {
-      final types = _issueCategoriesAndTypes[selectedCategory] ?? [];
-      _issueTypeModels = types
-          .map((type) => DropDownValueModel(name: type, value: type))
-          .toList();
-    } else {
-      _issueTypeModels = [];
+  // Load issue categories from API
+  Future<void> _loadIssueCategories() async {
+    setState(() {
+      _isLoadingCategories = true;
+    });
+
+    try {
+      // Get user data for token
+      final userDataString = await getuserdata();
+      final userData = jsonDecode(userDataString);
+      final token = userData['data']?['token'] ?? '';
+
+      final url = "${Api.api_url}issue-categories";
+      print('Loading issue categories from: $url');
+      final response = await httpget(url, token, context);
+
+      setState(() {
+        if (response != null &&
+            response['success'] == true &&
+            response['data'] != null) {
+          final List<dynamic> data = response['data'];
+          _issueCategoriesData = data.cast<Map<String, dynamic>>();
+
+          // Convert to DropDownValueModel
+          _issueCategoryModels = _issueCategoriesData
+              .map((category) => DropDownValueModel(
+                  name: category['name'], value: category['id'].toString()))
+              .toList();
+
+          // Add "Other" option
+          _issueCategoryModels
+              .add(DropDownValueModel(name: 'Other', value: 'Other'));
+          _issueCategoriesData.add({'id': 'Other', 'name': 'Other'});
+        } else {
+          // Fallback: add only "Other" if API fails
+          _issueCategoryModels = [
+            DropDownValueModel(name: 'Other', value: 'Other')
+          ];
+          _issueCategoriesData = [
+            {'id': 'Other', 'name': 'Other'}
+          ];
+        }
+      });
+    } catch (e) {
+      print('Error loading issue categories: $e');
+      setState(() {
+        // Fallback: add only "Other" if API fails
+        _issueCategoryModels = [
+          DropDownValueModel(name: 'Other', value: 'Other')
+        ];
+        _issueCategoriesData = [
+          {'id': 'Other', 'name': 'Other'}
+        ];
+      });
+    } finally {
+      setState(() {
+        _isLoadingCategories = false;
+      });
+    }
+  }
+
+  // Load issue types based on selected category
+  Future<void> _loadIssueTypes(String categoryId) async {
+    if (categoryId == 'Other') {
+      setState(() {
+        _issueTypeModels = [DropDownValueModel(name: 'Other', value: 'Other')];
+        _issueTypesData = [
+          {'id': 'Other', 'name': 'Other', 'issue_category_id': 'Other'}
+        ];
+      });
+      return;
     }
 
-    // Clear current selection
-    _issueTypeController.clearDropDown();
-    _selectedIssueType = null;
+    setState(() {
+      _isLoadingTypes = true;
+    });
+
+    try {
+      // Get user data for token
+      final userDataString = await getuserdata();
+      final userData = jsonDecode(userDataString);
+      final token = userData['data']?['token'] ?? '';
+
+      final url = "${Api.api_url}issue-types/$categoryId";
+      print(url);
+      print('Loading issue types from: $url');
+      final response = await httpget(url, token, context);
+
+      setState(() {
+        if (response != null &&
+            response['success'] == true &&
+            response['data'] != null) {
+          final List<dynamic> data = response['data'];
+          _issueTypesData = data.cast<Map<String, dynamic>>();
+
+          // Convert to DropDownValueModel
+          _issueTypeModels = _issueTypesData
+              .map((type) => DropDownValueModel(
+                  name: type['name'], value: type['id'].toString()))
+              .toList();
+
+          // Add "Other" option
+          _issueTypeModels
+              .add(DropDownValueModel(name: 'Other', value: 'Other'));
+          _issueTypesData.add({
+            'id': 'Other',
+            'name': 'Other',
+            'issue_category_id': categoryId
+          });
+        } else {
+          // Fallback: add only "Other" if API fails
+          _issueTypeModels = [
+            DropDownValueModel(name: 'Other', value: 'Other')
+          ];
+          _issueTypesData = [
+            {'id': 'Other', 'name': 'Other', 'issue_category_id': categoryId}
+          ];
+        }
+      });
+    } catch (e) {
+      print('Error loading issue types: $e');
+      setState(() {
+        // Fallback: add only "Other" if API fails
+        _issueTypeModels = [DropDownValueModel(name: 'Other', value: 'Other')];
+        _issueTypesData = [
+          {'id': 'Other', 'name': 'Other', 'issue_category_id': categoryId}
+        ];
+      });
+    } finally {
+      setState(() {
+        _isLoadingTypes = false;
+      });
+    }
+  }
+
+  // Update issue types based on selected category
+  Future<void> _updateIssueTypes(String? selectedCategoryId) async {
+    if (selectedCategoryId != null) {
+      // Clear current selection
+      _issueTypeController.clearDropDown();
+      _selectedIssueType = null;
+
+      // Load issue types for the selected category
+      await _loadIssueTypes(selectedCategoryId);
+    } else {
+      setState(() {
+        _issueTypeModels = [];
+        _issueTypesData = [];
+      });
+
+      // Clear current selection
+      _issueTypeController.clearDropDown();
+      _selectedIssueType = null;
+    }
   }
 
   // API function to load part numbers
@@ -254,12 +309,7 @@ class _IssueDialogState extends State<IssueDialog> {
   void initState() {
     super.initState();
 
-    // Initialize dropdown models for Issue Categories
-    _issueCategoryModels = _issueCategories
-        .map((category) => DropDownValueModel(name: category, value: category))
-        .toList();
-
-    // Initialize dropdown models for Defect Classifications
+    // Initialize dropdown models for Defect Classifications (still hardcoded)
     _defectClassificationModels = _defectClassifications
         .map((classification) =>
             DropDownValueModel(name: classification, value: classification))
@@ -269,20 +319,42 @@ class _IssueDialogState extends State<IssueDialog> {
     _issueDescriptionController.text = widget.initialDescription ?? '';
     _partNoController.text = widget.initialPartNo ?? '';
 
-    // Set initial dropdown values if provided
-    if (widget.initialCategory != null) {
-      _selectedIssueCategory = widget.initialCategory;
-      _issueCategoryController.dropDownValue = DropDownValueModel(
-          name: widget.initialCategory!, value: widget.initialCategory!);
-
-      // Initialize issue types for the selected category
-      _updateIssueTypes(widget.initialCategory);
+    if (widget.initialImages != null && widget.initialImages!.isNotEmpty) {
+      _imageFiles = List<File>.from(widget.initialImages!);
     }
 
-    if (widget.initialType != null) {
-      _selectedIssueType = widget.initialType;
-      _issueTypeController.dropDownValue = DropDownValueModel(
-          name: widget.initialType!, value: widget.initialType!);
+    // Load data from APIs
+    _loadIssueCategories();
+    _loadPartNumbers();
+
+    // Set initial values after a delay to ensure dropdowns are loaded
+    Future.delayed(Duration(milliseconds: 500), () {
+      _setInitialValues();
+    });
+  }
+
+  void _setInitialValues() {
+    // Set initial dropdown values if provided
+    if (widget.initialCategory != null && _issueCategoryModels.isNotEmpty) {
+      final categoryModel = _issueCategoryModels.firstWhere(
+        (model) => model.name == widget.initialCategory,
+        orElse: () => _issueCategoryModels.first,
+      );
+      _selectedIssueCategory = widget.initialCategory;
+      _selectedIssueCategoryId = categoryModel.value;
+      _issueCategoryController.dropDownValue = categoryModel;
+
+      // Load issue types for the selected category
+      _updateIssueTypes(_selectedIssueCategoryId).then((_) {
+        if (widget.initialType != null && _issueTypeModels.isNotEmpty) {
+          final typeModel = _issueTypeModels.firstWhere(
+            (model) => model.name == widget.initialType,
+            orElse: () => _issueTypeModels.first,
+          );
+          _selectedIssueType = widget.initialType;
+          _issueTypeController.dropDownValue = typeModel;
+        }
+      });
     }
 
     if (widget.initialClassification != null) {
@@ -291,13 +363,6 @@ class _IssueDialogState extends State<IssueDialog> {
           name: widget.initialClassification!,
           value: widget.initialClassification!);
     }
-
-    if (widget.initialImages != null && widget.initialImages!.isNotEmpty) {
-      _imageFiles = List<File>.from(widget.initialImages!);
-    }
-
-    // Load part numbers from API
-    _loadPartNumbers();
   }
 
   @override
@@ -403,12 +468,14 @@ class _IssueDialogState extends State<IssueDialog> {
                         setState(() {
                           // Handle both DropDownValueModel and String (when cleared)
                           if (value is DropDownValueModel) {
-                            _selectedIssueCategory = value.value;
+                            _selectedIssueCategoryId = value.value;
+                            _selectedIssueCategory = value.name;
                           } else {
                             _selectedIssueCategory = null;
+                            _selectedIssueCategoryId = null;
                           }
                           _categoryError = null;
-                          _updateIssueTypes(_selectedIssueCategory);
+                          _updateIssueTypes(_selectedIssueCategoryId);
                         });
                       },
                     ),
@@ -423,24 +490,70 @@ class _IssueDialogState extends State<IssueDialog> {
                     ],
                     if (_selectedIssueCategory != null) ...[
                       SizedBox(height: 16),
-                      _buildSearchableDropdown(
-                        label: 'Issue Type',
-                        controller: _issueTypeController,
-                        items: _issueTypeModels,
-                        prefixIcon: Icons.label,
-                        errorText: _typeError,
-                        onChanged: (value) {
-                          setState(() {
-                            // Handle both DropDownValueModel and String (when cleared)
-                            if (value is DropDownValueModel) {
-                              _selectedIssueType = value.value;
-                            } else {
-                              _selectedIssueType = null;
-                            }
-                            _typeError = null;
-                          });
-                        },
-                      ),
+                      _isLoadingTypes
+                          ? Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Issue Type',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.grey[700],
+                                  ),
+                                ),
+                                SizedBox(height: 6),
+                                Container(
+                                  width: double.infinity,
+                                  height: 56,
+                                  decoration: BoxDecoration(
+                                    border:
+                                        Border.all(color: Colors.grey.shade300),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Padding(
+                                        padding: EdgeInsets.all(16),
+                                        child: SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                    mycolor),
+                                          ),
+                                        ),
+                                      ),
+                                      Text(
+                                        'Loading issue types...',
+                                        style:
+                                            TextStyle(color: Colors.grey[600]),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            )
+                          : _buildSearchableDropdown(
+                              label: 'Issue Type',
+                              controller: _issueTypeController,
+                              items: _issueTypeModels,
+                              prefixIcon: Icons.label,
+                              errorText: _typeError,
+                              onChanged: (value) {
+                                setState(() {
+                                  // Handle both DropDownValueModel and String (when cleared)
+                                  if (value is DropDownValueModel) {
+                                    _selectedIssueType = value.value;
+                                  } else {
+                                    _selectedIssueType = null;
+                                  }
+                                  _typeError = null;
+                                });
+                              },
+                            ),
                       if (_selectedIssueType == 'Other') ...[
                         SizedBox(height: 16),
                         _buildSimpleTextField(
